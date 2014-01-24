@@ -21,12 +21,8 @@ def run():
     # Make sure necessary directories exist
     if not os.path.exists('tracks'):
         os.makedirs('tracks')
-    if not os.path.exists('tracks/shelf_transport/'):
-        os.makedirs('tracks/shelf_transport/')
     if not os.path.exists('figures'):
         os.makedirs('figures')
-    if not os.path.exists('figures/shelf_transport/'):
-        os.makedirs('figures/shelf_transport/')
         
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     grid = tracpy.inout.readgrid(loc)
