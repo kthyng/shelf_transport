@@ -28,8 +28,7 @@ def run():
     grid = tracpy.inout.readgrid(loc)
 
     overallstartdate = datetime(2004, 1, 1, 0, 1)
-    overallstopdate = datetime(2004, 1, 7, 0, 1)
-    # overallstopdate = datetime(2011, 1, 1, 0, 1)
+    overallstopdate = datetime(2011, 1, 1, 0, 1)
 
     date = overallstartdate
 
@@ -69,7 +68,7 @@ def run():
 
         # Increment by 24 hours for next loop, to move through more quickly
         # nh = nh + 24
-        date = date + timedelta(hours=24*7)
+        date = date + timedelta(hours=24)
 
     # # Do transport plot
     # tracpy.plotting.transport(name='all_f/N=5_dx=8/25days', fmod=startdate.isoformat()[0:7] + '*', 
