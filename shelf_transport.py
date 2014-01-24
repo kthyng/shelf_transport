@@ -36,7 +36,7 @@ def run():
     # keep running until we hit the next month
     while date < overallstopdate:
 
-        name = 'shelf_transport/' + date.isoformat()[0:13]
+        name = date.isoformat()[0:13]
 
         # If the particle trajectories have not been run, run them
         if not os.path.exists('tracks/' + name + '.nc'):
