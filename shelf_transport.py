@@ -39,7 +39,8 @@ def run():
         name = date.isoformat()[0:13]
 
         # If the particle trajectories have not been run, run them
-        if not os.path.exists('tracks/' + name + '.nc'):
+        if not os.path.exists('tracks/' + name + '.nc') or \
+            not os.path.exists('tracks/' + name + 'gc.nc'):
 
             # Read in simulation initialization
             nstep, N, ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, do3d, doturb, \
