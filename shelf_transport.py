@@ -46,10 +46,11 @@ def run():
                     grid, dostream = init.init(date, loc, grid=grid)
             # pdb.set_trace()
             # Run tracpy
+            # Save directly to grid coordinates
             lonp, latp, zp, t, grid \
                 = tracpy.run.run(loc, nstep, ndays, ff, date, tseas, ah, av, \
                                     lon0, lat0, z0, zpar, do3d, doturb, name, N=N,  \
-                                    grid=grid, dostream=dostream)
+                                    grid=grid, dostream=dostream, savell=False)
 
         # # If basic figures don't exist, make them
         # if not os.path.exists('figures/' + name + '*.png'):
