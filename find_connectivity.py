@@ -19,8 +19,8 @@ import glob
 from matplotlib.mlab import find
 
 # Find files to run through
-# Files = glob.glob('/Volumes/Emmons/projects/gisr/tracks/all_f/*gc.npz')
-Files = glob.glob('tracks/*gc.nc')
+Files = glob.glob('/Volumes/Emmons/projects/gisr/tracks/all_f/*gc.npz')
+# Files = glob.glob('tracks/*gc.nc')
 
 shelf_depth = 100
 
@@ -34,12 +34,12 @@ for File in Files:
         continue
 
     # Get necessary info from File
-    # d = np.load(File)
-    # xg = d['xg']; yg = d['yg']; tg = d['tg']
-    d = netCDF.Dataset(File)
-    xg = d.variables['xg'][:]
-    yg = d.variables['yg'][:]
-    tg = d.variables['tg'][:]
+    d = np.load(File)
+    xg = d['xg']; yg = d['yg']; tg = d['tg']
+    # d = netCDF.Dataset(File)
+    # xg = d.variables['xg'][:]
+    # yg = d.variables['yg'][:]
+    # tg = d.variables['tp'][:]
     d.close()
 
     # Time information
@@ -72,19 +72,24 @@ for File in Files:
         # Loop through number of days
         for nday in ndays:
 
-            nind = find(nday>=days)[-1] # number of indices into time dimension this nday corresponds to
+            nind1 = find(nday>=days)[-1] # number of indices into time dimension this nday corresponds to
+            nind2 = find(~np.isnan(h[i,:]))[-1] # last non-nan
+            # want the last index before nan's start or the appropriate timing for nday, whichever comes first
+            nind = min((nind1,nind2))
 
             # Find consecutive values of array (both shallower and deeper than shelf_depth). Searches in time direction
             # from http://stackoverflow.com/questions/7352684/how-to-find-the-groups-of-consecutive-elements-from-an-array-in-numpy
             pdb.set_trace()
             # number of entries in adeep list is the number of times it changes sides of the shelf, and number of entries
             # in each entry of list is the number of outputs it is there. True is deep and False is shallow.
+            # nan's show up as False
             adeep = np.array_split(ideep[i,:nind], np.where(np.diff(ideep[i,:nind])==1)[0]+1)
             ashallow = np.array_split(ishallow[i,:nind], np.where(np.diff(ishallow[i,:nind])==1)[0]+1)
 
             # Search through chunks of consecutive true's and false's (deep/shallow) to see if on both sides for enough time
             # move on if find a true
-            for j in xrange(len(adeep)):
+            for j in xrange( len(adeep) ):
+            # for j in xrange( max(len(adeep),len(ashallow)) ):
 
                 # Find when starts deep and has more than iday elements on shallow side
                 if (h[i,0]>shelf_depth) and (ashallow[j].astype(int).sum()>iday):
