@@ -60,7 +60,7 @@ for File in Files:
     # Initial array of information
     ntrac = xp.shape[0] # number of drifters
     ndays = np.arange(2,31) # number of simulation days
-    cross = np.ones((ntrac, ndays.size))*np.nan # to store analysis. True if crosses shelf by nday.
+    cross = np.zeros((ntrac, ndays.size)) # to store analysis. True if crosses shelf by nday.
 
     # Loop through drifters
     for i in xrange(ntrac):
@@ -68,6 +68,7 @@ for File in Files:
         # find indices of drifters deeper and shallower than shelf_depth)
         ideep = h > shelf_depth # indices of deeper locations
         ishallow = h <= shelf_depth # indices of shallower locations
+        pdb.set_trace()
 
         # Loop through number of days
         for nday in ndays:
@@ -79,7 +80,6 @@ for File in Files:
 
             # Find consecutive values of array (both shallower and deeper than shelf_depth). Searches in time direction
             # from http://stackoverflow.com/questions/7352684/how-to-find-the-groups-of-consecutive-elements-from-an-array-in-numpy
-            pdb.set_trace()
             # number of entries in adeep list is the number of times it changes sides of the shelf, and number of entries
             # in each entry of list is the number of outputs it is there. True is deep and False is shallow.
             # nan's show up as False
@@ -103,7 +103,11 @@ for File in Files:
 
             # If it has crossed for nday, then it will cross for the rest of them too
             if cross[i,nday] == True:
-                cross[i,nday:] = True
+                cross[i,nday+1:] = True
+                continue
+            # If the track has nan'ed out at this point, whatever the cross value is will be true for the rest of ndays
+            elif nind2 < nind1:
+                cross[i,nday+1:] = cross[i,nday]
                 continue
 
             # # Using drifter locations in grid coordinates, make drifter-sized array of 1's and 0's, 1 if the depth is both above and below
