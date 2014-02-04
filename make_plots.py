@@ -45,6 +45,6 @@ for tind in xrange(2):#tg.size):
 	ax = fig.add_subplot(111)
 	tracpy.plotting.background(grid=grid, ax=ax)
 
-	ax.plot(xp[:,tind], yp[:,tind], 'o', color='darkcyan')
+	ax.plot(xp[::5,tind], yp[::5,tind], 'o', color='darkcyan')
 	plt.savefig('figures/2010-07-01T00/' + str(tind) + '.png', dpi=150)
 	plt.close(fig)
