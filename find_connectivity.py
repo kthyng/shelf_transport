@@ -19,7 +19,7 @@ import glob
 from matplotlib.mlab import find
 
 # Find files to run through
-Files = glob.glob('/Volumes/Emmons/projects/gisr/tracks/all_f/*gc.npz')
+Files = glob.glob('/Volumes/Emmons/projects/gisr/tracks/all_f/*gc.npz')[0:2]
 # Files = glob.glob('tracks/*gc.nc')
 
 shelf_depth = 100
@@ -30,7 +30,9 @@ grid = tracpy.inout.readgrid(loc)
 # Loop through files for analysis
 for File in Files:
 
-    if os.path.exists('calcs/shelfconn/' + File.split('/')[-1][:-5] + '.npz'):
+    savefile = 'calcs/shelfconn/' + File.split('/')[-1][:-5] + '.npz'
+
+    if os.path.exists(savefile):
         continue
 
     # Get necessary info from File
@@ -59,7 +61,7 @@ for File in Files:
 
     # Initial array of information
     ntrac = xp.shape[0] # number of drifters
-    ndays = np.arange(2,31) # number of simulation days
+    ndays = np.arange(0,31) # number of simulation days # the first few days will be empty
     cross = np.zeros((ntrac, ndays.size)) # to store analysis. True if crosses shelf by nday.
 
     # Loop through drifters
@@ -68,10 +70,16 @@ for File in Files:
         # find indices of drifters deeper and shallower than shelf_depth)
         ideep = h > shelf_depth # indices of deeper locations
         ishallow = h <= shelf_depth # indices of shallower locations
-        pdb.set_trace()
+        # pdb.set_trace()
 
         # Loop through number of days
         for nday in ndays:
+
+            # nothing will happen these days
+            if nday==0:
+                continue
+            if nday==1:
+                continue
 
             nind1 = find(nday>=days)[-1] # number of indices into time dimension this nday corresponds to
             nind2 = find(~np.isnan(h[i,:]))[-1] # last non-nan
@@ -110,12 +118,7 @@ for File in Files:
                 cross[i,nday+1:] = cross[i,nday]
                 continue
 
-            # # Using drifter locations in grid coordinates, make drifter-sized array of 1's and 0's, 1 if the depth is both above and below
-            # # the shelf_depth during the nday length of considered simulation, and 0 if not. This is a function of nday and shelf_depth.
-            # # crosses = np.zeros(T0.shape) # elements will be changed to 1 if a given drifter is both above and below isobath at some point
-            # hsum = np.sum(h[:,:nind]>shelf_depth, axis=1) # ONLY LOOK UP THROUGH NDAY IN TIME FOR CROSSINGS
-            # # need to both have at least one point greater than shelf_depth but not all non-nan positions have over shelf_depth depth
-            # crosses = (hsum>0)*(hsum<np.sum(~hind[:,:nind], axis=1)) # bool of whether drifter crosses shelf
-
+    # save array
+    np.savez(savefile, cross=cross)
 
 
