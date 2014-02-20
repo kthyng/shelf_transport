@@ -19,8 +19,8 @@ import glob
 from matplotlib.mlab import find, Path
 
 # Find files to run through
-Files = glob.glob('/Volumes/Emmons/projects/gisr/tracks/all_f/*gc.npz')[0:2]
-# Files = glob.glob('tracks/*gc.nc')
+# Files = glob.glob('/Volumes/Emmons/projects/gisr/tracks/all_f/*gc.npz')[0:2]
+Files = glob.glob('tracks/*gc.nc')
 
 shelf_depth = 100
 
@@ -37,16 +37,16 @@ for File in Files:
     CHfile = 'calcs/coastconn/CH/' + File.split('/')[-1][:-4] + '.npz'
     LAfile = 'calcs/coastconn/LA/' + File.split('/')[-1][:-4] + '.npz'
 
-    # if os.path.exists(savefile):
-    #     continue
+    if os.path.exists(LAfile): # don't repeat calc if last file was created
+        continue
 
     # Get necessary info from File
-    d = np.load(File)
-    xg = d['xg']; yg = d['yg']; tg = d['tg']
-    # d = netCDF.Dataset(File)
-    # xg = d.variables['xg'][:]
-    # yg = d.variables['yg'][:]
-    # tg = d.variables['tp'][:]
+    # d = np.load(File)
+    # xg = d['xg']; yg = d['yg']; tg = d['tg']
+    d = netCDF.Dataset(File)
+    xg = d.variables['xg'][:]
+    yg = d.variables['yg'][:]
+    tg = d.variables['tp'][:]
     d.close()
 
     # Load in coastline region info
