@@ -82,10 +82,10 @@ def init(date, loc, grid=None):
     # horizontal_diffusivity project showed that relative dispersion did not
     # change between nsteps=25 and 50, but does between nsteps=5 and 25, and
     # interim numbers have not been tested yet.
-    nsteps = 25 
+    nsteps = 20 # old tracks: 25 
 
     # Number of steps to divide model output for outputting drifter location
-    N = 5
+    N = 20 # old tracks: 5
 
     # Number of days
     ndays = 30
@@ -95,7 +95,7 @@ def init(date, loc, grid=None):
 
     # Time between outputs
     tseas = 4*3600 # 4 hours between outputs, in seconds, time between model outputs 
-    ah = 5.
+    ah = 0. # old tracks: 5.
     av = 0. # m^2/s
 
     if grid is None:
@@ -124,7 +124,7 @@ def init(date, loc, grid=None):
 
     # for 3d flag, do3d=0 makes the run 2d and do3d=1 makes the run 3d
     do3d = 0
-    doturb = 2
+    doturb = 0 # old tracks: 2
 
     # Flag for streamlines. All the extra steps right after this are for streamlines.
     dostream = 0
