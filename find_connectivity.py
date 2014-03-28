@@ -44,7 +44,7 @@ def run():
     # Files = glob.glob('/Volumes/Emmons/projects/gisr/tracks/all_f/*gc.npz')[0:2]
     Files = glob.glob('tracks/*gc.nc')
 
-    shelf_depth = 100
+    shelf_depths = [20, 50, 100, 200, 300, 400, 500]
 
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     grid = tracpy.inout.readgrid(loc)
@@ -55,7 +55,7 @@ def run():
         # Time information
         days = (tg-tg[0])/(3600.*24)
         iday = find(days==2) - find(days==1) # number of indices per day
-        iday = int(iday/2) # use half a day instead of a full day
+        iday = int(iday) 
 
         if which=='cross':
 
@@ -75,27 +75,28 @@ def run():
             # Initial array of information
             ntrac = xp.shape[0] # number of drifters
             ndays = np.arange(0,31) # number of simulation days # the first few days will be empty
-            cross = np.ones(ntrac)*np.nan # to store time of crossing or nan if it doesn't cross
+            cross = np.ones(len(shelf_depths), ntrac)*np.nan # [number of depths,number of tracks] to store time of crossing or nan if it doesn't cross
 
             # Cross will hold timing of when the drifter crosses the shelf the first time if it 
             # spends at least iday points both deeper and shallower than shelf_depth, and nan otherwise
-            ideep = h>shelf_depth
-            ndeep = np.sum(ideep, axis=1) # number deeper than shelf depth
-            ishallow = h<shelf_depth
-            nshallow = np.sum(ishallow, axis=1) # number shallower than shelf depth
-            # need to have at least iday points deeper and shallower than shelf_depth 
-            icross = (ndeep>iday) * (nshallow>iday) # bools, True if crosses
-            # pdb.set_trace()
-            whencross = np.diff(ideep, axis=1) # will pick out when the drifters change from deep to shallow or vice versa
-            # days2d = np.expand_dims(days,axis=0).repeat(ntrac, axis=0)
-            # picks out the first time the switch happens, and gives the time in days
-            # is zero if not
-            iwhen = (days[1:]*whencross).argmax(axis=1) 
-            # when = days[(days[1:]*whencross).argmax(axis=1)+1]
-            # contains the time in days when the shelf is crossed the first time
-            # has to be on both sides of the shelf for idays
-            # is nan if doesn't cross the shelf
-            cross[icross] = days[iwhen[icross]] 
+            for i,shelf_depth in enumerate(shelf_depths):
+                ideep = h>shelf_depth
+                ndeep = np.sum(ideep, axis=1) # number deeper than shelf depth
+                ishallow = h<shelf_depth
+                nshallow = np.sum(ishallow, axis=1) # number shallower than shelf depth
+                # need to have at least iday points deeper and shallower than shelf_depth 
+                icross = (ndeep>iday) * (nshallow>iday) # bools, True if crosses
+                # pdb.set_trace()
+                whencross = np.diff(ideep, axis=1) # will pick out when the drifters change from deep to shallow or vice versa
+                # days2d = np.expand_dims(days,axis=0).repeat(ntrac, axis=0)
+                # picks out the first time the switch happens, and gives the time in days
+                # is zero if not
+                iwhen = (days[1:]*whencross).argmax(axis=1) 
+                # when = days[(days[1:]*whencross).argmax(axis=1)+1]
+                # contains the time in days when the shelf is crossed the first time
+                # has to be on both sides of the shelf for idays
+                # is nan if doesn't cross the shelf
+                cross[i,icross] = days[iwhen[icross]] 
 
             # save array
             np.savez(shelffile, xp0=xp[:,0], yp0=yp[:,0], cross=cross)
