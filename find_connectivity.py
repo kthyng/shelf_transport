@@ -54,7 +54,7 @@ def run():
 
         if which=='cross':
 
-            shelffile = 'calcs/shelfconn/' + File.split('/')[-1][:-4] + '.npz'
+            shelffile = 'calcs/shelfconn/' + File.split('/')[-1][:-3] + '.npz'
 
             if os.path.exists(shelffile): # don't repeat calc if last file was created
                 continue
@@ -67,15 +67,16 @@ def run():
             iday = int(iday) 
 
             # Calculate the depths for the drifter positions
-            nanind = np.isnan(xg) + xg==-1 # indices where nans are location in xg, yg; for reinstitution of nans
+            nanind = np.isnan(xg)# + xg==-1 # indices where nans are location in xg, yg; for reinstitution of nans
             xg[nanind] = 0; yg[nanind] = 0 # need to preserve the shape of xg, yg, and have valid indices to use with grid['h']
+            #pdb.set_trace()
             h = grid['h'][np.ceil(xg).astype(int), np.ceil(yg).astype(int)] # depths at all drifter locations
             h[nanind] = np.nan # reinstitute nans into depths of trajectories
 
             # Initial array of information
-            ntrac = xp.shape[0] # number of drifters
+            ntrac = xg.shape[0] # number of drifters
             ndays = np.arange(0,31) # number of simulation days # the first few days will be empty
-            cross = np.ones(len(shelf_depths), ntrac)*np.nan # [number of depths,number of tracks] to store time of crossing or nan if it doesn't cross
+            cross = np.ones((len(shelf_depths), ntrac))*np.nan # [number of depths,number of tracks] to store time of crossing or nan if it doesn't cross
 
             # Cross will hold timing of when the drifter crosses the shelf the first time if it 
             # spends at least iday points both deeper and shallower than shelf_depth, and nan otherwise
@@ -99,7 +100,7 @@ def run():
                 cross[i,icross] = days[iwhen[icross]] 
 
             # save array
-            np.savez(shelffile, xp0=xp[:,0], yp0=yp[:,0], cross=cross)
+            np.savez(shelffile, xg0=xg[:,0], yg0=yg[:,0], cross=cross)
 
 
         elif which=='coast':
@@ -151,7 +152,7 @@ def run():
             # dconn.close()
 
             # Change to projected drifter locations now
-            nanind = np.isnan(xg) + xg==-1 # indices where nans are location in xg, yg; for reinstitution of nans
+            nanind = np.isnan(xg) #+ xg==-1 # indices where nans are location in xg, yg; for reinstitution of nans
             xp, yp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2xy') 
             xp[nanind] = np.nan; yp[nanind] = np.nan
             del(xg,yg) # don't need grid info anymore
