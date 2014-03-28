@@ -52,11 +52,6 @@ def run():
     # Loop through files for analysis
     for File in Files:
 
-        # Time information
-        days = (tg-tg[0])/(3600.*24)
-        iday = find(days==2) - find(days==1) # number of indices per day
-        iday = int(iday) 
-
         if which=='cross':
 
             shelffile = 'calcs/shelfconn/' + File.split('/')[-1][:-4] + '.npz'
@@ -65,6 +60,11 @@ def run():
                 continue
 
             xg, yg, tp = load_tracks(File)
+
+            # Time information
+            days = (tp-tp[0])/(3600.*24)
+            iday = find(days==2) - find(days==1) # number of indices per day
+            iday = int(iday) 
 
             # Calculate the depths for the drifter positions
             nanind = np.isnan(xg) + xg==-1 # indices where nans are location in xg, yg; for reinstitution of nans
@@ -114,6 +114,11 @@ def run():
                 continue
 
             xg, yg, tp = load_tracks(File)
+ 
+            # Time information
+            days = (tp-tp[0])/(3600.*24)
+            iday = find(days==2) - find(days==1) # number of indices per day
+            iday = int(iday) 
 
             # Load in coastline region info
             # Mexico
