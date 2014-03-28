@@ -30,7 +30,7 @@ def load_tracks(File):
     d = netCDF.Dataset(File)
     xg = d.variables['xg'][:]
     yg = d.variables['yg'][:]
-    tg = d.variables['tp'][:]
+    tp = d.variables['tp'][:]
     d.close()
 
     return xg, yg, tp
