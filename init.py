@@ -82,10 +82,10 @@ def init(date, loc, grid=None):
     # horizontal_diffusivity project showed that relative dispersion did not
     # change between nsteps=25 and 50, but does between nsteps=5 and 25, and
     # interim numbers have not been tested yet.
-    nsteps = 12 # old tracks: 25 
+    nsteps = 25 # in-between tracks: 12 # old tracks: 25 
 
     # Number of steps to divide model output for outputting drifter location
-    N = 12 # old tracks: 5
+    N = 5 # in-between tracks: 12 # old tracks: 5
 
     # Number of days
     ndays = 30
