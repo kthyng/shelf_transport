@@ -10,6 +10,7 @@ import netCDF4 as netCDF
 import pdb
 import matplotlib.pyplot as plt
 import tracpy
+import tracpy.plotting
 import init
 from datetime import datetime, timedelta
 from glob import glob
@@ -43,13 +44,14 @@ def init(whichtime, whichtype):
     '''
 
     base = 'calcs/shelfconn/'
-
+    pdb.set_trace()
     if whichtime=='seasonal':
+        Files = []
         # Seasonal returns Files that has two entries of lists
-        Files = glob(base + '*-07-*.npz')
-        Files.extend(base + '*-08-*.npz')
-        Files.append(base + '*-01-*.npz')
-        Files.extend(base + '*-02-*.npz')
+        Files.append(glob(base + '*-0[7-8]-*.npz'))
+        #Files.extend(glob(base + '*-08-*.npz'))
+        Files.append(glob(base + '*-0[1-2]-*.npz'))
+        #Files.extend(glob(base + '*-02-*.npz'))
 
     if whichtype=='cross':
         cmap = 'YlOrRd'
@@ -157,7 +159,7 @@ def run():
     bins = (60,60)
 
     # Load in Files to read from based on which type of plot is being run
-    Files, cmap = init(which)
+    Files, cmap = init(whichtime, whichtype)
 
     # Grid info
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
@@ -172,13 +174,14 @@ def run():
     # Drifters always start in the same place.
     d = np.load(Files[0])
     # Histogram of starting locations
-    Hstart, xe, ye = calc_histogram(d['xg0'], d['yg0'], bins=bins, range=[Xrange, Yrange])
+    Hstart, xe, ye = calc_histogram(d['xg0'], d['yg0'], bins=bins, Xrange=Xrange, Yrange=Yrange)
     d.close()
 
     # Set up overall plot
     fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
 
     # Loop through calculation files to calculate overall histograms
+    pdb.set_trace()
     for i, files in enumerate(len(Files)): # Files has multiple entries, 1 for each subplot
 
         Hcross = np.zeros(bins) # initialize
@@ -197,7 +200,7 @@ def run():
             ind = ~np.isnan(cross[ishelf_depth,:])
 
             # Calculate and accumulate histograms of starting locations of drifters that cross shelf
-            Hcross, _, _ += calc_histogram(xg0[ind], yg0[ind], bins=bins, range=[Xrange, Yrange])
+            Hcross, _, _ = Hcross + calc_histogram(xg0[ind], yg0[ind], bins=bins, Xrange=Xrange, Yrange=Yrange)
 
 
         # Calculate overall histogram
