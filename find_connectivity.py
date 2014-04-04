@@ -110,7 +110,7 @@ def run():
             NTXfile = 'calcs/coastconn/NTX/' + File.split('/')[-1][:-4] + '.npz'
             CHfile = 'calcs/coastconn/CH/' + File.split('/')[-1][:-4] + '.npz'
             LAfile = 'calcs/coastconn/LA/' + File.split('/')[-1][:-4] + '.npz'
-
+            #pdb.set_trace()
             if os.path.exists(LAfile): # don't repeat calc if last file was created
                 continue
 
@@ -120,7 +120,7 @@ def run():
             days = (tp-tp[0])/(3600.*24)
             iday = find(days==2) - find(days==1) # number of indices per day
             iday = int(iday) 
-
+            # pdb.set_trace()
             # Load in coastline region info
             # Mexico
             dconn = np.load('calcs/MXpts.npz')
@@ -159,6 +159,7 @@ def run():
 
             # Initial array of information
             # cross = np.zeros((ntrac, ndays.size), dtype=bool) # to store analysis. True if crosses shelf by nday.
+            ntrac = xp.shape[0]            
             MX = np.ones(ntrac)*np.nan # to store analysis. 
             STX = np.ones(ntrac)*np.nan # to store analysis. 
             NTX = np.ones(ntrac)*np.nan # to store analysis. 
@@ -167,6 +168,7 @@ def run():
 
             # which points are inside the region
             # Mexico
+            #pdb.set_trace()
             inside = MXpath.contains_points(np.vstack((xp.flat, yp.flat)).T).reshape(xp.shape)
             iinside = inside.sum(axis=1).astype(bool) # true if goes inside
             whencross = np.diff(inside, axis=1) # will pick out when the drifters change from outside to inside region or vice versa
