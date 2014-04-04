@@ -60,10 +60,11 @@ from datetime import datetime, timedelta
 from matplotlib.mlab import *
 import tracpy
 import time
+from tracpy.tracpy_class import Tracpy
 
-units = 'seconds since 1970-01-01'
+time_units = 'seconds since 1970-01-01'
 
-def init(date, loc, grid=None):
+def init(name): #date, loc, grid=None):
     '''
     Initialization for seeding drifters at all shelf model grid points to be run
     forward.
@@ -78,6 +79,8 @@ def init(date, loc, grid=None):
     '''
 
     tic = time.time()
+
+    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
 
     # horizontal_diffusivity project showed that relative dispersion did not
     # change between nsteps=25 and 50, but does between nsteps=5 and 25, and
@@ -98,26 +101,6 @@ def init(date, loc, grid=None):
     ah = 0. # old tracks: 5.
     av = 0. # m^2/s
 
-    if grid is None:
-        # if loc is the aggregated thredds server, the grid info is
-        # included in the same file
-        grid = tracpy.inout.readgrid(loc)
-    else:
-        grid = grid
-
-    # Initial lon/lat locations for drifters
-    # Start uniform array of drifters across domain using x,y coords
-    dx = 1000 # initial separation distance of drifters, in meters, from sensitivity project
-    llcrnrlon = grid['lonr'].min(); urcrnrlon = grid['lonr'].max(); 
-    llcrnrlat = grid['latr'].min(); urcrnrlat = grid['latr'].max(); 
-    xcrnrs, ycrnrs = grid['basemap']([llcrnrlon, urcrnrlon], [llcrnrlat, urcrnrlat])
-    X, Y = np.meshgrid(np.arange(xcrnrs[0], xcrnrs[1], dx), np.arange(ycrnrs[0], ycrnrs[1], dx))
-
-    lon0, lat0 = grid['basemap'](X, Y, inverse=True)
-
-    # Eliminate points that are outside domain or in masked areas
-    lon0, lat0 = tracpy.tools.check_points(lon0, lat0, grid)
-
     # surface drifters
     z0 = 's'  
     zpar = 29 
@@ -129,5 +112,30 @@ def init(date, loc, grid=None):
     # Flag for streamlines. All the extra steps right after this are for streamlines.
     dostream = 0
 
-    return nsteps, N, ndays, ff, tseas, ah, av, lon0, lat0, \
-            z0, zpar, do3d, doturb, grid, dostream
+    # Initialize Tracpy class
+    tp = Tracpy(loc, name=name, tseas=tseas, ndays=ndays, nsteps=nsteps, dostream=dostream, savell=False, doperiodic=0, 
+                N=N, ff=ff, ah=ah, av=av, doturb=doturb, do3d=do3d, z0=z0, zpar=zpar, time_units=time_units)
+
+    tp._readgrid()
+
+    #if grid is None:
+        # if loc is the aggregated thredds server, the grid info is
+        # included in the same file
+    #    grid = tracpy.inout.readgrid(loc)
+    #else:
+    #    grid = grid
+
+    # Initial lon/lat locations for drifters
+    # Start uniform array of drifters across domain using x,y coords
+    dx = 1000 # initial separation distance of drifters, in meters, from sensitivity project
+    llcrnrlon = tp.grid['lonr'].min(); urcrnrlon = tp.grid['lonr'].max(); 
+    llcrnrlat = tp.grid['latr'].min(); urcrnrlat = tp.grid['latr'].max(); 
+    xcrnrs, ycrnrs = tp.grid['basemap']([llcrnrlon, urcrnrlon], [llcrnrlat, urcrnrlat])
+    X, Y = np.meshgrid(np.arange(xcrnrs[0], xcrnrs[1], dx), np.arange(ycrnrs[0], ycrnrs[1], dx))
+
+    lon0, lat0 = tp.grid['basemap'](X, Y, inverse=True)
+
+    # Eliminate points that are outside domain or in masked areas
+    lon0, lat0 = tracpy.tools.check_points(lon0, lat0, tp.grid)
+
+    return tp, lon0, lat0
