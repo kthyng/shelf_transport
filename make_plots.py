@@ -14,6 +14,7 @@ import tracpy.plotting
 import init
 from datetime import datetime, timedelta
 from glob import glob
+import op
 
 # mpl.rcParams['text.usetex'] = True
 mpl.rcParams.update({'font.size': 14})
@@ -44,11 +45,11 @@ def init(whichtime, whichtype):
     '''
 
     base = 'calcs/shelfconn/'
-    pdb.set_trace()
+    #pdb.set_trace()
     if whichtime=='seasonal':
         Files = []
         # Seasonal returns Files that has two entries of lists
-        Files.append(glob(base + '*-0[7-8]-*.npz'))
+        Files.append(glob(base + '*-0[6-7]-*.npz'))
         #Files.extend(glob(base + '*-08-*.npz'))
         Files.append(glob(base + '*-0[1-2]-*.npz'))
         #Files.extend(glob(base + '*-02-*.npz'))
@@ -113,7 +114,10 @@ def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax):
     Do the main plotting stuff.
     '''
 
-    ax.contourf(xe, ye, H.T, cmap, levels=np.linspace(0,100,11))
+    XE, YE = np.meshgrid(op.resize(xe, 0), op.resize(ye, 0))
+
+    # Try with pcolor too
+    ax.contourf(XE, YE, H.T, cmap, levels=np.linspace(0,100,11))
     ax.contour(grid['xr'], grid['yr'], grid['h'], [shelf_depth], colors='0.1', linewidth=3)
 
 
@@ -172,7 +176,7 @@ def run():
     ## Calculate starting position histogram just once ##
     # Read in connectivity info (previously calculated). 
     # Drifters always start in the same place.
-    d = np.load(Files[0])
+    d = np.load(Files[0][0])
     # Histogram of starting locations
     Hstart, xe, ye = calc_histogram(d['xg0'], d['yg0'], bins=bins, Xrange=Xrange, Yrange=Yrange)
     d.close()
@@ -181,10 +185,11 @@ def run():
     fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
 
     # Loop through calculation files to calculate overall histograms
-    pdb.set_trace()
-    for i, files in enumerate(len(Files)): # Files has multiple entries, 1 for each subplot
+    # pdb.set_trace()
+    for i, files in enumerate(Files): # Files has multiple entries, 1 for each subplot
 
         Hcross = np.zeros(bins) # initialize
+        #pdb.set_trace()
         Hstart *= len(files) # multiply to account for each simulation
 
         for File in files: # now loop through the files for this subplot
@@ -200,13 +205,14 @@ def run():
             ind = ~np.isnan(cross[ishelf_depth,:])
 
             # Calculate and accumulate histograms of starting locations of drifters that cross shelf
-            Hcross, _, _ = Hcross + calc_histogram(xg0[ind], yg0[ind], bins=bins, Xrange=Xrange, Yrange=Yrange)
-
+            Hcrosstemp, _, _ = calc_histogram(xg0[ind], yg0[ind], bins=bins, Xrange=Xrange, Yrange=Yrange)
+            Hcross = np.nansum( np.vstack((Hcross, Hcrosstemp)))
 
         # Calculate overall histogram
         H = Hstart/Hcross
 
         # Do subplot
+        pdb.set_trace()
         plot_stuff(xe, ye, H, cmap, grid, shelf_depth, axarr[i])
 
     # Add colorbar
