@@ -24,11 +24,12 @@ def run():
     if not os.path.exists('figures'):
         os.makedirs('figures')
         
-    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
-    grid = tracpy.inout.readgrid(loc)
+    #loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    #grid = tracpy.inout.readgrid(loc)
 
-    overallstartdate = datetime(2004, 1, 1, 0, 1)
-    overallstopdate = datetime(2011, 1, 1, 0, 1)
+    overallstartdate = datetime(2005, 8, 1, 0, 1)
+    overallstopdate = datetime(2006, 1, 1, 0, 1)
+    # overallstopdate = datetime(2011, 1, 1, 0, 1)
 
     date = overallstartdate
 
@@ -43,15 +44,11 @@ def run():
             not os.path.exists('tracks/' + name + 'gc.nc'):
 
             # Read in simulation initialization
-            nstep, N, ndays, ff, tseas, ah, av, lon0, lat0, z0, zpar, do3d, doturb, \
-                    grid, dostream = init.init(date, loc, grid=grid)
+            tp, lon0, lat0 = init.init(name)
             # pdb.set_trace()
             # Run tracpy
             # Save directly to grid coordinates
-            lonp, latp, zp, t, grid \
-                = tracpy.run.run(loc, nstep, ndays, ff, date, tseas, ah, av, \
-                                    lon0, lat0, z0, zpar, do3d, doturb, name, N=N,  \
-                                    grid=grid, dostream=dostream, savell=False)
+            lonp, latp, zp, t, T0, U, V = tracpy.run.run(tp, date, lon0, lat0)
 
         # # If basic figures don't exist, make them
         # if not os.path.exists('figures/' + name + '*.png'):
