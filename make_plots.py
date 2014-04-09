@@ -96,13 +96,15 @@ def plot_setup(whichtime, grid):
 
     if whichtime=='seasonal':
         # fig = plt.figure(figsize=(22,10))
-        fig, axarr = plt.subplots(2)#, sharex=True)
+        fig, axarr = plt.subplots(1,2)#, sharex=True)
         # ax = fig.add_subplot(1,2,1)
         for ax in axarr:
             tracpy.plotting.background(grid=grid, ax=ax)
             # Titles for subplots
-            ax.set_title('Winter')
-            ax.set_title('Summer')
+            if ax==0:
+                ax.set_title('Winter')
+            elif ax==1:
+                ax.set_title('Summer')
             # suptitle
             fig.suptitle('Probability of material crossing the shelf in 30 days, 2004-2010', y=.94)
 
@@ -117,11 +119,13 @@ def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax):
     XE, YE = np.meshgrid(op.resize(xe, 0), op.resize(ye, 0))
 
     # Try with pcolor too
-    ax.contourf(XE, YE, H.T, cmap, levels=np.linspace(0,100,11))
+    mappable = ax.contourf(XE, YE, H.T, cmap=cmap, levels=np.linspace(0,100,11))
     ax.contour(grid['xr'], grid['yr'], grid['h'], [shelf_depth], colors='0.1', linewidth=3)
 
+    return mappable
 
-def plot_colorbar(fig):
+
+def plot_colorbar(fig, mappable):
     '''
     Add colorbar to figure.
     '''
@@ -129,9 +133,8 @@ def plot_colorbar(fig):
     # Make colorbar
     # Horizontal colorbar below plot
     cax = fig.add_axes([0.25, 0.05, 0.48, 0.02]) #colorbar axes
-    cb = colorbar(cax=cax,orientation='horizontal')
+    cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
     cb.set_label('Probability (%)')
-    d.close()
 
 
 def plot_finish(fig, whichtype, whichtime):
@@ -177,8 +180,10 @@ def run():
     # Read in connectivity info (previously calculated). 
     # Drifters always start in the same place.
     d = np.load(Files[0][0])
+    # pdb.set_trace()
     # Histogram of starting locations
-    Hstart, xe, ye = calc_histogram(d['xg0'], d['yg0'], bins=bins, Xrange=Xrange, Yrange=Yrange)
+    xp, yp, _ = tracpy.tools.interpolate2d(d['xg0'], d['yg0'], grid, 'm_ij2xy')
+    Hstart, xe, ye = calc_histogram(xp, yp, bins=bins, Xrange=Xrange, Yrange=Yrange)
     d.close()
 
     # Set up overall plot
@@ -204,19 +209,23 @@ def run():
             # Count the drifters for the shelf_depth that have a non-nan entri
             ind = ~np.isnan(cross[ishelf_depth,:])
 
+            xp, yp, _ = tracpy.tools.interpolate2d(xg0[ind], yg0[ind], grid, 'm_ij2xy')
+
             # Calculate and accumulate histograms of starting locations of drifters that cross shelf
-            Hcrosstemp, _, _ = calc_histogram(xg0[ind], yg0[ind], bins=bins, Xrange=Xrange, Yrange=Yrange)
-            Hcross = np.nansum( np.vstack((Hcross, Hcrosstemp)))
+            Hcrosstemp, _, _ = calc_histogram(xp, yp, bins=bins, Xrange=Xrange, Yrange=Yrange)
+            Hcross = np.nansum( np.vstack((Hcross[np.newaxis,:,:], Hcrosstemp[np.newaxis,:,:])), axis=0)
+            d.close()
 
         # Calculate overall histogram
-        H = Hstart/Hcross
+        # pdb.set_trace()
+        H = Hcross/Hstart
 
         # Do subplot
-        pdb.set_trace()
-        plot_stuff(xe, ye, H, cmap, grid, shelf_depth, axarr[i])
+        mappable = plot_stuff(xe, ye, H*100, cmap, grid, shelf_depth, axarr[i])
 
     # Add colorbar
-    plot_colorbar(fig)
+    plot_colorbar(fig, mappable)
+    pdb.set_trace()
 
     # save and close
     plot_finish(fig, whichtime, whichtype)
