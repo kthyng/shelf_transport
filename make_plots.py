@@ -49,11 +49,11 @@ def init(whichtime, whichtype):
     if whichtime=='seasonal':
         Files = []
         # Seasonal returns Files that has two entries of lists
-        Files.append(glob(base + '*-0[6-7]-*.npz'))
-        #Files.extend(glob(base + '*-08-*.npz'))
         Files.append(glob(base + '*-0[1-2]-*.npz'))
-        #Files.extend(glob(base + '*-02-*.npz'))
-
+        #Files.append(glob(base + '*-02-01*.npz'))
+        Files.append(glob(base + '*-0[7-8]-*.npz'))
+        #Files.append(glob(base + '*-08-01*.npz'))
+ 
     if whichtype=='cross':
         cmap = 'YlOrRd'
 
@@ -97,16 +97,20 @@ def plot_setup(whichtime, grid):
     if whichtime=='seasonal':
         # fig = plt.figure(figsize=(22,10))
         fig, axarr = plt.subplots(1,2)#, sharex=True)
+        # pdb.set_trace()
+        fig.set_size_inches(13.675, 6.6125)
+        fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.07, hspace=0.04)
         # ax = fig.add_subplot(1,2,1)
-        for ax in axarr:
-            tracpy.plotting.background(grid=grid, ax=ax)
-            # Titles for subplots
-            if ax==0:
-                ax.set_title('Winter')
-            elif ax==1:
-                ax.set_title('Summer')
+        for i, ax in enumerate(axarr):
+           # Titles for subplots
+            if i==0:
+                 tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
+                 ax.set_title('Winter')
+            elif i==1:
+                 tracpy.plotting.background(grid=grid, ax=ax, parslabels=[0,0,0,0], mers=np.arange(-100, -80, 2))
+                 ax.set_title('Summer')
             # suptitle
-            fig.suptitle('Probability of material crossing the shelf in 30 days, 2004-2010', y=.94)
+            #fig.suptitle('Probability of material crossing the shelf in 30 days, 2004-2010', y=.94)
 
 
     return fig, axarr
@@ -132,17 +136,17 @@ def plot_colorbar(fig, mappable):
 
     # Make colorbar
     # Horizontal colorbar below plot
-    cax = fig.add_axes([0.25, 0.05, 0.48, 0.02]) #colorbar axes
+    cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
     cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
-    cb.set_label('Probability (%)')
+    cb.set_label('Probability of drifters crossing shelf (%)')
 
 
-def plot_finish(fig, whichtype, whichtime):
+def plot_finish(fig, whichtype, whichtime, shelf_depth):
     '''
     Save and close figure
     '''
 
-    fname = 'figures/' + whichtype + '/' + whichtime + '.png'
+    fname = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + '.png'
 
     if not os.path.exists('figures/' + whichtype): 
         os.makedirs('figures/' + whichtype)
@@ -163,7 +167,7 @@ def run():
     ishelf_depth = 2 # index in cross array
 
     # Number of bins to use in histogram
-    bins = (60,60)
+    bins = (30,30)
 
     # Load in Files to read from based on which type of plot is being run
     Files, cmap = init(whichtime, whichtype)
@@ -179,8 +183,8 @@ def run():
     ## Calculate starting position histogram just once ##
     # Read in connectivity info (previously calculated). 
     # Drifters always start in the same place.
-    d = np.load(Files[0][0])
     # pdb.set_trace()
+    d = np.load(Files[0][0])
     # Histogram of starting locations
     xp, yp, _ = tracpy.tools.interpolate2d(d['xg0'], d['yg0'], grid, 'm_ij2xy')
     Hstart, xe, ye = calc_histogram(xp, yp, bins=bins, Xrange=Xrange, Yrange=Yrange)
@@ -195,7 +199,7 @@ def run():
 
         Hcross = np.zeros(bins) # initialize
         #pdb.set_trace()
-        Hstart *= len(files) # multiply to account for each simulation
+        HstartUse = Hstart*len(files) # multiply to account for each simulation
 
         for File in files: # now loop through the files for this subplot
 
@@ -218,17 +222,17 @@ def run():
 
         # Calculate overall histogram
         # pdb.set_trace()
-        H = Hcross/Hstart
+        H = Hcross/HstartUse
 
         # Do subplot
         mappable = plot_stuff(xe, ye, H*100, cmap, grid, shelf_depth, axarr[i])
 
     # Add colorbar
     plot_colorbar(fig, mappable)
-    pdb.set_trace()
+    # pdb.set_trace()
 
     # save and close
-    plot_finish(fig, whichtime, whichtype)
+    plot_finish(fig, whichtype, whichtime, shelf_depth)
 
 
 if __name__ == "__main__":
