@@ -193,6 +193,8 @@ def run():
     contour = '10'
 
     dinds = np.load('calcs/indsinpath-' + area + '-' + amount + '-' + contour + 'percent.npz')
+    inds = dinds['inds']
+    dinds.close()
 
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     grid = tracpy.inout.readgrid(loc, usebasemap=False)
@@ -214,8 +216,8 @@ def run():
                 fname = floc + '/' + str(year) + '-' + str(month).zfill(2) + '.npz'
 
                 d = netCDF.Dataset(File)
-                xg = d.variables['xg'][ind,:]
-                yg = d.variables['yg'][ind,:]
+                xg = d.variables['xg'][inds,:]
+                yg = d.variables['yg'][inds,:]
                 tp = d.variables['tp'][:]
                 d.close()
 
@@ -266,7 +268,7 @@ def run():
                 D2 = np.zeros(nt)
                 nnans = np.zeros(nt) # to collect number of non-nans over all drifters for a time
                 for ipair in xrange(len(pairs)):
-                    
+
                     # rel_dispersion(lonp, latp, r=1, squared=True)
 
                     dist = tracpy.calcs.get_dist(lonp[pairs[ipair][0],:], lonp[pairs[ipair][1],:], 
