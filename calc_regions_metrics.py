@@ -178,19 +178,19 @@ def plot():
     fig.savefig('figures/D2.pdf', bbox_inches='tight', dpi=300)
 
 
-def run():
+def run_dispersion():
     '''
     Run dispersion calculation several areas for shelf transport drifter simulations.
     '''
 
     # area: 'winter' (Texas) or 'summer' (west LA)
-    area = 'winter'
+    area = 'summer'
 
     # amount of area: 'full' or 'part'
-    amount = 'full'
+    amount = 'part'
 
     # contour amount: '10', '20', or '30' percent
-    contour = '10'
+    contour = '20'
 
     dinds = np.load('calcs/indsinpath-' + area + '-' + amount + '-' + contour + 'percent.npz')
     inds = dinds['inds']
@@ -213,37 +213,47 @@ def run():
 
             for File in Files:
 
-                fname = floc + '/' + str(year) + '-' + str(month).zfill(2) + '.npz'
+                # pdb.set_trace()
 
+                fname = floc + '/' + File.split('/')[-1][:-5] + '.npz'
+                # pdb.set_trace()
                 d = netCDF.Dataset(File)
-                xg = d.variables['xg'][inds,:]
-                yg = d.variables['yg'][inds,:]
+                xg = d.variables['xg'][:]
+                yg = d.variables['yg'][:]
                 tp = d.variables['tp'][:]
                 d.close()
 
-                nt = tp.size
+                # only want drifters starting in this region
+                xg = xg[inds,:]; yg = yg[inds,:]
 
                 nanind = np.isnan(xg) + (xg==-1) + (np.ceil(xg)<=5) + (np.ceil(xg)>=grid['xr'].shape[0]-5) + (np.ceil(yg)<=5)
                 lonp, latp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2ll') 
                 lonp[nanind] = np.nan; latp[nanind] = np.nan
                 del(xg,yg) # don't need grid info anymore
 
+                nt = tp.size
+                ndrifters = lonp.shape[0]
+
 
                 ## ---- Find pairs of drifters in each region ---- ##
 
                 # let the index in axis 0 be the drifter id
                 ID = np.arange(lonp.shape[0])
-
+                # pdb.set_trace()
                 # save pairs to save time since they are always the same
                 if not os.path.exists(floc + '/pairs.npz'):
 
                     dist = np.zeros((lonp.shape[0],lonp.shape[0]))
                     for idrifter in xrange(lonp.shape[0]):
+                        print 'getting distances:'
+                        print 'drifter ' + str(idrifter) + ' of ' + str(ndrifters)
                         # dist contains all of the distances from other drifters for each drifter
-                        dist[idrifter,:] = get_dist(lonp[idrifter,0], lonp[:,0], latp[idrifter,0], latp[:,0])
+                        dist[idrifter,:] = tracpy.calcs.get_dist(lonp[idrifter,0], lonp[:,0], latp[idrifter,0], latp[:,0])
 
                     pairs = []
                     for idrifter in xrange(lonp.shape[0]):
+                        print 'finding pairs'
+                        print 'drifter ' + str(idrifter) + ' of ' + str(ndrifters)
                         ind = find(dist[idrifter,:]<=1)
                         for i in ind:
                             if ID[idrifter] != ID[i]:
@@ -259,17 +269,15 @@ def run():
 
                 ## ---- Finished finding pairs ---- ##
 
-        # pdb.set_trace()
-
-
                 # Loop over pairs of drifters from this area/time period and sum the FSLE, 
                 # then average at the end
 
                 D2 = np.zeros(nt)
                 nnans = np.zeros(nt) # to collect number of non-nans over all drifters for a time
-                for ipair in xrange(len(pairs)):
+                for j, ipair in enumerate(xrange(len(pairs))):
 
-                    # rel_dispersion(lonp, latp, r=1, squared=True)
+                    if j==0:
+                        print 'calculating dispersion for tracks ' + File.split('/')[-1][:-5]
 
                     dist = tracpy.calcs.get_dist(lonp[pairs[ipair][0],:], lonp[pairs[ipair][1],:], 
                                 latp[pairs[ipair][0],:], latp[pairs[ipair][1],:])
@@ -281,7 +289,86 @@ def run():
                 np.savez(fname, D2=D2, nnans=nnans, t=tp)
                 print 'saved file', fname
 
+def run_fsle():
+    '''
+    Run FSLE calculation several areas for shelf transport drifter simulations.
+    '''
+
+    # area: 'winter' (Texas) or 'summer' (west LA)
+    area = 'summer'
+
+    # amount of area: 'full' or 'part'
+    amount = 'part'
+
+    # contour amount: '10', '20', or '30' percent
+    contour = '20'
+
+    dinds = np.load('calcs/indsinpath-' + area + '-' + amount + '-' + contour + 'percent.npz')
+    inds = dinds['inds']
+    dinds.close()
+
+    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    grid = tracpy.inout.readgrid(loc, usebasemap=False)
+
+    floc = 'calcs/fsle/' + area + '/' + amount + '/' + contour
+
+    if not os.path.exists(floc):
+        os.makedirs(floc)
+
+
+    # run through each year and month
+    for year in np.arange(2004,2011):
+        for month in np.arange(1,13):
+
+            Files = glob('tracks/' + str(year) + '-' + str(month).zfill(2) + '-*gc.nc')
+
+            for File in Files:
+
+                # pdb.set_trace()
+
+                fname = floc + '/' + File.split('/')[-1][:-5] + '.npz'
+                # pdb.set_trace()
+                d = netCDF.Dataset(File)
+                xg = d.variables['xg'][:]
+                yg = d.variables['yg'][:]
+                tp = d.variables['tp'][:]
+                d.close()
+
+                # only want drifters starting in this region
+                xg = xg[inds,:]; yg = yg[inds,:]
+
+                nanind = np.isnan(xg) + (xg==-1) + (np.ceil(xg)<=5) + (np.ceil(xg)>=grid['xr'].shape[0]-5) + (np.ceil(yg)<=5)
+                lonp, latp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2ll') 
+                lonp[nanind] = np.nan; latp[nanind] = np.nan
+                del(xg,yg) # don't need grid info anymore
+
+                nt = tp.size
+                ndrifters = lonp.shape[0]
+
+                # Loop over pairs of drifters from this area/time period and sum the FSLE, 
+                # then average at the end
+
+                ndrifters = lonp.shape[0]
+                tSave = np.zeros((1,20))
+                nnans = np.zeros((1,20)) # to collect number of non-nans over all drifters for a time
+                ddrifter = 500 # how many drifter indices to include at once
+                driftercount = 0
+
+                # logic for looping through more than 1 drifter at once
+                while driftercount < ndrifters:
+                    print 'drifter ' + str(driftercount) + ' of ' + str(ndrifters)
+                    tSavetemp = tracpy.calcs.calc_fsle(lonp[driftercount:driftercount+ddrifter,:], 
+                                        latp[driftercount:driftercount+ddrifter,:], tp)
+                    ind = ~np.isnan(tSavetemp)
+                    tSave += np.nansum(tSavetemp, axis=0)
+                    nnans += ind.sum(axis=0)
+                    driftercount += ddrifter
+
+                # Save fsle for each file/area combination, NOT averaged
+                np.savez(fname, tSave=tSave, nnans=nnans)
+                print 'saved file', fname
+
 
 
 if __name__ == "__main__":
-    run()    
+    run_fsle()    
