@@ -190,7 +190,7 @@ def run_dispersion():
     amount = 'part'
 
     # contour amount: '10', '20', or '30' percent
-    contour = '20'
+    contour = '30'
 
     dinds = np.load('calcs/indsinpath-' + area + '-' + amount + '-' + contour + 'percent.npz')
     inds = dinds['inds']
@@ -301,7 +301,7 @@ def run_fsle():
     amount = 'part'
 
     # contour amount: '10', '20', or '30' percent
-    contour = '20'
+    contour = '30'
 
     dinds = np.load('calcs/indsinpath-' + area + '-' + amount + '-' + contour + 'percent.npz')
     inds = dinds['inds']
@@ -318,7 +318,7 @@ def run_fsle():
 
     # run through each year and month
     for year in np.arange(2004,2011):
-        for month in np.arange(1,13):
+        for month in np.arange(1,2):
 
             Files = glob('tracks/' + str(year) + '-' + str(month).zfill(2) + '-*gc.nc')
 
@@ -328,6 +328,10 @@ def run_fsle():
 
                 fname = floc + '/' + File.split('/')[-1][:-5] + '.npz'
                 # pdb.set_trace()
+
+                if os.path.exists(fname):
+                    continue
+
                 d = netCDF.Dataset(File)
                 xg = d.variables['xg'][:]
                 yg = d.variables['yg'][:]
@@ -351,22 +355,25 @@ def run_fsle():
                 ndrifters = lonp.shape[0]
                 tSave = np.zeros((1,20))
                 nnans = np.zeros((1,20)) # to collect number of non-nans over all drifters for a time
-                ddrifter = 500 # how many drifter indices to include at once
+                ddrifter = 1 # how many drifter indices to include at once
                 driftercount = 0
 
                 # logic for looping through more than 1 drifter at once
                 while driftercount < ndrifters:
-                    print 'drifter ' + str(driftercount) + ' of ' + str(ndrifters)
+                #    print 'drifter ' + str(driftercount) + ' of ' + str(ndrifters)
+
+                    tstart = time.time()
                     tSavetemp = tracpy.calcs.calc_fsle(lonp[driftercount:driftercount+ddrifter,:], 
                                         latp[driftercount:driftercount+ddrifter,:], tp)
                     ind = ~np.isnan(tSavetemp)
                     tSave += np.nansum(tSavetemp, axis=0)
                     nnans += ind.sum(axis=0)
                     driftercount += ddrifter
+                 #   print 'delta time ', time.time()-tstart
 
                 # Save fsle for each file/area combination, NOT averaged
                 np.savez(fname, tSave=tSave, nnans=nnans)
-                print 'saved file', fname
+                print 'saved file ', fname
 
 
 
