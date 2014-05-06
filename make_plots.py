@@ -156,6 +156,33 @@ def plot_finish(fig, whichtype, whichtime, shelf_depth):
     fig.savefig(fname)
     plt.close(fig)
 
+def plot_diff():
+    '''
+    Plot difference in transport between two histograms
+    '''
+
+    shelf_depth = 20
+
+    # Grid info
+    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    grid = tracpy.inout.readgrid(loc, usebasemap=True)
+    cmap = 'RdBu'
+
+    d = np.load('figures/cross/seasonal20H.npz')
+    Hboth = d['H']; xe=d['xe']; ye=d['ye']
+    d.close()
+
+    H = Hboth[0,:] - Hboth[1,:]
+
+    fig = plt.figure(figsize=(13.675, 6.6125))
+    ax = fig.add_subplot(111)
+
+    mappable = plot_stuff(xe, ye, H*100, cmap, grid, shelf_depth, ax)
+
+    pdb.set_trace()
+
+
+
 def run():
 
     # Which timing of plot: 'weatherband', 'seasonal', 'interannual'
