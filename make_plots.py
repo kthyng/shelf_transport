@@ -163,8 +163,8 @@ def run():
     # Which type of plot: 'cross' or 'coast'
     whichtype = 'cross'
 
-    shelf_depth = 100 # do 50 also
-    ishelf_depth = 2 # index in cross array
+    shelf_depth = 20 # do 100 50 and 20 
+    ishelf_depth = 0 # 2 1 0 index in cross array
 
     # Number of bins to use in histogram
     bins = (30,30)
@@ -192,6 +192,8 @@ def run():
 
     # Set up overall plot
     fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
+
+    H = np.zeros((len(Files),Hstart.shape[0], Hstart.shape[1]))
 
     # Loop through calculation files to calculate overall histograms
     # pdb.set_trace()
@@ -222,10 +224,13 @@ def run():
 
         # Calculate overall histogram
         # pdb.set_trace()
-        H = Hcross/HstartUse
+        H[i,:] = Hcross/HstartUse
 
         # Do subplot
-        mappable = plot_stuff(xe, ye, H*100, cmap, grid, shelf_depth, axarr[i])
+        mappable = plot_stuff(xe, ye, H[i,:]*100, cmap, grid, shelf_depth, axarr[i])
+
+    # save H
+    np.savez('figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz', H=H, xe=xe, ye=ye)
 
     # Add colorbar
     plot_colorbar(fig, mappable)
