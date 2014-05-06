@@ -30,152 +30,334 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 def plot():
 
+    # ----- Dispersion ----- #
 
-    # ----- all the lines ----- #
+    # --- horizontal diffusivity --- #
+    # doturb=0
+    File = '../horizontal_diffusivity/tracks/doturb0_ah0/D2overall.npz'
+    d = np.load(File)
+    Dhordiff_doturb0 = d['D2']; t = d['t']
+    dayshordiff = (t-t[0])/(3600.*24)
+    d.close()
 
-    # iWTX - 2007 - 02
-    Files = glob('calcs/2007-02-*D2iWTX.npz')
-    D2 = np.zeros(901); nnans = np.zeros(901)
+    # doturb=2
+    File = '../horizontal_diffusivity/tracks/doturb2_ah5/D2overall.npz'
+    d = np.load(File)
+    Dhordiff_doturb2 = d['D2']
+    d.close()
+
+    # --- summer location --- #
+
+    ## summer location - part - 30 -- Jan-Feb -- no diffusion
+    #Files = glob('calcs/dispersion/summer/part/30/*-0[1-2]-*.npz')
+    #D2 = np.zeros(901); nnans = np.zeros(901)
+    #for File in Files:
+    #    # sum all values for this combination
+    #    d = np.load(File)
+    #    D2 += d['D2']
+    #    nnans += d['nnans']
+    #    t = d['t']
+    #    d.close()
+    ## average values for this combination
+    #Dsummerpart30_0102 = D2/nnans
+    #days = (t-t[0])/(3600.*24)
+    #np.savez('calcs/dispersion/summer/part/30/dispersion_0102.npz', days=days, D2=Dsummerpart30_0102)
+    d = np.load('calcs/dispersion/summer/part/30/dispersion_0102.npz')
+    days = d['days']; Dsummerpart30_0102 = d['D2']
+
+    # # summer location - full - 10 -- Jan-Feb -- no diffusion
+    # Files = glob('calcs/dispersion/summer/full/10/*-0[1-2]-*.npz')
+    # D2 = np.zeros(901); nnans = np.zeros(901)
+    # for File in Files:
+    #    # sum all values for this combination
+    #    d = np.load(File)
+    #    D2 += d['D2']
+    #    nnans += d['nnans']
+    #    t = d['t']
+    #    d.close()
+    # # average values for this combination
+    # Dsummerfull10_0102 = D2/nnans
+    # days = (t-t[0])/(3600.*24)
+    # np.savez('calcs/dispersion/summer/full/10/dispersion_0102.npz', days=days, D2=Dsummerfull10_0102)
+    d = np.load('calcs/dispersion/summer/full/10/dispersion_0102.npz')
+    days = d['days']; Dsummerfull10_0102 = d['D2']
+
+    # # summer location - part - 30 -- Jan-Feb -- with diffusion
+    # Files = glob('../shelf_transport_doturb2_ah5/calcs/dispersion/summer/part/30/*-0[1-2]-*.npz')
+    # D2 = np.zeros(901); nnans = np.zeros(901)
+    # for File in Files:
+    #    # sum all values for this combination
+    #    d = np.load(File)
+    #    D2 += d['D2']
+    #    nnans += d['nnans']
+    #    t = d['t']
+    #    d.close()
+    # # average values for this combination
+    # Dsummerpart30_0102_doturb2 = D2/nnans
+    # days = (t-t[0])/(3600.*24)
+    # np.savez('../shelf_transport_doturb2_ah5/calcs/dispersion/summer/part/30/dispersion_0102.npz', days=days, D2=Dsummerpart30_0102_doturb2)
+    d = np.load('../shelf_transport_doturb2_ah5/calcs/dispersion/summer/part/30/dispersion_0102.npz')
+    days = d['days']; Dsummerpart30_0102_doturb2 = d['D2']
+
+
+    ## summer location - part - 30 -- July-Aug -- no diffusion
+    #Files = glob('calcs/dispersion/summer/part/30/*-0[7-8]-*.npz')
+    #D2 = np.zeros(901); nnans = np.zeros(901)
+    #for File in Files:
+    #    # sum all values for this combination
+    #    d = np.load(File)
+    #    D2 += d['D2']
+    #    nnans += d['nnans']
+    #    d.close()
+    ## average values for this combination
+    #Dsummerpart30_0708 = D2/nnans
+    #np.savez('calcs/dispersion/summer/part/30/dispersion_0708.npz', days=days, D2=Dsummerpart30_0708)
+    d = np.load('calcs/dispersion/summer/part/30/dispersion_0708.npz')
+    Dsummerpart30_0708 = d['D2']
+
+    # # summer location - full - 10 -- July-Aug -- no diffusion
+    # Files = glob('calcs/dispersion/summer/full/10/*-0[7-8]-*.npz')
+    # D2 = np.zeros(901); nnans = np.zeros(901)
+    # for File in Files:
+    #    # sum all values for this combination
+    #    d = np.load(File)
+    #    D2 += d['D2']
+    #    nnans += d['nnans']
+    #    d.close()
+    # # average values for this combination
+    # Dsummerfull10_0708 = D2/nnans
+    # np.savez('calcs/dispersion/summer/full/10/dispersion_0708.npz', days=days, D2=Dsummerfull10_0708)
+    d = np.load('calcs/dispersion/summer/full/10/dispersion_0708.npz')
+    Dsummerfull10_0708 = d['D2']
+
+    # # summer location - part - 30 -- July-Aug -- with diffusion
+    # Files = glob('../shelf_transport_doturb2_ah5/calcs/dispersion/summer/part/30/*-0[7-8]-*.npz')
+    # D2 = np.zeros(901); nnans = np.zeros(901)
+    # for File in Files:
+    #    # sum all values for this combination
+    #    d = np.load(File)
+    #    D2 += d['D2']
+    #    nnans += d['nnans']
+    #    d.close()
+    # # average values for this combination
+    # Dsummerpart30_0708_doturb2 = D2/nnans
+    # np.savez('../shelf_transport_doturb2_ah5/calcs/dispersion/summer/part/30/dispersion_0708.npz', days=days, D2=Dsummerpart30_0708_doturb2)
+    d = np.load('../shelf_transport_doturb2_ah5/calcs/dispersion/summer/part/30/dispersion_0708.npz')
+    Dsummerpart30_0708_doturb2 = d['D2']
+
+
+    # ----- FSLE ----- #
+
+    alpha = np.sqrt(2)
+
+    # distances increasing with factor alpha
+    Rs = np.asarray([np.array([0.7])*alpha**i for i in np.arange(20)]).T # in km
+
+    # --- model output from horizontal_diffusivity: doturb=0 --- #
+    # doturb=0, ah=0 -- with all pairs not just close ones
+    tSave = np.zeros((1,20))
+    nnans = np.zeros((1,20))
+    Files = glob('../horizontal_diffusivity/tracks/doturb0_ah0/*fsle.npz')
     for File in Files:
-        # sum all values for this combination
         d = np.load(File)
-        D2 += d['D2']
-        nnans += d['nnans']
-        t = d['t']
+        tSavetemp = d['tSave']
+        ind = ~np.isnan(tSavetemp)
+        tSave[ind] += tSavetemp[ind]
+        nnans[ind] += d['nnans'][ind]
+    #    tSave += d['tSave']
+    #    nnans += d['nnans']
         d.close()
-    # average values for this combination
-    # pdb.set_trace()
-    l200702W = D2/nnans
-    days = (t-t[0])/(3600.*24)
+    lhordiff_doturb0 = 1/((tSave/nnans))
+    #ax.loglog(Rs, l.T, '-', lw=4, color='0.6', ms=10)
 
-    # iWTX - 2007 - 06
-    Files = glob('calcs/2007-06-*D2iWTX.npz')
-    D2 = np.zeros(901); nnans = np.zeros(901)
+    # doturb=2, ah=5
+    tSave = np.zeros((1,20))
+    nnans = np.zeros((1,20))
+    Files = glob('../horizontal_diffusivity/tracks/doturb2_ah5/fsle_allpairs/*fsle.npz')
     for File in Files:
-        # sum all values for this combination
         d = np.load(File)
-        D2 += d['D2']
-        nnans += d['nnans']
-        t = d['t']
+        tSavetemp = d['tSave']
+        ind = ~np.isnan(tSavetemp)
+        tSave[ind] += tSavetemp[ind]
+        nnans[ind] += d['nnans'][ind]
+    #    tSave += d['tSave']
+    #    nnans += d['nnans']
         d.close()
-    # average values for this combination
-    # pdb.set_trace()
-    l200706W = D2/nnans
-    days = (t-t[0])/(3600.*24)
+    lhordiff_doturb2 = 1/((tSave/nnans))
 
-    # iWTX - 2008 - 02
-    Files = glob('calcs/2008-02-*D2iWTX.npz')
-    D2 = np.zeros(901); nnans = np.zeros(901)
-    for File in Files:
-        # sum all values for this combination
-        d = np.load(File)
-        D2 += d['D2']
-        nnans += d['nnans']
-        t = d['t']
-        d.close()
-    # average values for this combination
-    # pdb.set_trace()
-    l200802W = D2/nnans
-    days = (t-t[0])/(3600.*24)
 
-    # iWTX - 2008 - 06
-    Files = glob('calcs/2008-06-*D2iWTX.npz')
-    D2 = np.zeros(901); nnans = np.zeros(901)
-    for File in Files:
-        # sum all values for this combination
-        d = np.load(File)
-        D2 += d['D2']
-        nnans += d['nnans']
-        t = d['t']
-        d.close()
-    # average values for this combination
-    # pdb.set_trace()
-    l200806W = D2/nnans
-    days = (t-t[0])/(3600.*24)
+    # --- summer location --- #
 
-    # iETX - 2007 - 02
-    Files = glob('calcs/2007-02-*D2iETX.npz')
-    D2 = np.zeros(901); nnans = np.zeros(901)
-    for File in Files:
-        # sum all values for this combination
-        d = np.load(File)
-        D2 += d['D2']
-        nnans += d['nnans']
-        d.close()
-    # average values for this combination
-    # pdb.set_trace()
-    l200702E = D2/nnans
+    ## summer location - part - 30 -- 0102 -- no diffusion
+    #Files = glob('calcs/fsle/summer/part/30/*-0[1-2]-*.npz')
+    #tSave = np.zeros((1,20)); nnans = np.zeros((1,20))
+    #for File in Files:
+    #    d = np.load(File)
+    #    tSavetemp = d['tSave']
+    #    ind = ~np.isnan(tSavetemp)
+    #    tSave[ind] += tSavetemp[ind]
+    #    nnans[ind] += d['nnans'][ind]
+    #    d.close()
+    #lsummerpart30_0102 = 1/((tSave/nnans))
+    #np.savez('calcs/fsle/summer/part/30/fsle_0102.npz', Rs=Rs, l=lsummerpart30_0102)
+    d = np.load('calcs/fsle/summer/part/30/fsle_0102.npz')
+    Rs = d['Rs']; lsummerpart30_0102 = d['l']
 
-    # iETX - 2007 - 06
-    Files = glob('calcs/2007-06-*D2iETX.npz')
-    D2 = np.zeros(901); nnans = np.zeros(901)
-    for File in Files:
-        # sum all values for this combination
-        d = np.load(File)
-        D2 += d['D2']
-        nnans += d['nnans']
-        d.close()
-    # average values for this combination
+    # # summer location - part - 30 -- 0102 -- with diffusion
+    # Files = glob('../shelf_transport_doturb2_ah5/calcs/fsle/summer/part/30/*-0[1-2]-*.npz')
+    # tSave = np.zeros((1,20)); nnans = np.zeros((1,20))
+    # for File in Files:
+    #    d = np.load(File)
+    #    tSavetemp = d['tSave']
+    #    ind = ~np.isnan(tSavetemp)
+    #    tSave[ind] += tSavetemp[ind]
+    #    nnans[ind] += d['nnans'][ind]
+    #    pdb.set_trace()
+    #    d.close()
+    # lsummerpart30_0102_doturb2 = 1/((tSave/nnans))
     # pdb.set_trace()
-    l200706E = D2/nnans
+    # np.savez('../shelf_transport_doturb2_ah5/calcs/fsle/summer/part/30/fsle_0102.npz', Rs=Rs, l=lsummerpart30_0102_doturb2)
+    ## d = np.load('../shelf_transport_doturb2_ah5/calcs/fsle/summer/part/30/fsle_0102.npz')
+    ## Rs = d['Rs']; lsummerpart30_0102_doturb2 = d['l']
 
-    # iETX - 2008 - 02
-    Files = glob('calcs/2008-02-*D2iETX.npz')
-    D2 = np.zeros(901); nnans = np.zeros(901)
-    for File in Files:
-        # sum all values for this combination
-        d = np.load(File)
-        D2 += d['D2']
-        nnans += d['nnans']
-        d.close()
-    # average values for this combination
-    # pdb.set_trace()
-    l200802E = D2/nnans
+    # # summer location - full - 10 -- 0102 -- no diffusion
+    # Files = glob('calcs/fsle/summer/full/10/*-0[1-2]-*.npz')
+    # tSave = np.zeros((1,20)); nnans = np.zeros((1,20))
+    # for File in Files:
+    #    d = np.load(File)
+    #    tSavetemp = d['tSave']
+    #    ind = ~np.isnan(tSavetemp)
+    #    tSave[ind] += tSavetemp[ind]
+    #    nnans[ind] += d['nnans'][ind]
+    #    d.close()
+    # lsummerfull10_0102 = 1/((tSave/nnans))
+    # np.savez('calcs/fsle/summer/full/10/fsle_0102.npz', Rs=Rs, l=lsummerfull10_0102)
+    d = np.load('calcs/fsle/summer/full/10/fsle_0102.npz')
+    Rs = d['Rs']; lsummerfull10_0102 = d['l']
 
-    # iETX - 2008 - 06
-    Files = glob('calcs/2008-06-*D2iETX.npz')
-    D2 = np.zeros(901); nnans = np.zeros(901)
-    for File in Files:
-        # sum all values for this combination
-        d = np.load(File)
-        D2 += d['D2']
-        nnans += d['nnans']
-        d.close()
-    # average values for this combination
-    # pdb.set_trace()
-    l200806E = D2/nnans
+    ## summer location - part - 30 -- 0708 -- no diffusion
+    #Files = glob('calcs/fsle/summer/part/30/*-0[7-8]-*.npz')
+    #tSave = np.zeros((1,20)); nnans = np.zeros((1,20))
+    #for File in Files:
+    #    d = np.load(File)
+    #    tSavetemp = d['tSave']
+    #    ind = ~np.isnan(tSavetemp)
+    #    tSave[ind] += tSavetemp[ind]
+    #    nnans[ind] += d['nnans'][ind]
+    #    d.close()
+    #lsummerpart30_0708 = 1/((tSave/nnans))
+    #np.savez('calcs/fsle/summer/part/30/fsle_0708.npz', Rs=Rs, l=lsummerpart30_0708)
+    d = np.load('calcs/fsle/summer/part/30/fsle_0708.npz')
+    lsummerpart30_0708 = d['l']
+
+    # # summer location - part - 30 -- 0708 -- with diffusion
+    # Files = glob('../shelf_transport_doturb2_ah5/calcs/fsle/summer/part/30/*-0[7-8]-*.npz')
+    # tSave = np.zeros((1,20)); nnans = np.zeros((1,20))
+    # for File in Files:
+    #    d = np.load(File)
+    #    tSavetemp = d['tSave']
+    #    ind = ~np.isnan(tSavetemp)
+    #    tSave[ind] += tSavetemp[ind]
+    #    nnans[ind] += d['nnans'][ind]
+    #    d.close()
+    # lsummerpart30_0708_doturb2 = 1/((tSave/nnans))
+    # np.savez('../shelf_transport_doturb2_ah5/calcs/fsle/summer/part/30/fsle_0708.npz', Rs=Rs, l=lsummerpart30_0708_doturb2)
+    d = np.load('../shelf_transport_doturb2_ah5/calcs/fsle/summer/part/30/fsle_0708.npz')
+    lsummerpart30_0708_doturb2 = d['l']
+
+    # # summer location - full - 10 -- 0708 -- no diffusion
+    # Files = glob('calcs/fsle/summer/full/10/*-0[7-8]-*.npz')
+    # tSave = np.zeros((1,20)); nnans = np.zeros((1,20))
+    # for File in Files:
+    #    d = np.load(File)
+    #    tSavetemp = d['tSave']
+    #    ind = ~np.isnan(tSavetemp)
+    #    tSave[ind] += tSavetemp[ind]
+    #    nnans[ind] += d['nnans'][ind]
+    #    d.close()
+    # lsummerfull10_0708 = 1/((tSave/nnans))
+    # np.savez('calcs/fsle/summer/full/10/fsle_0708.npz', Rs=Rs, l=lsummerfull10_0708)
+    d = np.load('calcs/fsle/summer/full/10/fsle_0708.npz')
+    lsummerfull10_0708 = d['l']
+
 
     ## ----- Make the plot ----- ##
-    l = np.loadtxt('lacasce_dispersion_Points.txt')
+    D = np.loadtxt('lacasce_dispersion_Points.txt')
 
-    fig = plt.figure(figsize=(12,6))
-    ax = fig.add_subplot(111)
-    # ax.semilogy(days, l200702W, '-', color='darkcyan', lw=3)
-    ax.semilogy(days, l200802E, '-', color='darkcyan', lw=3)
-    # ax.semilogy(days, l200802W, '-', color='darkcyan', lw=3)
-    ax.semilogy(days, l200702E, '-', color='darkcyan', lw=3)
-    # ax.semilogy(days, l200806W, '-', color='orange', alpha=0.6, lw=3)
-    # ax.semilogy(days, l200706W, '-', color='orange', alpha=0.6, lw=3)
-    ax.semilogy(days, l200706E, '-', color='orange', lw=3)
-    ax.semilogy(days, l200806E, '-', color='orange', lw=3)
+    fig = plt.figure(figsize=(8,12))
 
+    ## Dispersion ##
+
+    ax = fig.add_subplot(2,1,1)
+    ax.semilogy(days, Dsummerpart30_0102, '-', color='0.2', lw=3)
+    # ax.semilogy(days, Dsummerfull10_0102, ':', color='0.2', lw=3)
+    # ax.semilogy(days, Dsummerpart30_0102_doturb2, '--', color='0.2', lw=3)
+    ax.semilogy(days, Dsummerpart30_0708, '-', color='0.4', lw=3)
+    # ax.semilogy(days, Dsummerfull10_0708, ':', color='0.4', lw=3)
+    # ax.semilogy(days, Dsummerpart30_0708_doturb2, '--', color='0.4', lw=3)
+
+    ax.semilogy(dayshordiff, Dhordiff_doturb0, '-.', color='r', lw=3, alpha=0.5)
+    ax.semilogy(dayshordiff, Dhordiff_doturb2, '-.', color='r', lw=3, alpha=0.5)
+
+    tind2 = find(days>=2)[0]
+    tind9 = find(days>=9)[0]
     tind10 = find(days>=10)[0]
-    tind25 = find(days>=25)[0]
-    ax.semilogy(days[:tind10], 8*np.exp(days[:tind10]*0.55), '--', color='0.5', lw=2)
-    ax.semilogy(days[tind10:tind25], 11*days[tind10:tind25]**2.2, '--', color='0.5', lw=2)
-    ax.semilogy(l[:,0], l[:,1], '*', color='0.3', ms=8)
+    tind11 = find(days>=11)[0]
+    tind24 = find(days>=24)[0]
+    ax.semilogy(days[tind2:tind9], .65*np.exp(days[tind2:tind9]*0.55), ':', color='r', lw=2, alpha=0.5)
+    ax.semilogy(days[tind11:tind24], 1*days[tind11:tind24]**2.2, ':', color='r', lw=2, alpha=0.5)
+    ax.semilogy(D[:,0], D[:,1], '*', color='r', ms=12)
 
     ax.set_xlabel('Time [days]')
     ax.set_ylabel('Mean separation distance [km$^2\!$]')
 
-    ax.text(15, 12, 'Summer', color='orange')
-    ax.text(15, 6, 'Winter', color='darkcyan')
-    ax.text(15, 3, 'Data', color='0.3')
+    ax.text(12, 4.0, 'Summer', color='0.4')
+    ax.text(12, 2.5, 'Winter', color='0.2')
+    ax.text(12, 1.5, 'Data/model comparison', color='r')
 
-    ax.set_ylim(1,)
+    ax.set_xlim(0,25)
+    ax.set_ylim(1,2e4)
     ax.set_frame_on(False)
 
-    fig.savefig('figures/D2.pdf', bbox_inches='tight', dpi=300)
+    ## FSLE ##
+
+    l = np.loadtxt('LaCasce2008_fsle.txt')
+
+    ax2 = fig.add_subplot(2,1,2)
+    ind = ~np.isnan(lsummerpart30_0102)
+    ax2.loglog(Rs[ind], lsummerpart30_0102[ind], '-', color='0.2', lw=3)
+    # ind = ~np.isnan(lsummerfull10_0102)
+    # ax2.loglog(Rs[ind], lsummerfull10_0102[ind], ':', color='0.2', lw=3)
+    # ind = ~np.isnan(lsummerpart30_0102_doturb2)
+    # ax2.loglog(Rs[ind], lsummerpart30_0102_doturb2[ind], '--', color='0.2', lw=3)
+
+    ind = ~np.isnan(lsummerpart30_0708)
+    ax2.loglog(Rs[ind], lsummerpart30_0708[ind], '-', color='0.4', lw=3)
+    # ind = ~np.isnan(lsummerfull10_0708)
+    # ax2.loglog(Rs[ind], lsummerfull10_0708[ind], ':', color='0.4', lw=3)
+    # ind = ~np.isnan(lsummerpart30_0708_doturb2)
+    # ax2.loglog(Rs[ind], lsummerpart30_0708_doturb2[ind], '--', color='0.4', lw=3)
+
+    ind = ~np.isnan(lhordiff_doturb0)
+    ax2.loglog(Rs[ind], lhordiff_doturb0[ind], '-.', color='r', lw=3, alpha=0.5)
+    ind = ~np.isnan(lhordiff_doturb2)
+    ax2.loglog(Rs[ind], lhordiff_doturb2[ind], '-.', color='r', lw=3, alpha=0.5)
+    #pdb.set_trace()
+    ax2.loglog(l[:,0], l[:,1], '*', color='r', ms=12)
+    #ind = ~np.isnand(
+    ax2.loglog(Rs[0,-11:-4], 1*(Rs[0,-11:-4])**(-2/3.), 'r:', alpha=0.5, lw=2)
+
+    ax2.set_xlabel('Distance [km]')
+    ax2.set_ylabel(r'FSLE: $\langle T \rangle ^{-1}$ [days$^{-1}$]')
+    ax2.set_frame_on(False)
+    ax2.set_xlim(0.6,)
+
+    plt.show()
+
+    # pdb.set_trace()
+
+    fig.savefig('figures/D2_fsle.pdf', bbox_inches='tight', dpi=100)#300)
+    fig.savefig('figures/D2_fsle.png', bbox_inches='tight', dpi=300)#300)
 
 
 def run_dispersion():
@@ -187,10 +369,10 @@ def run_dispersion():
     area = 'summer'
 
     # amount of area: 'full' or 'part'
-    amount = 'part'
+    amount = 'full'
 
     # contour amount: '10', '20', or '30' percent
-    contour = '30'
+    contour = '10'
 
     dinds = np.load('calcs/indsinpath-' + area + '-' + amount + '-' + contour + 'percent.npz')
     inds = dinds['inds']
@@ -298,10 +480,10 @@ def run_fsle():
     area = 'summer'
 
     # amount of area: 'full' or 'part'
-    amount = 'part'
+    amount = 'full'
 
     # contour amount: '10', '20', or '30' percent
-    contour = '30'
+    contour = '10'
 
     dinds = np.load('calcs/indsinpath-' + area + '-' + amount + '-' + contour + 'percent.npz')
     inds = dinds['inds']
@@ -318,7 +500,7 @@ def run_fsle():
 
     # run through each year and month
     for year in np.arange(2004,2011):
-        for month in np.arange(1,2):
+        for month in np.arange(1,13):
 
             Files = glob('tracks/' + str(year) + '-' + str(month).zfill(2) + '-*gc.nc')
 
