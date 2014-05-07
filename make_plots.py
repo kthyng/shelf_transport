@@ -43,8 +43,14 @@ def init(whichtime, whichtype):
                     are loaded in.
     whichtype       Which type of plot: 'cross' (shelf) or 'coast' (-al connectivity)
     '''
+ 
+    if whichtype == 'cross':
+        cmap = 'YlOrRd'
+        base = 'calcs/shelfconn/'
+    elif whichtype == 'coast':
+        cmap = 'YlGn'
+        base = 'calcs/coastconn/*/'
 
-    base = 'calcs/shelfconn/'
     #pdb.set_trace()
     if whichtime=='seasonal':
         Files = []
@@ -53,9 +59,8 @@ def init(whichtime, whichtype):
         #Files.append(glob(base + '*-02-01*.npz'))
         Files.append(glob(base + '*-0[7-8]-*.npz'))
         #Files.append(glob(base + '*-08-01*.npz'))
- 
-    if whichtype=='cross':
-        cmap = 'YlOrRd'
+
+    pdb.set_trace()
 
     return Files, cmap
 
@@ -158,7 +163,7 @@ def plot_finish(fig, whichtype, whichtime, shelf_depth):
 
 def plot_diff():
     '''
-    Plot difference in transport between two histograms
+    Plot difference in transport between two histograms. Plot separately for convenience.
     '''
 
     shelf_depth = 20
@@ -174,10 +179,11 @@ def plot_diff():
 
     H = Hboth[0,:] - Hboth[1,:]
 
-    fig = plt.figure(figsize=(13.675, 6.6125))
+    fig = plt.figure(figsize=(6.8375, 6.6125))
     ax = fig.add_subplot(111)
-
+    tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
     mappable = plot_stuff(xe, ye, H*100, cmap, grid, shelf_depth, ax)
+    fig.colorbar(mappable)
 
     pdb.set_trace()
 
@@ -188,7 +194,7 @@ def run():
     # Which timing of plot: 'weatherband', 'seasonal', 'interannual'
     whichtime = 'seasonal'
     # Which type of plot: 'cross' or 'coast'
-    whichtype = 'cross'
+    whichtype = 'coast'
 
     shelf_depth = 20 # do 100 50 and 20 
     ishelf_depth = 0 # 2 1 0 index in cross array
@@ -261,7 +267,7 @@ def run():
 
     # Add colorbar
     plot_colorbar(fig, mappable)
-    # pdb.set_trace()
+    pdb.set_trace()
 
     # save and close
     plot_finish(fig, whichtype, whichtime, shelf_depth)
