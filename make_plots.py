@@ -255,9 +255,13 @@ def run():
 
             # Read in connectivity info (previously calculated)
             d = np.load(File)
-            xg0 = d['xg0']; yg0 = d['yg0']
+            if whichtype == 'cross': # results are in xg, yg
+                xg0 = d['xg0']; yg0 = d['yg0']
+                cross = d['cross']
+            elif 'coast' in whichtype:  # results are in xp, yp
+                xp = d['xp0']; yp = d['yp0']
+                cross = d['conn'] # just also call this cross even though it is for the coastline
             # [number of depths,number of tracks] to store time of crossing or nan if it doesn't cross
-            cross = d['cross']
             d.close()
 
             # Count the drifters for the shelf_depth that have a non-nan entri
