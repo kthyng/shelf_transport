@@ -163,12 +163,10 @@ def plot_finish(fig, whichtype, whichtime, shelf_depth):
     Save and close figure
     '''
 
-    fname = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + '.png'
-
-    if not os.path.exists('figures/' + whichtype): 
-        os.makedirs('figures/' + whichtype)
-    if not os.path.exists('figures/' + whichtype + '/' + whichtime): 
-        os.makedirs('figures/' + whichtype + '/' + whichtime)
+    if whichtype == 'cross':
+        fname = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + '.png'
+    elif 'coast' in whichtype: 
+        fname = 'figures/' + whichtype + '/' + whichtime + '.png'
 
     fig.savefig(fname)
     plt.close(fig)
@@ -285,7 +283,15 @@ def run():
         mappable = plot_stuff(xe, ye, H[i,:]*100, cmap, grid, shelf_depth, axarr[i])
 
     # save H
-    np.savez('figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz', H=H, xe=xe, ye=ye)
+    if not os.path.exists('figures/' + whichtype): 
+        os.makedirs('figures/' + whichtype)
+    if not os.path.exists('figures/' + whichtype + '/' + whichtime): 
+        os.makedirs('figures/' + whichtype + '/' + whichtime)
+
+    if whichtype == 'cross':
+        np.savez('figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz', H=H, xe=xe, ye=ye)
+    elif 'coast' in whichtype: 
+        np.savez('figures/' + whichtype + '/' + whichtime + 'H.npz', H=H, xe=xe, ye=ye)
 
     # Add colorbar
     plot_colorbar(fig, mappable)
