@@ -146,7 +146,7 @@ def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax):
     return mappable
 
 
-def plot_colorbar(fig, mappable):
+def plot_colorbar(fig, mappable, whichtype):
     '''
     Add colorbar to figure.
     '''
@@ -155,7 +155,11 @@ def plot_colorbar(fig, mappable):
     # Horizontal colorbar below plot
     cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
     cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
-    cb.set_label('Probability of drifters crossing shelf (%)')
+
+    if whichtype == 'cross':
+        cb.set_label('Probability of drifters crossing shelf (%)')
+    elif 'coast' in whichtype: 
+        cb.set_label('Probability of drifters reaching coastline region (%)')
 
 
 def plot_finish(fig, whichtype, whichtime, shelf_depth):
@@ -294,7 +298,7 @@ def run():
         np.savez('figures/' + whichtype + '/' + whichtime + 'H.npz', H=H, xe=xe, ye=ye)
 
     # Add colorbar
-    plot_colorbar(fig, mappable)
+    plot_colorbar(fig, mappable, whichtype)
     # pdb.set_trace()
 
     # save and close
