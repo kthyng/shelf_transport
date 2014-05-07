@@ -267,10 +267,10 @@ def run():
             # Count the drifters for the shelf_depth that have a non-nan entry
             if whichtype == 'cross':
                 ind = ~np.isnan(cross[ishelf_depth,:])
+                xp, yp, _ = tracpy.tools.interpolate2d(xg0[ind], yg0[ind], grid, 'm_ij2xy')
             elif 'coast' in whichtype: 
                 ind = ~np.isnan(conn)
 
-            xp, yp, _ = tracpy.tools.interpolate2d(xg0[ind], yg0[ind], grid, 'm_ij2xy')
 
             # Calculate and accumulate histograms of starting locations of drifters that cross shelf
             Hcrosstemp, _, _ = calc_histogram(xp, yp, bins=bins, Xrange=Xrange, Yrange=Yrange)
