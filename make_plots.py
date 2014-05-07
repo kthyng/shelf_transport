@@ -231,7 +231,10 @@ def run():
     # pdb.set_trace()
     d = np.load(Files[0][0])
     # Histogram of starting locations
-    xp, yp, _ = tracpy.tools.interpolate2d(d['xg0'], d['yg0'], grid, 'm_ij2xy')
+    if whichtype == 'cross': # results are in xg, yg
+        xp, yp, _ = tracpy.tools.interpolate2d(d['xg0'], d['yg0'], grid, 'm_ij2xy')
+    elif 'coast' in whichtype:  # results are in xp, yp
+        xp = d['xp0']; yp = d['yp0']
     Hstart, xe, ye = calc_histogram(xp, yp, bins=bins, Xrange=Xrange, Yrange=Yrange)
     d.close()
 
