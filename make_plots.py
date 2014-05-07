@@ -206,7 +206,7 @@ def run():
     # Which type of plot: 'cross' or 'coastCH', 'coastMX', 'coastLA', 'coastNTX', 'coastSTX' 
     whichtype = 'coastCH'
 
-    shelf_depth = 20 # do 100 50 and 20 
+    shelf_depth = -20 # do 100 50 and 20 
     ishelf_depth = 0 # 2 1 0 index in cross array
 
     # Number of bins to use in histogram
