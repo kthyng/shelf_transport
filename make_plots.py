@@ -295,7 +295,7 @@ def run():
 
     # Add colorbar
     plot_colorbar(fig, mappable)
-    pdb.set_trace()
+    # pdb.set_trace()
 
     # save and close
     plot_finish(fig, whichtype, whichtime, shelf_depth)
