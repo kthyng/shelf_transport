@@ -260,12 +260,15 @@ def run():
                 cross = d['cross']
             elif 'coast' in whichtype:  # results are in xp, yp
                 xp = d['xp0']; yp = d['yp0']
-                cross = d['conn'] # just also call this cross even though it is for the coastline
+                conn = d['conn'] 
             # [number of depths,number of tracks] to store time of crossing or nan if it doesn't cross
             d.close()
 
-            # Count the drifters for the shelf_depth that have a non-nan entri
-            ind = ~np.isnan(cross[ishelf_depth,:])
+            # Count the drifters for the shelf_depth that have a non-nan entry
+            if whichtype == 'cross':
+                ind = ~np.isnan(cross[ishelf_depth,:])
+            elif 'coast' in whichtype: 
+                ind = ~np.isnan(conn)
 
             xp, yp, _ = tracpy.tools.interpolate2d(xg0[ind], yg0[ind], grid, 'm_ij2xy')
 
