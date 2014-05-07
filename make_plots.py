@@ -47,9 +47,21 @@ def init(whichtime, whichtype):
     if whichtype == 'cross':
         cmap = 'YlOrRd'
         base = 'calcs/shelfconn/'
-    elif whichtype == 'coast':
+    elif whichtype == 'coastCH':
         cmap = 'YlGn'
-        base = 'calcs/coastconn/*/'
+        base = 'calcs/coastconn/CH/'
+    elif whichtype == 'coastMX':
+        cmap = 'YlGn'
+        base = 'calcs/coastconn/MX/'
+    elif whichtype == 'coastSTX':
+        cmap = 'YlGn'
+        base = 'calcs/coastconn/STX/'
+    elif whichtype == 'coastNTX':
+        cmap = 'YlGn'
+        base = 'calcs/coastconn/NTX/'
+    elif whichtype == 'coastLA':
+        cmap = 'YlGn'
+        base = 'calcs/coastconn/LA/'
 
     #pdb.set_trace()
     if whichtime=='seasonal':
@@ -60,7 +72,7 @@ def init(whichtime, whichtype):
         Files.append(glob(base + '*-0[7-8]-*.npz'))
         #Files.append(glob(base + '*-08-01*.npz'))
 
-    pdb.set_trace()
+    # pdb.set_trace()
 
     return Files, cmap
 
@@ -193,8 +205,8 @@ def run():
 
     # Which timing of plot: 'weatherband', 'seasonal', 'interannual'
     whichtime = 'seasonal'
-    # Which type of plot: 'cross' or 'coast'
-    whichtype = 'coast'
+    # Which type of plot: 'cross' or 'coastCH', 'coastMX', 'coastLA', 'coastNTX', 'coastSTX' 
+    whichtype = 'coastCH'
 
     shelf_depth = 20 # do 100 50 and 20 
     ishelf_depth = 0 # 2 1 0 index in cross array
