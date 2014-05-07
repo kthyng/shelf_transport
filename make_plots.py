@@ -268,7 +268,7 @@ def run():
                 xp, yp, _ = tracpy.tools.interpolate2d(xg0[ind], yg0[ind], grid, 'm_ij2xy')
             elif 'coast' in whichtype: 
                 ind = ~np.isnan(conn)
-
+                xp = xp[ind]; yp = yp[ind]
 
             # Calculate and accumulate histograms of starting locations of drifters that cross shelf
             Hcrosstemp, _, _ = calc_histogram(xp, yp, bins=bins, Xrange=Xrange, Yrange=Yrange)
