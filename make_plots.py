@@ -153,7 +153,7 @@ def plot_setup(whichtime, grid):
     elif 'interannual' in whichtime: # summer or winter
 
         fig, axarr = plt.subplots(2,4)
-        fig.set_size_inches(13.675, 6.6125)
+        fig.set_size_inches(13.4, 6.6125)
         fig.subplots_adjust(left=0.03, bottom=0.15, right=1.0, top=0.96, wspace=0.03, hspace=0.11)
 
         for i, ax in enumerate(axarr.flatten()):
