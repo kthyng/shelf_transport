@@ -64,13 +64,35 @@ def init(whichtime, whichtype):
         base = 'calcs/coastconn/LA/'
 
     #pdb.set_trace()
+    Files = []
     if whichtime=='seasonal':
-        Files = []
         # Seasonal returns Files that has two entries of lists
         Files.append(glob(base + '*-0[1-2]-*.npz'))
         #Files.append(glob(base + '*-02-01*.npz'))
         Files.append(glob(base + '*-0[7-8]-*.npz'))
         #Files.append(glob(base + '*-08-01*.npz'))
+    elif whichtime == 'weatherband1':
+        Files.append(glob(base + '2007-01-[16-19]-*.npz'))
+        Files.append(glob(base + '2007-01-20T04.npz'))
+    elif whichtime == 'interannual-winter':
+        # interannual returns Files that has 12 entries of lists
+        Files.append(glob(base + '2004-0[1-2]-*.npz'))
+        Files.append(glob(base + '2005-0[1-2]-*.npz'))
+        Files.append(glob(base + '2006-0[1-2]-*.npz'))
+        Files.append(glob(base + '2007-0[1-2]-*.npz'))
+        Files.append(glob(base + '2008-0[1-2]-*.npz'))
+        Files.append(glob(base + '2009-0[1-2]-*.npz'))
+        Files.append(glob(base + '2010-0[1-2]-*.npz'))
+    elif whichtime == 'interannual-winter':
+        # interannual returns Files that has 12 entries of lists
+        Files.append(glob(base + '2004-0[7-8]-*.npz'))
+        Files.append(glob(base + '2005-0[7-8]-*.npz'))
+        Files.append(glob(base + '2006-0[7-8]-*.npz'))
+        Files.append(glob(base + '2007-0[7-8]-*.npz'))
+        Files.append(glob(base + '2008-0[7-8]-*.npz'))
+        Files.append(glob(base + '2009-0[7-8]-*.npz'))
+        Files.append(glob(base + '2010-0[7-8]-*.npz'))
+
 
     # pdb.set_trace()
 
@@ -128,6 +150,10 @@ def plot_setup(whichtime, grid):
                  ax.set_title('Summer')
             # suptitle
             #fig.suptitle('Probability of material crossing the shelf in 30 days, 2004-2010', y=.94)
+    elif 'interannual' in whichtime: # summer or winter
+        fig, axarr = plt.subplots(2,4)
+        fig.set_size_inches(27.35, 13.225)
+        fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.07, hspace=0.04)
 
 
     return fig, axarr
@@ -205,12 +231,12 @@ def plot_diff():
 
 def run():
 
-    # Which timing of plot: 'weatherband', 'seasonal', 'interannual'
-    whichtime = 'seasonal'
+    # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
+    whichtime = 'interannual-winter'
     # Which type of plot: 'cross' or 'coastCH', 'coastMX', 'coastLA', 'coastNTX', 'coastSTX' 
-    whichtype = 'coastCH'
+    whichtype = 'cross'
 
-    shelf_depth = -20 # do 100 50 and 20 
+    shelf_depth = 20 # do 100 50 and 20 
     ishelf_depth = 0 # 2 1 0 index in cross array
 
     # Number of bins to use in histogram
@@ -237,6 +263,7 @@ def run():
         xp, yp, _ = tracpy.tools.interpolate2d(d['xg0'], d['yg0'], grid, 'm_ij2xy')
     elif 'coast' in whichtype:  # results are in xp, yp
         xp = d['xp0']; yp = d['yp0']
+
     Hstart, xe, ye = calc_histogram(xp, yp, bins=bins, Xrange=Xrange, Yrange=Yrange)
     d.close()
 
