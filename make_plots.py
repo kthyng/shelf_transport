@@ -153,13 +153,20 @@ def plot_setup(whichtime, grid):
     elif 'interannual' in whichtime: # summer or winter
 
         fig, axarr = plt.subplots(2,4)
-        fig.set_size_inches(27.35, 13.225)
-        fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.07, hspace=0.04)
+        fig.set_size_inches(13.675, 6.6125)
+        fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.07, hspace=0.06)
 
         for i, ax in enumerate(axarr.flatten()):
            # Titles for subplots
-             tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
-             ax.set_title(str(2004+i))
+            if i==4:
+                tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
+                ax.set_title(str(2004+i))
+            elif i==7:
+                pass
+            else:
+                tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2), 
+                    merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
+                ax.set_title(str(2004+i))
 
     return fig, axarr
 
