@@ -154,7 +154,7 @@ def plot_setup(whichtime, grid):
 
         fig, axarr = plt.subplots(2,4)
         fig.set_size_inches(13.675, 6.6125)
-        fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.05, hspace=0.08)
+        fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.05, hspace=0.1)
 
         for i, ax in enumerate(axarr.flatten()):
            # Titles for subplots
@@ -163,6 +163,7 @@ def plot_setup(whichtime, grid):
                 ax.set_title(str(2004+i))
             elif i==7:
                 ax.set_frame_on(False)
+                ax.set_axis_off()
             else:
                 tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2), 
                     merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
