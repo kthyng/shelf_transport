@@ -154,7 +154,7 @@ def plot_setup(whichtime, grid):
 
         fig, axarr = plt.subplots(2,4)
         fig.set_size_inches(13.675, 6.6125)
-        fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.05, hspace=0.1)
+        fig.subplots_adjust(left=0.03, bottom=0.15, right=1.0, top=0.96, wspace=0.03, hspace=0.11)
 
         for i, ax in enumerate(axarr.flatten()):
            # Titles for subplots
