@@ -311,7 +311,7 @@ def run():
         H[i,:] = Hcross/HstartUse
 
         # Do subplot
-        mappable = plot_stuff(xe, ye, H[i,:]*100, cmap, grid, shelf_depth, axarr[i])
+        mappable = plot_stuff(xe, ye, H[i,:]*100, cmap, grid, shelf_depth, axarr.flatten()[i])
 
     # save H
     if not os.path.exists('figures/' + whichtype): 
