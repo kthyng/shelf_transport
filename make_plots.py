@@ -11,6 +11,7 @@ import pdb
 import matplotlib.pyplot as plt
 import tracpy
 import tracpy.plotting
+import tracpy.calcs
 import init
 from datetime import datetime, timedelta
 from glob import glob
@@ -62,6 +63,9 @@ def init(whichtime, whichtype):
     elif whichtype == 'coastLA':
         cmap = 'YlGn'
         base = 'calcs/coastconn/LA/'
+    elif whichtype == 'D2':
+        cmap = 'YlGnBu'
+        base = 'tracks/'
 
     #pdb.set_trace()
     Files = []
@@ -83,7 +87,7 @@ def init(whichtime, whichtype):
         Files.append(glob(base + '2008-0[1-2]-*.npz'))
         Files.append(glob(base + '2009-0[1-2]-*.npz'))
         Files.append(glob(base + '2010-0[1-2]-*.npz'))
-    elif whichtime == 'interannual-winter':
+    elif whichtime == 'interannual-summer':
         # interannual returns Files that has 12 entries of lists
         Files.append(glob(base + '2004-0[7-8]-*.npz'))
         Files.append(glob(base + '2005-0[7-8]-*.npz'))
@@ -99,7 +103,7 @@ def init(whichtime, whichtype):
     return Files, cmap
 
 
-def calc_histogram(xp, yp, bins=(60,60), 
+def calc_histogram(xp, yp, whichtype, bins=(60,60), 
                     Xrange=None, Yrange=None):
     '''
     Calculate the histograms for the connectivity calculations.
@@ -114,13 +118,45 @@ def calc_histogram(xp, yp, bins=(60,60),
     Yrange          (None) min and max values for y direction in format (ymin, ymax)
     '''
 
-    if Xrange!=None and Yrange!=None:
-        H, xe, ye = np.histogram2d(xp, yp, bins=bins, 
-                            range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
-    else:
-        H, xe, ye = np.histogram2d(xp, yp, bins=bins)
+    if whichtype == 'cross' or 'coast' in whichtype:
+        # Then we are finding the number of drifters starting in each
+        # bin for division into a probability
+        if Xrange!=None and Yrange!=None:
+            H, xe, ye = np.histogram2d(xp, yp, bins=bins, 
+                                range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
+        else:
+            H, xe, ye = np.histogram2d(xp, yp, bins=bins)
+
+    elif whichtype == 'D2' or whichtype == 'fsle':
+        # We are finding which drifters started in each bin, by index
+        xes = np.linspace(Xrange[0], Xrange[1], bins[0])
+        yes = np.linspace(Yrange[0], Yrange[1], bins[1])
+        H = np.empty((yes.size-1,xes.size-1))
+        for i, xe in enumerate(xes[:-1]): # loop through edges in x
+            for j, ye in enumerate(yes[:-1]): # loop through edges in y
+                # H contains indices of corresponding drifter seed locations
+                # THESE WILL NEED TO BE LISTS IN THE ARRAY
+                H[j,i] = xp<xe and xp>xes[i+1] and yp<ye and yp>yes[j+1]
 
     return H, xe, ye
+
+
+def calc_metric(xp, yp, Hstart, whichtype):
+    '''
+    Calculate metric given by whichtype 
+    '''
+
+    if whichtype == 'D2':
+        metric, nnans = tracpy.calcs.rel_dispersion(xp, yp, r=1, squared=True)
+    elif whichtype == 'fsle':
+        tSavetemp = tracpy.calcs.calc_fsle(lonp, latp, tp, alpha=np.sqrt(2))
+        ind = ~np.isnan(tSavetemp)
+        metric = np.nansum(tSavetemp, axis=0)
+        nnans = ind.sum(axis=0)
+        # still have to calculate fsle
+        # metric = 1./(tSave/nnans) # CHECK THIS
+
+    return metric, nnans
 
 
 def plot_setup(whichtime, grid):
@@ -246,10 +282,11 @@ def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
     whichtime = 'interannual-winter'
-    # Which type of plot: 'cross' or 'coastCH', 'coastMX', 'coastLA', 'coastNTX', 'coastSTX' 
+    # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
+    #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'cross'
 
-    shelf_depth = 20 # do 100 50 and 20 
+    shelf_depth = -20 # do 100 50 and 20 
     ishelf_depth = 0 # 2 1 0 index in cross array
 
     # Number of bins to use in histogram
@@ -276,34 +313,44 @@ def run():
         xp, yp, _ = tracpy.tools.interpolate2d(d['xg0'], d['yg0'], grid, 'm_ij2xy')
     elif 'coast' in whichtype:  # results are in xp, yp
         xp = d['xp0']; yp = d['yp0']
+    elif whichtype == 'D2': # results are in xg, yg
+        # xp, yp are lonp, latp in this case
+        xp, yp, _ = tracpy.tools.interpolate2d(d['xg'][:,0], d['yg'][:,0], grid, 'm_ij2ll')
 
-    Hstart, xe, ye = calc_histogram(xp, yp, bins=bins, Xrange=Xrange, Yrange=Yrange)
+    # For D2 and fsle, Hstart contains indices of drifters seeded in bins
+    Hstart, xe, ye = calc_histogram(xp, yp, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
+
     d.close()
 
     # Set up overall plot
     fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
 
-    H = np.zeros((len(Files),Hstart.shape[0], Hstart.shape[1]))
+    # For D2 and fsle, H contains the metric calculation averaged over that bin
+    H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
 
     # Loop through calculation files to calculate overall histograms
     # pdb.set_trace()
     for i, files in enumerate(Files): # Files has multiple entries, 1 for each subplot
 
-        Hcross = np.zeros(bins) # initialize
-        #pdb.set_trace()
-        HstartUse = Hstart*len(files) # multiply to account for each simulation
+        if whichtype == 'cross' or 'coast' in whichtype:
+            Hcross = np.zeros(bins) # initialize
+            #pdb.set_trace()
+            HstartUse = Hstart*len(files) # multiply to account for each simulation
+
 
         for File in files: # now loop through the files for this subplot
 
-            # Read in connectivity info (previously calculated)
+            # Read in info
             d = np.load(File)
             if whichtype == 'cross': # results are in xg, yg
+            # [number of depths,number of tracks] to store time of crossing or nan if it doesn't cross
                 xg0 = d['xg0']; yg0 = d['yg0']
                 cross = d['cross']
             elif 'coast' in whichtype:  # results are in xp, yp
                 xp = d['xp0']; yp = d['yp0']
                 conn = d['conn'] 
-            # [number of depths,number of tracks] to store time of crossing or nan if it doesn't cross
+            elif whichtype == 'D2' or whichtype == 'fsle':
+                xg = d['xg'][:]; yg = d['yg'][:]
             d.close()
 
             # Count the drifters for the shelf_depth that have a non-nan entry
@@ -313,18 +360,30 @@ def run():
             elif 'coast' in whichtype: 
                 ind = ~np.isnan(conn)
                 xp = xp[ind]; yp = yp[ind]
+            elif whichtype == 'D2' or whichtype == 'fsle':
+                lonp, latp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2ll')
 
-            # Calculate and accumulate histograms of starting locations of drifters that cross shelf
-            Hcrosstemp, _, _ = calc_histogram(xp, yp, bins=bins, Xrange=Xrange, Yrange=Yrange)
-            Hcross = np.nansum( np.vstack((Hcross[np.newaxis,:,:], Hcrosstemp[np.newaxis,:,:])), axis=0)
-            d.close()
+            if whichtype == 'cross' or 'coast' in whichtype:
+                # Calculate and accumulate histograms of starting locations of drifters that cross shelf
+                Hcrosstemp, _, _ = calc_histogram(xp, yp, bins=bins, Xrange=Xrange, Yrange=Yrange)
+                Hcross = np.nansum( np.vstack((Hcross[np.newaxis,:,:], Hcrosstemp[np.newaxis,:,:])), axis=0)
+            elif whichtype == 'D2' or whichtype == 'fsle':
+                # Calculate the metric in each bin and combine for all files
+                metric_temp, nnans = calc_metric(xp, yp, Hstart, whichtype)
+                H[i,:] = H[i,:] + metric_temp
+            # d.close()
 
         # Calculate overall histogram
         # pdb.set_trace()
-        H[i,:] = Hcross/HstartUse
+        if whichtype == 'cross' or 'coast' in whichtype:
+            H[i,:] = (Hcross/HstartUse)*100
+        elif whichtype == 'D2':
+            H[i,:] = H[i,:]/nnans
+        elif whichtype == 'fsle':
+            H[i,:] = 1./H[i,:]/nnans
 
         # Do subplot
-        mappable = plot_stuff(xe, ye, H[i,:]*100, cmap, grid, shelf_depth, axarr.flatten()[i])
+        mappable = plot_stuff(xe, ye, H[i,:], cmap, grid, shelf_depth, axarr.flatten()[i])
 
     # save H
     if not os.path.exists('figures/' + whichtype): 
