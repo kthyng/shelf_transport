@@ -281,16 +281,16 @@ def plot_diff():
 def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
-    whichtime = 'interannual-winter'
+    whichtime = 'seasonal'#'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'cross'
 
-    shelf_depth = -20 # do 100 50 and 20 
-    ishelf_depth = 0 # 2 1 0 index in cross array
+    shelf_depth = 50 #-20 # do 100 50 and 20 
+    ishelf_depth = 1 #0 # 2 1 0 index in cross array
 
     # Number of bins to use in histogram
-    bins = (30,30)
+    bins = (100,100) #(30,30)
 
     # Load in Files to read from based on which type of plot is being run
     Files, cmap = init(whichtime, whichtype)
