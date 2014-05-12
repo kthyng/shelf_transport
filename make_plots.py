@@ -365,7 +365,7 @@ def run():
 
             if whichtype == 'cross' or 'coast' in whichtype:
                 # Calculate and accumulate histograms of starting locations of drifters that cross shelf
-                Hcrosstemp, _, _ = calc_histogram(xp, yp, bins=bins, Xrange=Xrange, Yrange=Yrange)
+                Hcrosstemp, _, _ = calc_histogram(xp, yp, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
                 Hcross = np.nansum( np.vstack((Hcross[np.newaxis,:,:], Hcrosstemp[np.newaxis,:,:])), axis=0)
             elif whichtype == 'D2' or whichtype == 'fsle':
                 # Calculate the metric in each bin and combine for all files
