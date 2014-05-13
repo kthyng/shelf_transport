@@ -80,22 +80,22 @@ def init(whichtime, whichtype):
         Files.append(glob(base + '2007-01-20T04.npz'))
     elif whichtime == 'interannual-winter':
         # interannual returns Files that has 12 entries of lists
-        Files.append(glob(base + '2004-0[1-2]-*.npz'))
-        Files.append(glob(base + '2005-0[1-2]-*.npz'))
-        Files.append(glob(base + '2006-0[1-2]-*.npz'))
-        Files.append(glob(base + '2007-0[1-2]-*.npz'))
-        Files.append(glob(base + '2008-0[1-2]-*.npz'))
-        Files.append(glob(base + '2009-0[1-2]-*.npz'))
-        Files.append(glob(base + '2010-0[1-2]-*.npz'))
+        Files.append(glob(base + '2004-0[1-2]-*.'))#npz'))
+        Files.append(glob(base + '2005-0[1-2]-*.'))#npz'))
+        Files.append(glob(base + '2006-0[1-2]-*.'))#npz'))
+        Files.append(glob(base + '2007-0[1-2]-*.'))#npz'))
+        Files.append(glob(base + '2008-0[1-2]-*.'))#npz'))
+        Files.append(glob(base + '2009-0[1-2]-*.'))#npz'))
+        Files.append(glob(base + '2010-0[1-2]-*.'))#npz'))
     elif whichtime == 'interannual-summer':
         # interannual returns Files that has 12 entries of lists
-        Files.append(glob(base + '2004-0[7-8]-*.npz'))
-        Files.append(glob(base + '2005-0[7-8]-*.npz'))
-        Files.append(glob(base + '2006-0[7-8]-*.npz'))
-        Files.append(glob(base + '2007-0[7-8]-*.npz'))
-        Files.append(glob(base + '2008-0[7-8]-*.npz'))
-        Files.append(glob(base + '2009-0[7-8]-*.npz'))
-        Files.append(glob(base + '2010-0[7-8]-*.npz'))
+        Files.append(glob(base + '2004-0[7-8]-*.'))#npz'))
+        Files.append(glob(base + '2005-0[7-8]-*.'))#npz'))
+        Files.append(glob(base + '2006-0[7-8]-*.'))#npz'))
+        Files.append(glob(base + '2007-0[7-8]-*.'))#npz'))
+        Files.append(glob(base + '2008-0[7-8]-*.'))#npz'))
+        Files.append(glob(base + '2009-0[7-8]-*.'))#npz'))
+        Files.append(glob(base + '2010-0[7-8]-*.'))#npz'))
 
 
     # pdb.set_trace()
@@ -306,7 +306,7 @@ def run():
     ## Calculate starting position histogram just once ##
     # Read in connectivity info (previously calculated). 
     # Drifters always start in the same place.
-    # pdb.set_trace()
+    pdb.set_trace()
     d = np.load(Files[0][0])
     # Histogram of starting locations
     if whichtype == 'cross': # results are in xg, yg
@@ -322,7 +322,7 @@ def run():
 
     d.close()
 
-    pdb.set_trace()
+    # pdb.set_trace()
 
     # Set up overall plot
     fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
