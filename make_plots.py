@@ -71,31 +71,31 @@ def init(whichtime, whichtype):
     Files = []
     if whichtime=='seasonal':
         # Seasonal returns Files that has two entries of lists
-        Files.append(glob(base + '*-0[1-2]-*.*'))#npz'))
+        Files.append(glob(base + '*-0[1-2]-*.npz'))
         #Files.append(glob(base + '*-02-01*.npz'))
-        Files.append(glob(base + '*-0[7-8]-*.*'))#npz'))
+        Files.append(glob(base + '*-0[7-8]-*.npz'))
         #Files.append(glob(base + '*-08-01*.npz'))
     elif whichtime == 'weatherband1':
-        Files.append(glob(base + '2007-01-[16-19]-*.*'))#npz'))
-        Files.append(glob(base + '2007-01-20T04.*'))#npz'))
+        Files.append(glob(base + '2007-01-[16-19]-*.npz'))
+        Files.append(glob(base + '2007-01-20T04.npz'))
     elif whichtime == 'interannual-winter':
         # interannual returns Files that has 12 entries of lists
-        Files.append(glob(base + '2004-0[1-2]-*.*'))#npz'))
-        Files.append(glob(base + '2005-0[1-2]-*.*'))#npz'))
-        Files.append(glob(base + '2006-0[1-2]-*.*'))#npz'))
-        Files.append(glob(base + '2007-0[1-2]-*.*'))#npz'))
-        Files.append(glob(base + '2008-0[1-2]-*.*'))#npz'))
-        Files.append(glob(base + '2009-0[1-2]-*.*'))#npz'))
-        Files.append(glob(base + '2010-0[1-2]-*.*'))#npz'))
+        Files.append(glob(base + '2004-0[1-2]-*.'))#npz'))
+        Files.append(glob(base + '2005-0[1-2]-*.'))#npz'))
+        Files.append(glob(base + '2006-0[1-2]-*.'))#npz'))
+        Files.append(glob(base + '2007-0[1-2]-*.'))#npz'))
+        Files.append(glob(base + '2008-0[1-2]-*.'))#npz'))
+        Files.append(glob(base + '2009-0[1-2]-*.'))#npz'))
+        Files.append(glob(base + '2010-0[1-2]-*.'))#npz'))
     elif whichtime == 'interannual-summer':
         # interannual returns Files that has 12 entries of lists
-        Files.append(glob(base + '2004-0[7-8]-*.*'))#npz'))
-        Files.append(glob(base + '2005-0[7-8]-*.*'))#npz'))
-        Files.append(glob(base + '2006-0[7-8]-*.*'))#npz'))
-        Files.append(glob(base + '2007-0[7-8]-*.*'))#npz'))
-        Files.append(glob(base + '2008-0[7-8]-*.*'))#npz'))
-        Files.append(glob(base + '2009-0[7-8]-*.*'))#npz'))
-        Files.append(glob(base + '2010-0[7-8]-*.*'))#npz'))
+        Files.append(glob(base + '2004-0[7-8]-*.'))#npz'))
+        Files.append(glob(base + '2005-0[7-8]-*.'))#npz'))
+        Files.append(glob(base + '2006-0[7-8]-*.'))#npz'))
+        Files.append(glob(base + '2007-0[7-8]-*.'))#npz'))
+        Files.append(glob(base + '2008-0[7-8]-*.'))#npz'))
+        Files.append(glob(base + '2009-0[7-8]-*.'))#npz'))
+        Files.append(glob(base + '2010-0[7-8]-*.'))#npz'))
 
 
     # pdb.set_trace()
@@ -307,7 +307,10 @@ def run():
     # Read in connectivity info (previously calculated). 
     # Drifters always start in the same place.
     pdb.set_trace()
-    d = np.load(Files[0][0])
+    if whichtype == 'cross' or 'coast' in whichtype:
+        d = np.load(Files[0][0])
+    elif whichtype == 'D2': # results are in xg, yg
+        d = np.load(Files[0][0])
     # Histogram of starting locations
     if whichtype == 'cross': # results are in xg, yg
         xp, yp, _ = tracpy.tools.interpolate2d(d['xg0'], d['yg0'], grid, 'm_ij2xy')
