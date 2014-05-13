@@ -310,7 +310,7 @@ def run():
     if whichtype == 'cross' or 'coast' in whichtype:
         d = np.load(Files[0][0])
     elif whichtype == 'D2': # results are in xg, yg
-        d = np.load(Files[0][0])
+        d = netCDF.Dataset(Files[0][0])
     # Histogram of starting locations
     if whichtype == 'cross': # results are in xg, yg
         xp, yp, _ = tracpy.tools.interpolate2d(d['xg0'], d['yg0'], grid, 'm_ij2xy')
@@ -318,7 +318,7 @@ def run():
         xp = d['xp0']; yp = d['yp0']
     elif whichtype == 'D2': # results are in xg, yg
         # xp, yp are lonp, latp in this case
-        xp, yp, _ = tracpy.tools.interpolate2d(d['xg'][:,0], d['yg'][:,0], grid, 'm_ij2ll')
+        xp, yp, _ = tracpy.tools.interpolate2d(d.variables['xg'][:,0], d.variables['yg'][:,0], grid, 'm_ij2ll')
 
     # For D2 and fsle, Hstart contains indices of drifters seeded in bins
     Hstart, xe, ye = calc_histogram(xp, yp, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
