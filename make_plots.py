@@ -284,10 +284,10 @@ def run():
     whichtime = 'seasonal'#'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
-    whichtype = 'cross'
+    whichtype = 'D2'
 
-    shelf_depth = 50 #-20 # do 100 50 and 20 
-    ishelf_depth = 1 #0 # 2 1 0 index in cross array
+    shelf_depth = -20 # do 100 50 and 20 
+    ishelf_depth = 0 # 2 1 0 index in cross array
 
     # Number of bins to use in histogram
     bins = (100,100) #(30,30)
@@ -321,6 +321,8 @@ def run():
     Hstart, xe, ye = calc_histogram(xp, yp, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
 
     d.close()
+
+    pdb.set_trace()
 
     # Set up overall plot
     fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
