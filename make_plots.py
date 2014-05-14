@@ -136,7 +136,9 @@ def calc_histogram(xp, yp, whichtype, bins=(60,60),
             for j, ye in enumerate(yes[:-1]): # loop through edges in y
                 # H contains indices of corresponding drifter seed locations
                 # THESE WILL NEED TO BE LISTS IN THE ARRAY
+                pdb.set_trace()
                 H[j,i] = xp<xe and xp>xes[i+1] and yp<ye and yp>yes[j+1]
+        pdb.set_trace()
 
     return H, xe, ye
 
