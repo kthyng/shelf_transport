@@ -142,7 +142,7 @@ def calc_histogram(xp, yp, whichtype, bins=(60,60),
                 # THESE WILL NEED TO BE LISTS IN THE ARRAY
                 # pdb.set_trace()
                 H[j,i].append(find((xp>xe) * (xp<xes[i+1]) * (yp>ye) * (yp<yes[j+1])))
-        pdb.set_trace()
+        # pdb.set_trace()
 
     return H, xe, ye
 
@@ -308,7 +308,7 @@ def run():
     ## Calculate starting position histogram just once ##
     # Read in connectivity info (previously calculated). 
     # Drifters always start in the same place.
-    pdb.set_trace()
+    # pdb.set_trace()
     if whichtype == 'cross' or 'coast' in whichtype:
         d = np.load(Files[0][0])
 
@@ -329,7 +329,7 @@ def run():
     elif whichtype == 'D2': # results are in xg, yg
         # xp, yp are lonp, latp in this case
         xp, yp, _ = tracpy.tools.interpolate2d(d.variables['xg'][:,0], d.variables['yg'][:,0], grid, 'm_ij2ll')
-    pdb.set_trace()
+    # pdb.set_trace()
     # For D2 and fsle, Hstart contains indices of drifters seeded in bins
     Hstart, xe, ye = calc_histogram(xp, yp, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
 
@@ -379,8 +379,8 @@ def run():
                 ind = ~np.isnan(conn)
                 xp = xp[ind]; yp = yp[ind]
             elif whichtype == 'D2' or whichtype == 'fsle':
-                lonp, latp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2ll')
-
+                xp, yp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2ll')
+            pdb.set_trace()
             if whichtype == 'cross' or 'coast' in whichtype:
                 # Calculate and accumulate histograms of starting locations of drifters that cross shelf
                 Hcrosstemp, _, _ = calc_histogram(xp, yp, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
