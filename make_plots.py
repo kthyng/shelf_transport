@@ -16,6 +16,7 @@ import init
 from datetime import datetime, timedelta
 from glob import glob
 import op
+from matplotlib.mlab import find
 
 # mpl.rcParams['text.usetex'] = True
 mpl.rcParams.update({'font.size': 14})
@@ -131,13 +132,15 @@ def calc_histogram(xp, yp, whichtype, bins=(60,60),
         # We are finding which drifters started in each bin, by index
         xes = np.linspace(Xrange[0], Xrange[1], bins[0])
         yes = np.linspace(Yrange[0], Yrange[1], bins[1])
-        H = np.empty((yes.size-1,xes.size-1))
+        # Initialize an array of lists: http://mail.scipy.org/pipermail/numpy-discussion/2009-November/046566.html
+        filler = np.frompyfunc(lambda x: list(), 1, 1)
+        H = np.empty((yes.size-1,xes.size-1), dtype=np.object)
         for i, xe in enumerate(xes[:-1]): # loop through edges in x
             for j, ye in enumerate(yes[:-1]): # loop through edges in y
                 # H contains indices of corresponding drifter seed locations
                 # THESE WILL NEED TO BE LISTS IN THE ARRAY
                 pdb.set_trace()
-                H[j,i] = (xp>xe) * (xp<xes[i+1]) * (yp>ye) * (yp<yes[j+1])
+                H[j,i].append(find((xp>xe) * (xp<xes[i+1]) * (yp>ye) * (yp<yes[j+1])))
         pdb.set_trace()
 
     return H, xe, ye
