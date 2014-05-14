@@ -296,7 +296,7 @@ def run():
     ishelf_depth = 0 # 2 1 0 index in cross array
 
     # Number of bins to use in histogram
-    bins = (100,100) #(30,30)
+    bins = (120,120) #(30,30)
 
     # Load in Files to read from based on which type of plot is being run
     Files, cmap = init(whichtime, whichtype)
