@@ -135,6 +135,7 @@ def calc_histogram(xp, yp, whichtype, bins=(60,60),
         # Initialize an array of lists: http://mail.scipy.org/pipermail/numpy-discussion/2009-November/046566.html
         filler = np.frompyfunc(lambda x: list(), 1, 1)
         H = np.empty((yes.size-1,xes.size-1), dtype=np.object)
+        filler(H, H)
         for i, xe in enumerate(xes[:-1]): # loop through edges in x
             for j, ye in enumerate(yes[:-1]): # loop through edges in y
                 # H contains indices of corresponding drifter seed locations
