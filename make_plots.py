@@ -355,17 +355,20 @@ def run():
 
         for File in files: # now loop through the files for this subplot
 
-            # Read in info
-            d = np.load(File)
             if whichtype == 'cross': # results are in xg, yg
             # [number of depths,number of tracks] to store time of crossing or nan if it doesn't cross
+                # Read in info
+                d = np.load(File)
                 xg0 = d['xg0']; yg0 = d['yg0']
                 cross = d['cross']
             elif 'coast' in whichtype:  # results are in xp, yp
+                # Read in info
+                d = np.load(File)
                 xp = d['xp0']; yp = d['yp0']
                 conn = d['conn'] 
             elif whichtype == 'D2' or whichtype == 'fsle':
-                xg = d['xg'][:]; yg = d['yg'][:]
+                d = netCDF.Dataset(File)
+                xg = d.variables['xg'][:]; yg = d.variables['yg'][:]
             d.close()
 
             # Count the drifters for the shelf_depth that have a non-nan entry
