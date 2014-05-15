@@ -379,6 +379,9 @@ def run():
                 xp = d['xp0']; yp = d['yp0']
                 conn = d['conn'] 
             elif whichtype == 'D2' or whichtype == 'fsle':
+                sfile = 'calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0])
+                if os.path.exists(sfile):
+                    continue
                 d = netCDF.Dataset(File)
                 xg = d.variables['xg'][:]; yg = d.variables['yg'][:]
             d.close()
@@ -401,8 +404,8 @@ def run():
                 # Calculate the metric in each bin and combine for all files
                 metric_temp, nnanstemp = calc_metric(xp, yp, Hstart, whichtype)
                 # Save calculations by bins for each file
-                pdb.set_trace()
-                np.savez('calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0])) 
+                # pdb.set_trace()
+                np.savez(sfile + '.npz', D2=metric_temp, nnans=nnanstemp) 
                 # metric_temp is in time, but want to show a single value for each bin in space.
                 # Take the value at the final time.
                 # pdb.set_trace()
