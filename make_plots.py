@@ -400,8 +400,12 @@ def run():
             elif whichtype == 'D2' or whichtype == 'fsle':
                 # Calculate the metric in each bin and combine for all files
                 metric_temp, nnanstemp = calc_metric(xp, yp, Hstart, whichtype)
+                # Save calculations by bins for each file
+                pdb.set_trace()
+                np.savez('calcs/dispersion/hist/' + File)
                 # metric_temp is in time, but want to show a single value for each bin in space.
                 # Take the value at the final time.
+                pdb.set_trace()
                 H[i,:] = H[i,:] + metric_temp[:,:,-1]*nnanstemp[:,:,-1] # need to un-average before combining
                 nnans[i,:] = nnans[i,:] + nnanstemp[:,:,-1] # need to un-average before combining
             # d.close()
