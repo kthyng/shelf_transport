@@ -152,8 +152,13 @@ def calc_metric(xp, yp, Hstart, whichtype):
     Calculate metric given by whichtype 
     '''
 
+    # loop through histogram bins and calculate metrics for each bin
+    pdb.set_trace()
+
     if whichtype == 'D2':
-        metric, nnans = tracpy.calcs.rel_dispersion(xp, yp, r=1, squared=True)
+        metric, nnans, pairs = tracpy.calcs.rel_dispersion(xp, yp, r=1, squared=True)
+        np.savez('calcs/pairs/bin' + str(i) + '_' + str(H.size) + '.npz')
+    
     elif whichtype == 'fsle':
         tSavetemp = tracpy.calcs.calc_fsle(lonp, latp, tp, alpha=np.sqrt(2))
         ind = ~np.isnan(tSavetemp)
@@ -296,7 +301,7 @@ def run():
     ishelf_depth = 0 # 2 1 0 index in cross array
 
     # Number of bins to use in histogram
-    bins = (120,120) #(30,30)
+    bins = (100,100) #(30,30)
 
     # Load in Files to read from based on which type of plot is being run
     Files, cmap = init(whichtime, whichtype)
@@ -388,6 +393,7 @@ def run():
             elif whichtype == 'D2' or whichtype == 'fsle':
                 # Calculate the metric in each bin and combine for all files
                 metric_temp, nnans = calc_metric(xp, yp, Hstart, whichtype)
+
                 H[i,:] = H[i,:] + metric_temp
             # d.close()
 
