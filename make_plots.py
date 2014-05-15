@@ -382,6 +382,9 @@ def run():
                 sfile = 'calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0])
                 if os.path.exists(sfile):
                     continue
+                # This is for distributing the workload to different processors
+                if not '2004' in File:
+                    continue
                 print 'working on D2 ', sfile
                 d = netCDF.Dataset(File)
                 xg = d.variables['xg'][:]; yg = d.variables['yg'][:]
