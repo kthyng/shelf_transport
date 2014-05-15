@@ -154,25 +154,24 @@ def calc_metric(xp, yp, Hstart, whichtype):
 
     # loop through histogram bins and calculate metrics for each bin
     # pdb.set_trace()
-    for i in xrange(Hstart.size):
+    metric = np.empty((Hstart.shape[0], Hstart.shape[1], xp.shape[1]))
+    nnans = np.empty((Hstart.shape[0], Hstart.shape[1], xp.shape[1]))
+    for j in xrange(Hstart.shape[0]):
+        for i in xrange(Hstart.shape[1]):
 
-        if whichtype == 'D2':
+            if whichtype == 'D2':
 
-            # if xp[Hstart.flat[i][0],:].shape[0]==0:
-            #     metric = np.nans
-            # else:
-
-            # D^2 is already averaged
-            metric, nnans, pairs = tracpy.calcs.rel_dispersion(xp[Hstart.flat[i][0],:], yp[Hstart.flat[i][0],:], r=1, squared=True)
-            # np.savez('calcs/pairs/bin' + str(i) + '_' + str(H.size) + '.npz')
-        
-        elif whichtype == 'fsle':
-            tSavetemp = tracpy.calcs.calc_fsle(lonp, latp, tp, alpha=np.sqrt(2))
-            ind = ~np.isnan(tSavetemp)
-            metric = np.nansum(tSavetemp, axis=0)
-            nnans = ind.sum(axis=0)
-            # still have to calculate fsle
-            # metric = 1./(tSave/nnans) # CHECK THIS
+                # D^2 is already averaged
+                metric[j,i,:], nnans[j,i,:], pairs = tracpy.calcs.rel_dispersion(xp[Hstart[j,i][0],:], yp[Hstart[j,i][0],:], r=1, squared=True)
+                # np.savez('calcs/pairs/bin' + str(i) + '_' + str(H.size) + '.npz')
+            
+            elif whichtype == 'fsle':
+                tSavetemp = tracpy.calcs.calc_fsle(lonp, latp, tp, alpha=np.sqrt(2))
+                ind = ~np.isnan(tSavetemp)
+                metric = np.nansum(tSavetemp, axis=0)
+                nnans = ind.sum(axis=0)
+                # still have to calculate fsle
+                # metric = 1./(tSave/nnans) # CHECK THIS
 
     return metric, nnans
 
@@ -401,9 +400,10 @@ def run():
             elif whichtype == 'D2' or whichtype == 'fsle':
                 # Calculate the metric in each bin and combine for all files
                 metric_temp, nnanstemp = calc_metric(xp, yp, Hstart, whichtype)
-
-                H[i,:] = H[i,:] + metric_temp*nnanstemp # need to un-average before combining
-                nnans[i,:] = nnans[i,:] + nnanstemp # need to un-average before combining
+                # metric_temp is in time, but want to show a single value for each bin in space.
+                # Take the value at the final time.
+                H[i,:] = H[i,:] + metric_temp[:,:,-1]*nnanstemp[:,:,-1] # need to un-average before combining
+                nnans[i,:] = nnans[i,:] + nnanstemp[:,:,-1] # need to un-average before combining
             # d.close()
 
         # Calculate overall histogram
