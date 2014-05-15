@@ -153,19 +153,26 @@ def calc_metric(xp, yp, Hstart, whichtype):
     '''
 
     # loop through histogram bins and calculate metrics for each bin
-    pdb.set_trace()
+    # pdb.set_trace()
+    for i in xrange(Hstart.size):
 
-    if whichtype == 'D2':
-        metric, nnans, pairs = tracpy.calcs.rel_dispersion(xp, yp, r=1, squared=True)
-        np.savez('calcs/pairs/bin' + str(i) + '_' + str(H.size) + '.npz')
-    
-    elif whichtype == 'fsle':
-        tSavetemp = tracpy.calcs.calc_fsle(lonp, latp, tp, alpha=np.sqrt(2))
-        ind = ~np.isnan(tSavetemp)
-        metric = np.nansum(tSavetemp, axis=0)
-        nnans = ind.sum(axis=0)
-        # still have to calculate fsle
-        # metric = 1./(tSave/nnans) # CHECK THIS
+        if whichtype == 'D2':
+
+            # if xp[Hstart.flat[i][0],:].shape[0]==0:
+            #     metric = np.nans
+            # else:
+
+            # D^2 is already averaged
+            metric, nnans, pairs = tracpy.calcs.rel_dispersion(xp[Hstart.flat[i][0],:], yp[Hstart.flat[i][0],:], r=1, squared=True)
+            # np.savez('calcs/pairs/bin' + str(i) + '_' + str(H.size) + '.npz')
+        
+        elif whichtype == 'fsle':
+            tSavetemp = tracpy.calcs.calc_fsle(lonp, latp, tp, alpha=np.sqrt(2))
+            ind = ~np.isnan(tSavetemp)
+            metric = np.nansum(tSavetemp, axis=0)
+            nnans = ind.sum(axis=0)
+            # still have to calculate fsle
+            # metric = 1./(tSave/nnans) # CHECK THIS
 
     return metric, nnans
 
@@ -347,6 +354,7 @@ def run():
 
     # For D2 and fsle, H contains the metric calculation averaged over that bin
     H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
+    nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
 
     # Loop through calculation files to calculate overall histograms
     # pdb.set_trace()
@@ -385,16 +393,17 @@ def run():
                 xp = xp[ind]; yp = yp[ind]
             elif whichtype == 'D2' or whichtype == 'fsle':
                 xp, yp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2ll')
-            pdb.set_trace()
+            # pdb.set_trace() 
             if whichtype == 'cross' or 'coast' in whichtype:
                 # Calculate and accumulate histograms of starting locations of drifters that cross shelf
                 Hcrosstemp, _, _ = calc_histogram(xp, yp, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
                 Hcross = np.nansum( np.vstack((Hcross[np.newaxis,:,:], Hcrosstemp[np.newaxis,:,:])), axis=0)
             elif whichtype == 'D2' or whichtype == 'fsle':
                 # Calculate the metric in each bin and combine for all files
-                metric_temp, nnans = calc_metric(xp, yp, Hstart, whichtype)
+                metric_temp, nnanstemp = calc_metric(xp, yp, Hstart, whichtype)
 
-                H[i,:] = H[i,:] + metric_temp
+                H[i,:] = H[i,:] + metric_temp*nnanstemp # need to un-average before combining
+                nnans[i,:] = nnans[i,:] + nnanstemp # need to un-average before combining
             # d.close()
 
         # Calculate overall histogram
@@ -402,9 +411,9 @@ def run():
         if whichtype == 'cross' or 'coast' in whichtype:
             H[i,:] = (Hcross/HstartUse)*100
         elif whichtype == 'D2':
-            H[i,:] = H[i,:]/nnans
+            H[i,:] = H[i,:]/nnans[i,:]
         elif whichtype == 'fsle':
-            H[i,:] = 1./H[i,:]/nnans
+            H[i,:] = 1./H[i,:]/nnans[i,:]
 
         # Do subplot
         mappable = plot_stuff(xe, ye, H[i,:], cmap, grid, shelf_depth, axarr.flatten()[i])
