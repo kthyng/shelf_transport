@@ -379,7 +379,7 @@ def run():
                 xp = d['xp0']; yp = d['yp0']
                 conn = d['conn'] 
             elif whichtype == 'D2' or whichtype == 'fsle':
-                sfile = 'calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0])
+                sfile = 'calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0]) + '.npz'
                 if os.path.exists(sfile):
                     continue
                 # This is for distributing the workload to different processors
@@ -409,7 +409,7 @@ def run():
                 metric_temp, nnanstemp = calc_metric(xp, yp, Hstart, whichtype)
                 # Save calculations by bins for each file
                 # pdb.set_trace()
-                np.savez(sfile + '.npz', D2=metric_temp, nnans=nnanstemp) 
+                np.savez(sfile, D2=metric_temp, nnans=nnanstemp) 
                 print 'saving D2 file ', sfile
                 # metric_temp is in time, but want to show a single value for each bin in space.
                 # Take the value at the final time.
