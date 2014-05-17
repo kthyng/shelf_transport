@@ -144,7 +144,7 @@ def calc_histogram(xp, yp, whichtype, bins=(60,60),
                 H[j,i].append(find((xp>xe) * (xp<xes[i+1]) * (yp>ye) * (yp<yes[j+1])))
         # pdb.set_trace()
 
-    return H, xe, ye
+    return H, xes, yes
 
 
 def calc_metric(xp, yp, Hstart, whichtype):
