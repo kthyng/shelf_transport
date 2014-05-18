@@ -421,7 +421,7 @@ def run():
                     # pdb.set_trace()
                 else:
                     d = np.load(sfile)
-                    metric_temp = d['D2']; nnanstemp = d['nnanstemp']
+                    metric_temp = d['D2']; nnanstemp = d['nnans']
                 H[i,:] = H[i,:] + metric_temp[:,:,-1]*nnanstemp[:,:,-1] # need to un-average before combining
                 nnans[i,:] = nnans[i,:] + nnanstemp[:,:,-1] # need to un-average before combining
 
