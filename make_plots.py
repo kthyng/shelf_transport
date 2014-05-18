@@ -434,6 +434,7 @@ def run():
             H[i,:] = H[i,:]/nnans[i,:]
             # np.savez('calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0])) 
         elif whichtype == 'fsle':
+            xe, ye = grid['basemap'](xe, ye) # change from lon/lat
             H[i,:] = 1./H[i,:]/nnans[i,:]
 
         # Do subplot
