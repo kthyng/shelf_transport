@@ -375,6 +375,7 @@ def run():
                 xg0 = d['xg0']; yg0 = d['yg0']
                 cross = d['cross']
                 ind = ~np.isnan(cross[ishelf_depth,:])
+                d.close()
                 xp, yp, _ = tracpy.tools.interpolate2d(xg0[ind], yg0[ind], grid, 'm_ij2xy')
             elif 'coast' in whichtype:  # results are in xp, yp
                 # Read in info
@@ -383,6 +384,7 @@ def run():
                 conn = d['conn'] 
                 ind = ~np.isnan(conn)
                 xp = xp[ind]; yp = yp[ind]
+                d.close()
             elif whichtype == 'D2' or whichtype == 'fsle':
                 sfile = 'calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0]) + '.npz'
                 if os.path.exists(sfile): # just read in info
@@ -398,7 +400,7 @@ def run():
                     d = netCDF.Dataset(File)
                     xg = d.variables['xg'][:]; yg = d.variables['yg'][:]
                     xp, yp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2ll')
-            d.close()
+                    d.close()
 
             # Count the drifters for the shelf_depth that have a non-nan entry
             # pdb.set_trace() 
