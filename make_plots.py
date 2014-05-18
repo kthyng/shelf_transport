@@ -422,8 +422,8 @@ def run():
                 else:
                     d = np.load(sfile)
                     metric_temp = d['D2']; nnanstemp = d['nnans']
-                pdb.set_trace()
-                H[i,:] = np.nansum( np.vstack((H[i,:],metric_temp[:,:,100]*nnanstemp[:,:,100]))) # need to un-average before combining
+                # pdb.set_trace()
+                H[i,:] = np.nansum( np.vstack((H[np.newaxis,i,:],metric_temp[np.newaxis,:,:,100]*nnanstemp[np.newaxis,:,:,100])), axis=0) # need to un-average before combining
                 # H[i,:] = H[i,:] + metric_temp[:,:,-1]*nnanstemp[:,:,-1] # need to un-average before combining
                 nnans[i,:] = nnans[i,:] + nnanstemp[:,:,-1] # need to un-average before combining
 
