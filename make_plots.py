@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from glob import glob
 import op
 from matplotlib.mlab import find
+# from matplotlib.path import Path
 
 # mpl.rcParams['text.usetex'] = True
 mpl.rcParams.update({'font.size': 14})
@@ -143,8 +144,9 @@ def calc_histogram(xp, yp, whichtype, bins=(60,60),
                 # pdb.set_trace()
                 H[j,i].append(find((xp>xe) * (xp<xes[i+1]) * (yp>ye) * (yp<yes[j+1])))
         # pdb.set_trace()
+        xe = xes; ye = yes;
 
-    return H, xes, yes
+    return H, xe, ye
 
 
 def calc_metric(xp, yp, Hstart, whichtype):
@@ -298,10 +300,10 @@ def plot_diff():
 def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
-    whichtime = 'seasonal'#'interannual-winter'
+    whichtime = 'interannual-winter'#'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
-    whichtype = 'D2'
+    whichtype = 'coastCH'
 
     shelf_depth = -20 # do 100 50 and 20 
     ishelf_depth = 0 # 2 1 0 index in cross array
@@ -354,9 +356,9 @@ def run():
     fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
 
     # For D2 and fsle, H contains the metric calculation averaged over that bin
-    if whichtype == 'D2' or whichtype == 'fsle':
-        H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
-        nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
+    # if whichtype == 'D2' or whichtype == 'fsle':
+    H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
+    nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
 
     # Loop through calculation files to calculate overall histograms
     # pdb.set_trace()
@@ -441,7 +443,17 @@ def run():
 
         # Do subplot
         mappable = plot_stuff(xe, ye, H[i,:], cmap, grid, shelf_depth, axarr.flatten()[i])
-        pdb.set_trace()
+        # pdb.set_trace()
+
+        # Add coastline area if applicable
+        if 'coast' in whichtype:
+            coastloc = whichtype.split('coast')[-1]
+            pts = np.load('calcs/' + coastloc + 'pts.npz')[coastloc]
+            axarr.flatten()[i].plot(pts[:,0], pts[:,1], color='0.0', lw=3)
+            # verts = np.vstack((pts[:,0], pts[:,1]))
+            # # Form path
+            # path = Path(verts.T)
+            # if not path.contains_point(np.vstack((xp[jd,it],yp[jd,it]))):
 
     # save H
     if not os.path.exists('figures/' + whichtype): 
@@ -453,6 +465,7 @@ def run():
         np.savez('figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz', H=H, xe=xe, ye=ye)
     elif 'coast' in whichtype: 
         np.savez('figures/' + whichtype + '/' + whichtime + 'H.npz', H=H, xe=xe, ye=ye)
+
 
     # Add colorbar
     plot_colorbar(fig, mappable, whichtype)
