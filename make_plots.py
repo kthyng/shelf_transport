@@ -303,10 +303,14 @@ def run():
     whichtime = 'interannual-winter'#'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
-    whichtype = 'coastCH'
+    whichtype = 'cross'
 
-    shelf_depth = -20 # do 100 50 and 20 
-    ishelf_depth = 0 # 2 1 0 index in cross array
+    shelf_depth = 100 #-20 # do 100 50 and 20 
+    ishelf_depth = 2 #0 # 2 1 0 index in cross array
+
+    # Whether to overlay previously-calculated wind stress arrows
+    # from projects/txla_plots/plot_mean_wind.py on Rainier
+    addwind = 1
 
     # Number of bins to use in histogram
     bins = (100,100) #(30,30)
@@ -454,6 +458,20 @@ def run():
             # # Form path
             # path = Path(verts.T)
             # if not path.contains_point(np.vstack((xp[jd,it],yp[jd,it]))):
+
+        # Overlay mean wind arrows
+        if addwind:
+            # Right now is just for cross, interannual, winter
+            year = File.split('/')[-1].split('-')[0]
+            wind = np.load('calcs/wind_stress/' + year + 'winter.npz')
+            x = wind['x']; y = wind['y']; u = wind['u']; v = wind['v']
+            q = axarr.flatten()[i].quiver(x, y, u, v, color = '0.3',
+                        pivot='middle', zorder=1e35, width=0.003)
+                        # scale=1.0/scale, pivot='middle', zorder=1e35, width=0.003)
+
+            if year == 2008:
+                plt.quiverkey(q, 0.85, 0.07, 0.1, label=r'0.1 N m$^{2}$', coordinates='axes')
+
 
     # save H
     if not os.path.exists('figures/' + whichtype): 
