@@ -266,7 +266,7 @@ def plot_finish(fig, whichtype, whichtime, shelf_depth):
     elif 'coast' in whichtype: 
         fname = 'figures/' + whichtype + '/' + whichtime + '.png'
 
-    fig.savefig(fname)
+    fig.savefig(fname)#, dpi=300)
     plt.close(fig)
 
 def plot_diff():
@@ -300,10 +300,10 @@ def plot_diff():
 def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
-    whichtime = 'interannual-winter'#'interannual-winter'
+    whichtime = 'interannual-summer'#'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
-    whichtype = 'cross'
+    whichtype = 'coastSTX'
 
     shelf_depth = 100 #-20 # do 100 50 and 20 
     ishelf_depth = 2 #0 # 2 1 0 index in cross array
@@ -463,7 +463,8 @@ def run():
         if addwind:
             # Right now is just for cross, interannual, winter
             year = File.split('/')[-1].split('-')[0]
-            wind = np.load('calcs/wind_stress/' + year + 'winter.npz')
+            season = whichtime.split('-')[-1]
+            wind = np.load('calcs/wind_stress/' + year + season +  '.npz')
             x = wind['x']; y = wind['y']; u = wind['u']; v = wind['v']
             q = axarr.flatten()[i].quiver(x, y, u, v, color = '0.3',
                         pivot='middle', zorder=1e35, width=0.003)
