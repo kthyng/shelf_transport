@@ -19,7 +19,7 @@ import glob
 from matplotlib.mlab import find, Path
 
 # 'cross' or 'coast'
-which = 'cross'
+which = 'coast'
 
 def load_tracks(File):
     '''
@@ -42,7 +42,7 @@ def run():
 
     # Find files to run through
     # Files = glob.glob('/Volumes/Emmons/projects/gisr/tracks/all_f/*gc.npz')[0:2]
-    Files = glob.glob('tracks/*gc.nc')
+    Files = glob.glob('tracks/back/2004*gc.nc')
 
     shelf_depths = [20, 50, 100, 200, 300, 400, 500]
 
@@ -105,11 +105,11 @@ def run():
 
         elif which=='coast':
 
-            MXfile = 'calcs/coastconn/MX/' + File.split('/')[-1][:-4] + '.npz'
-            STXfile = 'calcs/coastconn/STX/' + File.split('/')[-1][:-4] + '.npz'
-            NTXfile = 'calcs/coastconn/NTX/' + File.split('/')[-1][:-4] + '.npz'
-            CHfile = 'calcs/coastconn/CH/' + File.split('/')[-1][:-4] + '.npz'
-            LAfile = 'calcs/coastconn/LA/' + File.split('/')[-1][:-4] + '.npz'
+            MXfile = 'calcs/coastconn/back/MX/' + File.split('/')[-1][:-4] + '.npz'
+            STXfile = 'calcs/coastconn/back/STX/' + File.split('/')[-1][:-4] + '.npz'
+            NTXfile = 'calcs/coastconn/back/NTX/' + File.split('/')[-1][:-4] + '.npz'
+            CHfile = 'calcs/coastconn/back/CH/' + File.split('/')[-1][:-4] + '.npz'
+            LAfile = 'calcs/coastconn/back/LA/' + File.split('/')[-1][:-4] + '.npz'
             #pdb.set_trace()
             if os.path.exists(LAfile): # don't repeat calc if last file was created
                 continue
@@ -117,10 +117,12 @@ def run():
             xg, yg, tp = load_tracks(File)
  
             # Time information
+            # new, now have an array of time?
+            tp = tp[0,:]
+            #
             days = (tp-tp[0])/(3600.*24)
             iday = find(days==2) - find(days==1) # number of indices per day
             iday = int(iday) 
-            # pdb.set_trace()
             # Load in coastline region info
             # Mexico
             dconn = np.load('calcs/MXpts.npz')
