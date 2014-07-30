@@ -164,7 +164,8 @@ def calc_metric(xp, yp, Hstart, whichtype):
             if whichtype == 'D2':
 
                 # D^2 is already averaged
-                metric[j,i,:], nnans[j,i,:], pairs = tracpy.calcs.rel_dispersion(xp[Hstart[j,i][0],:], yp[Hstart[j,i][0],:], r=1, squared=True)
+                # Picks out the drifters (xp,yp) that are in the j,i-th histogram bin, and looks at their statistics
+                metric[j,i,:], nnans[j,i,:], pairs = tracpy.calcs.rel_dispersion(xp[Hstart[j,i][0],:], yp[Hstart[j,i][0],:], r=1.05, squared=True)
                 # np.savez('calcs/pairs/bin' + str(i) + '_' + str(H.size) + '.npz')
             
             elif whichtype == 'fsle':
@@ -300,10 +301,10 @@ def plot_diff():
 def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
-    whichtime = 'interannual-summer'#'interannual-winter'
+    whichtime = 'interannual-winter'#'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
-    whichtype = 'coastSTX'
+    whichtype = 'D2'
 
     shelf_depth = 100 #-20 # do 100 50 and 20 
     ishelf_depth = 2 #0 # 2 1 0 index in cross array
@@ -340,15 +341,15 @@ def run():
         Yrange = [grid['latpsi'].min(), grid['latpsi'].max()]
     # Histogram of starting locations
     if whichtype == 'cross': # results are in xg, yg
-        xp, yp, _ = tracpy.tools.interpolate2d(d['xg0'], d['yg0'], grid, 'm_ij2xy')
+        xp0, yp0, _ = tracpy.tools.interpolate2d(d['xg0'], d['yg0'], grid, 'm_ij2xy')
     elif 'coast' in whichtype:  # results are in xp, yp
-        xp = d['xp0']; yp = d['yp0']
+        xp0 = d['xp0']; yp0 = d['yp0']
     elif whichtype == 'D2': # results are in xg, yg
-        # xp, yp are lonp, latp in this case
-        xp, yp, _ = tracpy.tools.interpolate2d(d.variables['xg'][:,0], d.variables['yg'][:,0], grid, 'm_ij2ll')
+        # xp0, yp0 are lonp, latp in this case
+        xp0, yp0, _ = tracpy.tools.interpolate2d(d.variables['xg'][:,0], d.variables['yg'][:,0], grid, 'm_ij2ll')
     # pdb.set_trace()
     # For D2 and fsle, Hstart contains indices of drifters seeded in bins
-    Hstart, xe, ye = calc_histogram(xp, yp, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
+    Hstart, xe, ye = calc_histogram(xp0, yp0, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
     if whichtype == 'D2':
         xe, ye = grid['basemap'](xe, ye) # change from lon/lat
 
@@ -430,7 +431,7 @@ def run():
                 else:
                     d = np.load(sfile)
                     metric_temp = d['D2']; nnanstemp = d['nnans']
-                pdb.set_trace()
+
                 H[i,:] = np.nansum( np.vstack((H[np.newaxis,i,:],metric_temp[np.newaxis,:,:,100]*nnanstemp[np.newaxis,:,:,100])), axis=0) # need to un-average before combining
                 # H[i,:] = H[i,:] + metric_temp[:,:,-1]*nnanstemp[:,:,-1] # need to un-average before combining
                 nnans[i,:] = nnans[i,:] + nnanstemp[:,:,-1] # need to un-average before combining
