@@ -352,6 +352,9 @@ def run():
     Hstart, xe, ye = calc_histogram(xp0, yp0, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
     if whichtype == 'D2':
         xe, ye = grid['basemap'](xe, ye) # change from lon/lat
+        Hstartfile = 'calcs/dispersion/hist/Hstart_bins' + str(bins[0]) + '.npz'
+        np.savez(Hstartfile, Hstart=Hstart, xe=xe, ye=ye) 
+        
 
     d.close()
 
