@@ -235,7 +235,7 @@ def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,
     XE, YE = np.meshgrid(op.resize(xe, 0), op.resize(ye, 0))
 
     # Try with pcolor too
-    pdb.set_trace()
+    # pdb.set_trace()
     mappable = ax.contourf(XE, YE, H.T, cmap=cmap, levels=levels)
     ax.contour(grid['xr'], grid['yr'], grid['h'], [shelf_depth], colors='0.1', linewidth=3)
 
@@ -325,7 +325,8 @@ def run():
     Files, cmap = init(whichtime, whichtype)
 
     # Grid info
-    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    # loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    loc = '/Users/kthyng/Documents/research/postdoc/grid.nc'
     grid = tracpy.inout.readgrid(loc, usebasemap=True)
 
     ## Calculate starting position histogram just once ##
@@ -463,7 +464,7 @@ def run():
         if whichtype == 'cross' or 'coast' in whichtype:
             H[i,:] = (Hcross/HstartUse)*100
         elif whichtype == 'D2':
-            xe, ye = grid['basemap'](xe, ye) # change from lon/lat
+            # xe, ye = grid['basemap'](xe, ye) # change from lon/lat
             H[i,:] = H[i,:]/nnans[i,:]
             # np.savez('calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0])) 
         elif whichtype == 'fsle':
