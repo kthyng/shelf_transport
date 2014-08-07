@@ -325,8 +325,8 @@ def run():
     Files, cmap = init(whichtime, whichtype)
 
     # Grid info
-    # loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
-    loc = '/Users/kthyng/Documents/research/postdoc/grid.nc'
+    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    # loc = '/Users/kthyng/Documents/research/postdoc/grid.nc'
     grid = tracpy.inout.readgrid(loc, usebasemap=True)
 
     ## Calculate starting position histogram just once ##
