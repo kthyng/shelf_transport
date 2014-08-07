@@ -266,6 +266,8 @@ def plot_finish(fig, whichtype, whichtime, shelf_depth):
         fname = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + '.png'
     elif 'coast' in whichtype: 
         fname = 'figures/' + whichtype + '/' + whichtime + '.png'
+    elif whichtype == 'D2':
+        fname = 'figures/' + whichtype + '/' + whichtime + '.png'
 
     fig.savefig(fname)#, dpi=300)
     plt.close(fig)
