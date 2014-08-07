@@ -345,6 +345,8 @@ def run():
         elif 'coast' in whichtype:  # results are in xp, yp
             xp0 = d['xp0']; yp0 = d['yp0']
 
+        d.close()
+
     elif whichtype == 'D2': # results are in xg, yg
 
         # Histogram of starting locations
@@ -361,6 +363,8 @@ def run():
             # xp0, yp0 are lonp, latp in this case
             xp0, yp0, _ = tracpy.tools.interpolate2d(d.variables['xg'][:,0], d.variables['yg'][:,0], grid, 'm_ij2ll')
 
+            d.close()
+
     if os.path.exists(Hstartfile): # just read in info
         Hstartf = np.load(Hstartfile)
         xe = Hstartf['xe']; ye = Hstartf['ye']
@@ -373,8 +377,6 @@ def run():
             xe, ye = grid['basemap'](xe, ye) # change from lon/lat
             np.savez(Hstartfile, Hstart=Hstart, xe=xe, ye=ye) 
 
-
-    d.close()
 
     # pdb.set_trace()
 
