@@ -235,6 +235,7 @@ def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,
     XE, YE = np.meshgrid(op.resize(xe, 0), op.resize(ye, 0))
 
     # Try with pcolor too
+    pdb.set_trace()
     mappable = ax.contourf(XE, YE, H.T, cmap=cmap, levels=levels)
     ax.contour(grid['xr'], grid['yr'], grid['h'], [shelf_depth], colors='0.1', linewidth=3)
 
@@ -345,18 +346,20 @@ def run():
             xp0 = d['xp0']; yp0 = d['yp0']
 
     elif whichtype == 'D2': # results are in xg, yg
-        d = netCDF.Dataset(Files[0][0])
-
-        # Calculate xrange and yrange for histograms in ll
-        Xrange = [grid['lonpsi'].min(), grid['lonpsi'].max()]
-        Yrange = [grid['latpsi'].min(), grid['latpsi'].max()]
-    
-        # Histogram of starting locations
-        # xp0, yp0 are lonp, latp in this case
-        xp0, yp0, _ = tracpy.tools.interpolate2d(d.variables['xg'][:,0], d.variables['yg'][:,0], grid, 'm_ij2ll')
 
         # Histogram of starting locations
         Hstartfile = 'calcs/dispersion/hist/Hstart_bins' + str(bins[0]) + '.npz'
+
+        if not os.path.exists(Hstartfile): # just read in info
+            d = netCDF.Dataset(Files[0][0])
+
+            # Calculate xrange and yrange for histograms in ll
+            Xrange = [grid['lonpsi'].min(), grid['lonpsi'].max()]
+            Yrange = [grid['latpsi'].min(), grid['latpsi'].max()]
+        
+            # Histogram of starting locations
+            # xp0, yp0 are lonp, latp in this case
+            xp0, yp0, _ = tracpy.tools.interpolate2d(d.variables['xg'][:,0], d.variables['yg'][:,0], grid, 'm_ij2ll')
 
     if os.path.exists(Hstartfile): # just read in info
         Hstartf = np.load(Hstartfile)
@@ -465,7 +468,7 @@ def run():
             H[i,:] = 1./H[i,:]/nnans[i,:]
 
         # Do subplot
-        pdb.set_trace()
+        # pdb.set_trace()
         mappable = plot_stuff(xe, ye, H[i,:], cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
 
         # Add coastline area if applicable
