@@ -227,7 +227,7 @@ def plot_setup(whichtime, grid):
 
     return fig, axarr
 
-def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax):
+def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,11)):
     '''
     Do the main plotting stuff.
     '''
@@ -235,7 +235,7 @@ def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax):
     XE, YE = np.meshgrid(op.resize(xe, 0), op.resize(ye, 0))
 
     # Try with pcolor too
-    mappable = ax.contourf(XE, YE, H.T, cmap=cmap, levels=np.linspace(0,100,11))
+    mappable = ax.contourf(XE, YE, H.T, cmap=cmap, levels=levels)
     ax.contour(grid['xr'], grid['yr'], grid['h'], [shelf_depth], colors='0.1', linewidth=3)
 
     return mappable
@@ -308,12 +308,14 @@ def run():
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'D2'
 
+    levels = np.linspace(0,1,11)
+
     shelf_depth = 100 #-20 # do 100 50 and 20 
     ishelf_depth = 2 #0 # 2 1 0 index in cross array
 
     # Whether to overlay previously-calculated wind stress arrows
     # from projects/txla_plots/plot_mean_wind.py on Rainier
-    addwind = 1
+    addwind = 0
 
     # Number of bins to use in histogram
     bins = (100,100) #(30,30)
@@ -463,8 +465,8 @@ def run():
             H[i,:] = 1./H[i,:]/nnans[i,:]
 
         # Do subplot
-        mappable = plot_stuff(xe, ye, H[i,:], cmap, grid, shelf_depth, axarr.flatten()[i])
-        # pdb.set_trace()
+        pdb.set_trace()
+        mappable = plot_stuff(xe, ye, H[i,:], cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
 
         # Add coastline area if applicable
         if 'coast' in whichtype:
