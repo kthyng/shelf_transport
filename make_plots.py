@@ -432,6 +432,9 @@ def run():
                     print 'working on D2 ', sfile
                     d = netCDF.Dataset(File)
                     xg = d.variables['xg'][:]; yg = d.variables['yg'][:]
+                    # eliminate entries equal to -1
+                    ind = xg==-1
+                    xg[ind] = np.nan; yg[ind] = np.nan
                     xp, yp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2ll')
                     d.close()
 
