@@ -455,6 +455,9 @@ def run():
                 else:
                     d = np.load(sfile)
                     metric_temp = d['D2']; nnanstemp = d['nnans']
+                    # filter out boxes with too few available drifters
+                    ind = nnanstemp<10
+                    metric_temp[ind] = np.nan
 
                 H[i,:] = np.nansum( np.vstack((H[np.newaxis,i,:],metric_temp[np.newaxis,:,:,100]*nnanstemp[np.newaxis,:,:,100])), axis=0) # need to un-average before combining
                 # H[i,:] = H[i,:] + metric_temp[:,:,-1]*nnanstemp[:,:,-1] # need to un-average before combining
