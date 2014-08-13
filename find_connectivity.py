@@ -30,10 +30,16 @@ def load_tracks(File):
     d = netCDF.Dataset(File)
     xg = d.variables['xg'][:]
     yg = d.variables['yg'][:]
-    tp = d.variables['tp'][:]
+    #tp = d.variables['tp'][:]
+    # Calculate times since they are messed up if a drifter exits the domain
+    tseas = d.variables['tseas'][:]
+    N = d.variables['N'][:]
+    iday = int((3600.*24)/(tseas/N)) 
+    days = np.linspace(0, 30, xg.shape[1]) #tseas/N/(3600.*24))
+    pdb.set_trace()
     d.close()
 
-    return xg, yg, tp
+    return xg, yg, iday, days
 
 
 
@@ -114,15 +120,15 @@ def run():
             if os.path.exists(LAfile): # don't repeat calc if last file was created
                 continue
 
-            xg, yg, tp = load_tracks(File)
+            xg, yg, iday, days = load_tracks(File)
  
             # Time information
             # new, now have an array of time?
-            tp = tp[0,:]
+            #tp = tp[0,:]
             #
-            days = (tp-tp[0])/(3600.*24)
-            iday = find(days==2) - find(days==1) # number of indices per day
-            iday = int(iday) 
+            #days = (tp-tp[0])/(3600.*24)
+            # number of indices per day
+            #iday = int((3600.*24)/(d.variables['tseas'][:]/d.variables['N'][:])) 
             # Load in coastline region info
             # Mexico
             dconn = np.load('calcs/MXpts.npz')

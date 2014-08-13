@@ -386,8 +386,8 @@ def run():
 
     # For D2 and fsle, H contains the metric calculation averaged over that bin
     # if whichtype == 'D2' or whichtype == 'fsle':
-    H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
-    nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
+    H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
+    nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
 
     # Loop through calculation files to calculate overall histograms
     # pdb.set_trace()
@@ -458,13 +458,14 @@ def run():
                 else:
                     d = np.load(sfile)
                     metric_temp = d['D2']; nnanstemp = d['nnans']
+                    # pdb.set_trace()
                     # filter out boxes with too few available drifters
-                    ind = nnanstemp<10
+                    ind = nnanstemp<30
                     metric_temp[ind] = np.nan
 
-                H[i,:] = np.nansum( np.vstack((H[np.newaxis,i,:],metric_temp[np.newaxis,:,:,100]*nnanstemp[np.newaxis,:,:,100])), axis=0) # need to un-average before combining
+                H[i,:] = np.nansum( np.vstack((H[np.newaxis,i,:,:,:],metric_temp[np.newaxis,:,:,:]*nnanstemp[np.newaxis,:,:,:])), axis=0) # need to un-average before combining
                 # H[i,:] = H[i,:] + metric_temp[:,:,-1]*nnanstemp[:,:,-1] # need to un-average before combining
-                nnans[i,:] = nnans[i,:] + nnanstemp[:,:,-1] # need to un-average before combining
+                nnans[i,:] = nnans[i,:] + nnanstemp[:,:,:] # need to un-average before combining
 
         # Calculate overall histogram
         if whichtype == 'cross' or 'coast' in whichtype:
@@ -477,8 +478,10 @@ def run():
             H[i,:] = 1./H[i,:]/nnans[i,:]
 
         # Do subplot
-        # pdb.set_trace()
-        mappable = plot_stuff(xe, ye, H[i,:], cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
+        #pdb.set_trace()
+        # which time index to plot?
+        itind = 100
+        mappable = plot_stuff(xe, ye, H[i,:,:,itind], cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
 
         # Add coastline area if applicable
         if 'coast' in whichtype:
