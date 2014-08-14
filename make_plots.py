@@ -235,8 +235,8 @@ def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,
     XE, YE = np.meshgrid(op.resize(xe, 0), op.resize(ye, 0))
 
     # Try with pcolor too
-    # pdb.set_trace()
-    mappable = ax.contourf(XE, YE, H.T, cmap=cmap, levels=levels)
+    #pdb.set_trace()
+    mappable = ax.contourf(XE, YE, H, cmap=cmap)#, levels=levels)
     ax.contour(grid['xr'], grid['yr'], grid['h'], [shelf_depth], colors='0.1', linewidth=3)
 
     return mappable
@@ -478,7 +478,7 @@ def run():
             H[i,:] = 1./H[i,:]/nnans[i,:]
 
         # Do subplot
-        #pdb.set_trace()
+        # pdb.set_trace()
         # which time index to plot?
         itind = 100
         mappable = plot_stuff(xe, ye, H[i,:,:,itind], cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
