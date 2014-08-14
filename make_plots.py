@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from glob import glob
 import op
 from matplotlib.mlab import find
+from matplotlib import ticker
 # from matplotlib.path import Path
 
 # mpl.rcParams['text.usetex'] = True
@@ -66,7 +67,7 @@ def init(whichtime, whichtype):
         cmap = 'YlGn'
         base = 'calcs/coastconn/LA/'
     elif whichtype == 'D2':
-        cmap = 'YlGnBu'
+        cmap = 'BuPu'
         base = 'tracks/'
 
     #pdb.set_trace()
@@ -500,7 +501,11 @@ def run():
 
     # which time index to plot
     itind = 100
-    levels = np.linspace(0, np.nanmax(H[:,:,:,itind]), 11)
+    # Choose consistent levels to plot
+    locator = ticker.MaxNLocator(11)
+    locator.create_dummy_axis()
+    locator.set_bounds(0, np.nanmax(H[:,:,:,itind]))
+    levels = locator()
 
     # Set up overall plot, now that everything is calculated
     fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
