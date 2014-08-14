@@ -257,6 +257,8 @@ def plot_colorbar(fig, mappable, whichtype):
         cb.set_label('Probability of drifters crossing shelf (%)')
     elif 'coast' in whichtype: 
         cb.set_label('Probability of drifters reaching coastline region (%)')
+    elif whichtype == 'D2':
+        cb.set_label('Mean squared separation distance [km]')
 
 
 def plot_finish(fig, whichtype, whichtime, shelf_depth):
@@ -504,7 +506,8 @@ def run():
     # Choose consistent levels to plot
     locator = ticker.MaxNLocator(11)
     locator.create_dummy_axis()
-    locator.set_bounds(0, np.nanmax(H[:,:,:,itind]))
+    # don't use highest max since everything is washed out then
+    locator.set_bounds(0, 0.75*np.nanmax(H[:,:,:,itind]))
     levels = locator()
 
     # Set up overall plot, now that everything is calculated
@@ -519,7 +522,7 @@ def run():
         # which time index to plot?
         #itind = 100
         mappable = plot_stuff(xe, ye, H[i,:,:,itind], cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
-        axarr.flatten()[i].set_title(np.nanmax(H[i,:,:,itind]))
+        #axarr.flatten()[i].set_title(np.nanmax(H[i,:,:,itind]))
         # Add coastline area if applicable
         if 'coast' in whichtype:
             coastloc = whichtype.split('coast')[-1]
