@@ -258,7 +258,7 @@ def plot_colorbar(fig, mappable, whichtype):
     elif 'coast' in whichtype: 
         cb.set_label('Probability of drifters reaching coastline region (%)')
     elif whichtype == 'D2':
-        cb.set_label('Mean squared separation distance [km]')
+        cb.set_label('Mean squared separation distance [km$^2\!$]', fontsize=13.5)
 
 
 def plot_finish(fig, whichtype, whichtime, shelf_depth):
