@@ -236,7 +236,7 @@ def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,
 
     # Try with pcolor too
     #pdb.set_trace()
-    mappable = ax.contourf(XE, YE, H, cmap=cmap)#, levels=levels)
+    mappable = ax.contourf(XE, YE, H, cmap=cmap, levels=levels)
     ax.contour(grid['xr'], grid['yr'], grid['h'], [shelf_depth], colors='0.1', linewidth=3)
 
     return mappable
@@ -496,8 +496,11 @@ def run():
 
         Hfile = np.load(Hfilename)
         H = Hfile['H']; xe = Hfile['xe']; ye = Hfile['ye']
-        levels = np.linspace(0, np.nanmax(H), 11)
+        #levels = np.linspace(0, np.nanmax(H), 11)
 
+    # which time index to plot
+    itind = 100
+    levels = np.linspace(0, np.nanmax(H[:,:,:,itind]), 11)
 
     # Set up overall plot, now that everything is calculated
     fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
@@ -509,9 +512,9 @@ def run():
         # Do subplot
         # pdb.set_trace()
         # which time index to plot?
-        itind = 100
+        #itind = 100
         mappable = plot_stuff(xe, ye, H[i,:,:,itind], cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
-
+        axarr.flatten()[i].set_title(np.nanmax(H[i,:,:,itind]))
         # Add coastline area if applicable
         if 'coast' in whichtype:
             coastloc = whichtype.split('coast')[-1]
