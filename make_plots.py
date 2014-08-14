@@ -381,101 +381,130 @@ def run():
 
     # pdb.set_trace()
 
-    # Set up overall plot
-    fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
+    if whichtype == 'D2':
+        Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
 
-    # For D2 and fsle, H contains the metric calculation averaged over that bin
-    # if whichtype == 'D2' or whichtype == 'fsle':
-    H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
-    nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
+    if not os.path.exists(Hfilename): 
+
+        # For D2 and fsle, H contains the metric calculation averaged over that bin
+        # if whichtype == 'D2' or whichtype == 'fsle':
+        H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
+        nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
+
+        # Loop through calculation files to calculate overall histograms
+        # pdb.set_trace()
+        for i, files in enumerate(Files): # Files has multiple entries, 1 for each subplot
+
+            if whichtype == 'cross' or 'coast' in whichtype:
+                Hcross = np.zeros(bins) # initialize
+                #pdb.set_trace()
+                HstartUse = Hstart*len(files) # multiply to account for each simulation
+
+
+            for File in files: # now loop through the files for this subplot
+
+                if whichtype == 'cross': # results are in xg, yg
+                # [number of depths,number of tracks] to store time of crossing or nan if it doesn't cross
+                    # Read in info
+                    d = np.load(File)
+                    xg0 = d['xg0']; yg0 = d['yg0']
+                    cross = d['cross']
+                    ind = ~np.isnan(cross[ishelf_depth,:])
+                    d.close()
+                    xp, yp, _ = tracpy.tools.interpolate2d(xg0[ind], yg0[ind], grid, 'm_ij2xy')
+                elif 'coast' in whichtype:  # results are in xp, yp
+                    # Read in info
+                    d = np.load(File)
+                    xp = d['xp0']; yp = d['yp0']
+                    conn = d['conn'] 
+                    ind = ~np.isnan(conn)
+                    xp = xp[ind]; yp = yp[ind]
+                    d.close()
+                elif whichtype == 'D2' or whichtype == 'fsle':
+                    sfile = 'calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0]) + '.npz'
+                    if os.path.exists(sfile): # just read in info
+                        already_calculated = 1
+                    else:
+                        already_calculated = 0
+                    # # This is for distributing the workload to different processors
+                    # if not '2004' in File:
+                    #     continue
+
+                    if not already_calculated:
+                        print 'working on D2 ', sfile
+                        d = netCDF.Dataset(File)
+                        xg = d.variables['xg'][:]; yg = d.variables['yg'][:]
+                        # eliminate entries equal to -1
+                        ind = xg==-1
+                        xg[ind] = np.nan; yg[ind] = np.nan
+                        xp, yp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2ll')
+                        d.close()
+
+                # Count the drifters for the shelf_depth that have a non-nan entry
+                # pdb.set_trace() 
+                if whichtype == 'cross' or 'coast' in whichtype:
+                    # Calculate and accumulate histograms of starting locations of drifters that cross shelf
+                    Hcrosstemp, _, _ = calc_histogram(xp, yp, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
+                    Hcross = np.nansum( np.vstack((Hcross[np.newaxis,:,:], Hcrosstemp[np.newaxis,:,:])), axis=0)
+                elif whichtype == 'D2' or whichtype == 'fsle':
+                    if not already_calculated:
+                        # Calculate the metric in each bin and combine for all files
+                        metric_temp, nnanstemp = calc_metric(xp, yp, Hstart, whichtype)
+                        # Save calculations by bins for each file
+                        # pdb.set_trace()
+                        np.savez(sfile, D2=metric_temp, nnans=nnanstemp) 
+                        print 'saving D2 file ', sfile
+                        # metric_temp is in time, but want to show a single value for each bin in space.
+                        # Take the value at the final time.
+                        # pdb.set_trace()
+                    else:
+                        d = np.load(sfile)
+                        metric_temp = d['D2']; nnanstemp = d['nnans']
+                        # pdb.set_trace()
+                        # filter out boxes with too few available drifters
+                        ind = nnanstemp<30
+                        metric_temp[ind] = np.nan
+
+                    H[i,:] = np.nansum( np.vstack((H[np.newaxis,i,:,:,:],metric_temp[np.newaxis,:,:,:]*nnanstemp[np.newaxis,:,:,:])), axis=0) # need to un-average before combining
+                    # H[i,:] = H[i,:] + metric_temp[:,:,-1]*nnanstemp[:,:,-1] # need to un-average before combining
+                    nnans[i,:] = nnans[i,:] + nnanstemp[:,:,:] # need to un-average before combining
+
+            # Calculate overall histogram
+            if whichtype == 'cross' or 'coast' in whichtype:
+                H[i,:] = (Hcross/HstartUse)*100
+            elif whichtype == 'D2':
+                # xe, ye = grid['basemap'](xe, ye) # change from lon/lat
+                H[i,:] = H[i,:]/nnans[i,:]
+                # np.savez('calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0])) 
+            elif whichtype == 'fsle':
+                H[i,:] = 1./H[i,:]/nnans[i,:]
+
+        # save H
+        if not os.path.exists('figures/' + whichtype): 
+            os.makedirs('figures/' + whichtype)
+        # if not os.path.exists('figures/' + whichtype + '/' + whichtime): 
+        #     os.makedirs('figures/' + whichtype + '/' + whichtime)
+
+        if whichtype == 'cross':
+            np.savez('figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz', H=H, xe=xe, ye=ye)
+        elif 'coast' in whichtype: 
+            np.savez('figures/' + whichtype + '/' + whichtime + 'H.npz', H=H, xe=xe, ye=ye)
+        elif whichtype == 'D2': 
+            np.savez(Hfilename, H=H, xe=xe, ye=ye)
+
+    else: # H has already been calculated
+
+        Hfile = np.load(Hfilename)
+        H = Hfile['H']; xe = Hfile['xe']; ye = Hfile['ye']
+        levels = np.linspace(0, np.nanmax(H), 11)
+
+
+    # Set up overall plot, now that everything is calculated
+    fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
 
     # Loop through calculation files to calculate overall histograms
     # pdb.set_trace()
-    for i, files in enumerate(Files): # Files has multiple entries, 1 for each subplot
-
-        if whichtype == 'cross' or 'coast' in whichtype:
-            Hcross = np.zeros(bins) # initialize
-            #pdb.set_trace()
-            HstartUse = Hstart*len(files) # multiply to account for each simulation
-
-
-        for File in files: # now loop through the files for this subplot
-
-            if whichtype == 'cross': # results are in xg, yg
-            # [number of depths,number of tracks] to store time of crossing or nan if it doesn't cross
-                # Read in info
-                d = np.load(File)
-                xg0 = d['xg0']; yg0 = d['yg0']
-                cross = d['cross']
-                ind = ~np.isnan(cross[ishelf_depth,:])
-                d.close()
-                xp, yp, _ = tracpy.tools.interpolate2d(xg0[ind], yg0[ind], grid, 'm_ij2xy')
-            elif 'coast' in whichtype:  # results are in xp, yp
-                # Read in info
-                d = np.load(File)
-                xp = d['xp0']; yp = d['yp0']
-                conn = d['conn'] 
-                ind = ~np.isnan(conn)
-                xp = xp[ind]; yp = yp[ind]
-                d.close()
-            elif whichtype == 'D2' or whichtype == 'fsle':
-                sfile = 'calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0]) + '.npz'
-                if os.path.exists(sfile): # just read in info
-                    already_calculated = 1
-                else:
-                    already_calculated = 0
-                # # This is for distributing the workload to different processors
-                # if not '2004' in File:
-                #     continue
-
-                if not already_calculated:
-                    print 'working on D2 ', sfile
-                    d = netCDF.Dataset(File)
-                    xg = d.variables['xg'][:]; yg = d.variables['yg'][:]
-                    # eliminate entries equal to -1
-                    ind = xg==-1
-                    xg[ind] = np.nan; yg[ind] = np.nan
-                    xp, yp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2ll')
-                    d.close()
-
-            # Count the drifters for the shelf_depth that have a non-nan entry
-            # pdb.set_trace() 
-            if whichtype == 'cross' or 'coast' in whichtype:
-                # Calculate and accumulate histograms of starting locations of drifters that cross shelf
-                Hcrosstemp, _, _ = calc_histogram(xp, yp, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
-                Hcross = np.nansum( np.vstack((Hcross[np.newaxis,:,:], Hcrosstemp[np.newaxis,:,:])), axis=0)
-            elif whichtype == 'D2' or whichtype == 'fsle':
-                if not already_calculated:
-                    # Calculate the metric in each bin and combine for all files
-                    metric_temp, nnanstemp = calc_metric(xp, yp, Hstart, whichtype)
-                    # Save calculations by bins for each file
-                    # pdb.set_trace()
-                    np.savez(sfile, D2=metric_temp, nnans=nnanstemp) 
-                    print 'saving D2 file ', sfile
-                    # metric_temp is in time, but want to show a single value for each bin in space.
-                    # Take the value at the final time.
-                    # pdb.set_trace()
-                else:
-                    d = np.load(sfile)
-                    metric_temp = d['D2']; nnanstemp = d['nnans']
-                    # pdb.set_trace()
-                    # filter out boxes with too few available drifters
-                    ind = nnanstemp<30
-                    metric_temp[ind] = np.nan
-
-                H[i,:] = np.nansum( np.vstack((H[np.newaxis,i,:,:,:],metric_temp[np.newaxis,:,:,:]*nnanstemp[np.newaxis,:,:,:])), axis=0) # need to un-average before combining
-                # H[i,:] = H[i,:] + metric_temp[:,:,-1]*nnanstemp[:,:,-1] # need to un-average before combining
-                nnans[i,:] = nnans[i,:] + nnanstemp[:,:,:] # need to un-average before combining
-
-        # Calculate overall histogram
-        if whichtype == 'cross' or 'coast' in whichtype:
-            H[i,:] = (Hcross/HstartUse)*100
-        elif whichtype == 'D2':
-            # xe, ye = grid['basemap'](xe, ye) # change from lon/lat
-            H[i,:] = H[i,:]/nnans[i,:]
-            # np.savez('calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0])) 
-        elif whichtype == 'fsle':
-            H[i,:] = 1./H[i,:]/nnans[i,:]
+    for i in xrange(H.shape[0]): # Files has multiple entries, 1 for each subplot
 
         # Do subplot
         # pdb.set_trace()
@@ -507,17 +536,6 @@ def run():
             if year == 2008:
                 plt.quiverkey(q, 0.85, 0.07, 0.1, label=r'0.1 N m$^{2}$', coordinates='axes')
 
-
-    # save H
-    if not os.path.exists('figures/' + whichtype): 
-        os.makedirs('figures/' + whichtype)
-    if not os.path.exists('figures/' + whichtype + '/' + whichtime): 
-        os.makedirs('figures/' + whichtype + '/' + whichtime)
-
-    if whichtype == 'cross':
-        np.savez('figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz', H=H, xe=xe, ye=ye)
-    elif 'coast' in whichtype: 
-        np.savez('figures/' + whichtype + '/' + whichtime + 'H.npz', H=H, xe=xe, ye=ye)
 
 
     # Add colorbar
