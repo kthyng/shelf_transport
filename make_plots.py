@@ -18,6 +18,7 @@ from glob import glob
 import op
 from matplotlib.mlab import find
 from matplotlib import ticker
+from matplotlib import cbook
 # from matplotlib.path import Path
 
 # mpl.rcParams['text.usetex'] = True
@@ -503,13 +504,15 @@ def run():
         #levels = np.linspace(0, np.nanmax(H), 11)
 
     # which time index to plot
-    itind = 100
+    itind = 100 # 100 # a number or 'mean'
     # Choose consistent levels to plot
     locator = ticker.MaxNLocator(11)
     locator.create_dummy_axis()
     # don't use highest max since everything is washed out then
     #pdb.set_trace()
-    locator.set_bounds(0, 3000)
+    # 12000 for mean interannual-summer, 20000 for mean, interannual-winter, 1400 for 100 seasonal
+    # 1800 for 100 interannual-winter, 1800 for 100 interannual-summer
+    locator.set_bounds(0, 1800) 
     #locator.set_bounds(0, 0.75*np.nanmax(np.nanmax(H[:,:,:,itind], axis=1), axis=1).mean())
     levels = locator()
 
@@ -524,7 +527,10 @@ def run():
         # pdb.set_trace()
         # which time index to plot?
         #itind = 100
-        mappable = plot_stuff(xe, ye, H[i,:,:,itind], cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
+        if cbook.is_numlike(itind): # plot a particular time
+            mappable = plot_stuff(xe, ye, H[i,:,:,itind], cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
+        elif itind=='mean': # plot the mean over time
+            mappable = plot_stuff(xe, ye, np.nansum(H[i,:,:,:], axis=-1)/np.sum(~np.isnan(H[i,:,:,:]), axis=-1), cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
         #axarr.flatten()[i].set_title(np.nanmax(H[i,:,:,itind]))
         # Add coastline area if applicable
         if 'coast' in whichtype:
