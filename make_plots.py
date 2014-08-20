@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import tracpy
 import tracpy.plotting
 import tracpy.calcs
-import init
+# import init
 from datetime import datetime, timedelta
 from glob import glob
 import op
