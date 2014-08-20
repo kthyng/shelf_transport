@@ -237,7 +237,7 @@ def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,
 
     # Try with pcolor too
     #pdb.set_trace()
-    mappable = ax.contourf(XE, YE, H, cmap=cmap, levels=levels)
+    mappable = ax.contourf(XE, YE, H, cmap=cmap, levels=levels, extend='max')
     ax.contour(grid['xr'], grid['yr'], grid['h'], [shelf_depth], colors='0.1', linewidth=3)
 
     return mappable
@@ -251,6 +251,7 @@ def plot_colorbar(fig, mappable, whichtype):
     # Make colorbar
     # Horizontal colorbar below plot
     cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
+    #pdb.set_trace()
     cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
 
     if whichtype == 'cross':
@@ -261,7 +262,7 @@ def plot_colorbar(fig, mappable, whichtype):
         cb.set_label('Mean squared separation distance [km$^2\!$]', fontsize=13.5)
 
 
-def plot_finish(fig, whichtype, whichtime, shelf_depth):
+def plot_finish(fig, whichtype, whichtime, shelf_depth, itind):
     '''
     Save and close figure
     '''
@@ -271,7 +272,7 @@ def plot_finish(fig, whichtype, whichtime, shelf_depth):
     elif 'coast' in whichtype: 
         fname = 'figures/' + whichtype + '/' + whichtime + '.png'
     elif whichtype == 'D2':
-        fname = 'figures/' + whichtype + '/' + whichtime + '.png'
+        fname = 'figures/' + whichtype + '/' + whichtime + str(itind) + '.png'
 
     fig.savefig(fname)#, dpi=300)
     plt.close(fig)
@@ -307,15 +308,15 @@ def plot_diff():
 def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
-    whichtime = 'interannual-winter'#'interannual-winter'
+    whichtime = 'interannual-summer'#'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'D2'
 
-    levels = np.linspace(0,1,11)
+    #levels = np.linspace(0,1,11)
 
-    shelf_depth = 100 #-20 # do 100 50 and 20 
-    ishelf_depth = 2 #0 # 2 1 0 index in cross array
+    shelf_depth = -20 # do 100 50 and 20 
+    ishelf_depth = 0 # 2 1 0 index in cross array
 
     # Whether to overlay previously-calculated wind stress arrows
     # from projects/txla_plots/plot_mean_wind.py on Rainier
@@ -507,7 +508,9 @@ def run():
     locator = ticker.MaxNLocator(11)
     locator.create_dummy_axis()
     # don't use highest max since everything is washed out then
-    locator.set_bounds(0, 0.75*np.nanmax(H[:,:,:,itind]))
+    #pdb.set_trace()
+    locator.set_bounds(0, 3000)
+    #locator.set_bounds(0, 0.75*np.nanmax(np.nanmax(H[:,:,:,itind], axis=1), axis=1).mean())
     levels = locator()
 
     # Set up overall plot, now that everything is calculated
@@ -554,7 +557,7 @@ def run():
     # pdb.set_trace()
 
     # save and close
-    plot_finish(fig, whichtype, whichtime, shelf_depth)
+    plot_finish(fig, whichtype, whichtime, shelf_depth, itind)
 
 
 if __name__ == "__main__":
