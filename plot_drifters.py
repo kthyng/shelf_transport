@@ -28,9 +28,13 @@ loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
 # loc = '/home/kthyng/shelf/grid.nc'
 grid = tracpy.inout.readgrid(loc, usebasemap=True)
 
+# whether to do tails on drifters or not (don't with low decimation)
+dotails = False # True or False
+
 # Read in drifter tracks
-dd = 500 # drifter decimation
-d = netCDF.Dataset('tracks/2008-07-15T00gc.nc')
+dd = 1 # 500 # drifter decimation
+startdate = '2004-07-15T00'
+d = netCDF.Dataset('tracks/' + startdate + 'gc.nc')
 xg = d.variables['xg'][::dd,:]
 yg = d.variables['yg'][::dd,:]
 ind = (xg == -1)
@@ -47,14 +51,25 @@ dates = netCDF.num2date(tp, d.variables['tp'].units)
 # Find indices relative to present time
 i5daysago = 0 # keeps track of index 5 days ago
 i2daysago = find(days>=3)[0] # index for 2 days ago, which starts as 3 days in
-i5days = find(days>=5)[0] # index for 5 days in
+if dotails:
+    i5days = find(days>=5)[0] # index for 5 days in
+else:
+    i5days = 0 # start at the beginning
 nt = tp.size # total number of time indices
 # for i in np.arange(0,nt+1,5):
+
+dirname = 'figures/drifters/dd' + str(dd) + '/' + startdate
+if not os.path.exists(dirname):
+    os.makedirs(dirname)
+
 for i in np.arange(i5days,nt+1,5):
 
-    fname = 'figures/drifters/' + dates[i].isoformat()[:-6] + '.png'
+    fname = dirname + '/' + dates[i].isoformat()[:-6] + '.png'
 
     if os.path.exists(fname):
+        # Update indices
+        i5daysago += 5
+        i2daysago += 5
         continue
 
     # Plot background
@@ -62,25 +77,35 @@ for i in np.arange(i5days,nt+1,5):
     ax = fig.add_subplot(111)
     tracpy.plotting.background(grid=grid, ax=ax)
 
-    # Plot 5 days ago to 2 days ago
-    ax.plot(xp[:,i5daysago:i2daysago].T, yp[:,i5daysago:i2daysago].T, color='0.6', lw=2)
+    if dotails:
+        # Plot 5 days ago to 2 days ago
+        ax.plot(xp[:,i5daysago:i2daysago].T, yp[:,i5daysago:i2daysago].T, color='0.6', lw=2)
 
-    # Plot 0-2 day tail
-    ax.plot(xp[:,i2daysago:i].T, yp[:,i2daysago:i].T, color='0.3', lw=3)
+        # Plot 0-2 day tail
+        ax.plot(xp[:,i2daysago:i].T, yp[:,i2daysago:i].T, color='0.3', lw=3)
 
-    # Plot drifter locations
-    ax.plot(xp[:,i].T, yp[:,i].T, 'o', color='r', ms=10)
+        # Plot drifter locations
+        ax.plot(xp[:,i].T, yp[:,i].T, 'o', color='r', ms=10)
+
+    else:
+
+        # Plot drifter locations
+        ax.plot(xp[:,i].T, yp[:,i].T, 'o', color='g', ms=2, mec='None')
 
     # Time
     ax.text(0.075, 0.95, dates[i].isoformat()[:-6], transform=ax.transAxes, fontsize=20)
 
     # Drifter legend
-    ax.plot(0.0895, 0.9, 'or', ms=10, transform=ax.transAxes) # drifter head
-    ax.plot([0.075, 0.1], [0.875, 0.875], '0.3', lw=3, transform=ax.transAxes) # drifter tail #1
-    ax.plot([0.075, 0.1], [0.85, 0.85], '0.5', lw=2, transform=ax.transAxes) # drifter tail #2
-    ax.text(0.125, 0.89, 'Drifter location', color='r', transform=ax.transAxes, fontsize=16)
-    ax.text(0.125, 0.866, '2 days prior', color='0.3', transform=ax.transAxes, fontsize=16)
-    ax.text(0.125, 0.842, '5 days prior', color='0.5', transform=ax.transAxes, fontsize=16)
+    if dotails:
+        ax.plot(0.0895, 0.9, 'or', ms=10, transform=ax.transAxes) # drifter head
+        ax.plot([0.075, 0.1], [0.875, 0.875], '0.3', lw=3, transform=ax.transAxes) # drifter tail #1
+        ax.plot([0.075, 0.1], [0.85, 0.85], '0.5', lw=2, transform=ax.transAxes) # drifter tail #2
+        ax.text(0.125, 0.89, 'Drifter location', color='r', transform=ax.transAxes, fontsize=16)
+        ax.text(0.125, 0.866, '2 days prior', color='0.3', transform=ax.transAxes, fontsize=16)
+        ax.text(0.125, 0.842, '5 days prior', color='0.5', transform=ax.transAxes, fontsize=16)
+    else:
+        ax.plot(0.0895, 0.9, 'o', color='g', ms=10, transform=ax.transAxes) # drifter head
+        ax.text(0.125, 0.89, 'Drifter location', color='g', transform=ax.transAxes, fontsize=16)
 
     # Update indices
     i5daysago += 5
