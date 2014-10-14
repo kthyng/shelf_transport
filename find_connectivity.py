@@ -35,8 +35,8 @@ def load_tracks(File):
     tseas = d.variables['tseas'][:]
     N = d.variables['N'][:]
     iday = int((3600.*24)/(tseas/N)) 
-    days = np.linspace(0, 30, xg.shape[1]) #tseas/N/(3600.*24))
-    pdb.set_trace()
+    days = np.linspace(0, 30, xg.shape[1]) #tseas/N/(3600.*24)) # forward or backward, but doesn't matter here I guess
+    # pdb.set_trace()
     d.close()
 
     return xg, yg, iday, days
@@ -48,12 +48,13 @@ def run():
 
     # Find files to run through
     # Files = glob.glob('/Volumes/Emmons/projects/gisr/tracks/all_f/*gc.npz')[0:2]
-    Files = glob.glob('tracks/back/2004*gc.nc')
+    Files = glob.glob('tracks/back/2010*gc.nc')
 
     shelf_depths = [20, 50, 100, 200, 300, 400, 500]
 
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
-    grid = tracpy.inout.readgrid(loc)
+    # need to use basemap not pyproj bc path points were saved using basemap
+    grid = tracpy.inout.readgrid(loc, usebasemap=True)
 
     # Loop through files for analysis
     for File in Files:
@@ -111,11 +112,11 @@ def run():
 
         elif which=='coast':
 
-            MXfile = 'calcs/coastconn/back/MX/' + File.split('/')[-1][:-4] + '.npz'
-            STXfile = 'calcs/coastconn/back/STX/' + File.split('/')[-1][:-4] + '.npz'
-            NTXfile = 'calcs/coastconn/back/NTX/' + File.split('/')[-1][:-4] + '.npz'
-            CHfile = 'calcs/coastconn/back/CH/' + File.split('/')[-1][:-4] + '.npz'
-            LAfile = 'calcs/coastconn/back/LA/' + File.split('/')[-1][:-4] + '.npz'
+            MXfile = 'calcs/coastconn/back/MX/' + File.split('/')[-1][:-3] + '.npz'
+            STXfile = 'calcs/coastconn/back/STX/' + File.split('/')[-1][:-3] + '.npz'
+            NTXfile = 'calcs/coastconn/back/NTX/' + File.split('/')[-1][:-3] + '.npz'
+            CHfile = 'calcs/coastconn/back/CH/' + File.split('/')[-1][:-3] + '.npz'
+            LAfile = 'calcs/coastconn/back/LA/' + File.split('/')[-1][:-3] + '.npz'
             #pdb.set_trace()
             if os.path.exists(LAfile): # don't repeat calc if last file was created
                 continue
@@ -160,7 +161,8 @@ def run():
             # dconn.close()
 
             # Change to projected drifter locations now
-            nanind = np.isnan(xg) #+ xg==-1 # indices where nans are location in xg, yg; for reinstitution of nans
+            nanind = np.isnan(xg) + (xg==-1) # indices where nans are location in xg, yg; for reinstitution of nans
+            # pdb.set_trace()
             xp, yp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2xy') 
             xp[nanind] = np.nan; yp[nanind] = np.nan
             del(xg,yg) # don't need grid info anymore
@@ -176,7 +178,7 @@ def run():
 
             # which points are inside the region
             # Mexico
-            #pdb.set_trace()
+            # pdb.set_trace()
             inside = MXpath.contains_points(np.vstack((xp.flat, yp.flat)).T).reshape(xp.shape)
             iinside = inside.sum(axis=1).astype(bool) # true if goes inside
             whencross = np.diff(inside, axis=1) # will pick out when the drifters change from outside to inside region or vice versa
