@@ -18,8 +18,8 @@ from datetime import datetime, timedelta
 import glob
 from matplotlib.mlab import find, Path
 
-# 'cross' or 'coast'
-which = 'coast'
+# 'cross' or 'coast' or 'galveston'
+which = 'galveston'
 
 def load_tracks(File):
     '''
@@ -48,7 +48,8 @@ def run():
 
     # Find files to run through
     # Files = glob.glob('/Volumes/Emmons/projects/gisr/tracks/all_f/*gc.npz')[0:2]
-    Files = glob.glob('tracks/back/2010*gc.nc')
+    # Files = glob.glob('tracks/back/2010-*gc.nc')
+    Files = glob.glob('tracks/back/2010-0[4-9]-*gc.nc')
 
     shelf_depths = [20, 50, 100, 200, 300, 400, 500]
 
@@ -156,10 +157,7 @@ def run():
             xp = np.asarray(dconn['LA'])[:,0]; yp = np.asarray(dconn['LA'])[:,1]
             LApath = Path(np.vstack((xp, yp)).T)
             dconn.close()
-            # dconn = np.load('calcs/LAinside.npz')
-            # LA = dconn['inside'] # indices for flattened rho array
-            # dconn.close()
-
+ 
             # Change to projected drifter locations now
             nanind = np.isnan(xg) + (xg==-1) # indices where nans are location in xg, yg; for reinstitution of nans
             # pdb.set_trace()
@@ -219,6 +217,43 @@ def run():
             np.savez(NTXfile, xp0=xp[:,0], yp0=yp[:,0], conn=NTX)
             np.savez(CHfile, xp0=xp[:,0], yp0=yp[:,0], conn=CH)
             np.savez(LAfile, xp0=xp[:,0], yp0=yp[:,0], conn=LA)
+
+        elif which=='galveston':
+
+            gfile = 'calcs/coastconn/back/galveston/' + File.split('/')[-1][:-3] + '.npz'
+
+            if os.path.exists(gfile): # don't repeat calc if last file was created
+                continue
+
+            xg, yg, iday, days = load_tracks(File)
+ 
+            # Load in coastline region info
+            dconn = np.load('calcs/galvestonpts.npz')
+            lon = dconn['lon']; lat = dconn['lat']
+            xp, yp = grid['basemap'](lon,lat)
+            gpath = Path(np.vstack((xp, yp)).T)
+            dconn.close()
+ 
+            # Change to projected drifter locations now
+            nanind = np.isnan(xg) + (xg==-1) # indices where nans are location in xg, yg; for reinstitution of nans
+            # pdb.set_trace()
+            xp, yp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2xy') 
+            xp[nanind] = np.nan; yp[nanind] = np.nan
+            del(xg,yg) # don't need grid info anymore
+
+            # Initial array of information
+            ntrac = xp.shape[0]            
+            g = np.ones(ntrac)*np.nan # to store analysis. 
+
+            # which points are inside the region
+            inside = gpath.contains_points(np.vstack((xp.flat, yp.flat)).T).reshape(xp.shape)
+            iinside = inside.sum(axis=1).astype(bool) # true if goes inside
+            whencross = np.diff(inside, axis=1) # will pick out when the drifters change from outside to inside region or vice versa
+            iwhen = (days[1:]*whencross).argmax(axis=1) 
+            g[iinside] = days[iwhen[iinside]]
+
+            # save array
+            np.savez(gfile, xp0=xp[:,0], yp0=yp[:,0], conn=g)
 
 
 if __name__ == "__main__":
