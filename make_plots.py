@@ -229,7 +229,7 @@ def plot_setup(whichtime, grid):
 
     return fig, axarr
 
-def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,11)):
+def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,11), extend='max'):
     '''
     Do the main plotting stuff.
     '''
@@ -238,13 +238,13 @@ def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,
 
     # Try with pcolor too
     #pdb.set_trace()
-    mappable = ax.contourf(XE, YE, H, cmap=cmap, levels=levels, extend='max')
+    mappable = ax.contourf(XE, YE, H, cmap=cmap, levels=levels, extend=extend)
     ax.contour(grid['xr'], grid['yr'], grid['h'], [shelf_depth], colors='0.1', linewidth=3)
 
     return mappable
 
 
-def plot_colorbar(fig, mappable, whichtype):
+def plot_colorbar(fig, mappable, whichtype, ticks=None):
     '''
     Add colorbar to figure.
     '''
@@ -252,7 +252,6 @@ def plot_colorbar(fig, mappable, whichtype):
     # Make colorbar
     # Horizontal colorbar below plot
     cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
-    #pdb.set_trace()
     cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
 
     if whichtype == 'cross':
@@ -261,6 +260,11 @@ def plot_colorbar(fig, mappable, whichtype):
         cb.set_label('Probability of drifters reaching coastline region (%)')
     elif whichtype == 'D2':
         cb.set_label('Mean squared separation distance [km$^2\!$]', fontsize=13.5)
+    elif whichtype == 'diff':
+        cb.set_label('Probability difference [%]')
+
+    if not ticks==None:
+        cb.set_ticks(ticks)
 
 
 def plot_finish(fig, whichtype, whichtime, shelf_depth, itind):
@@ -278,32 +282,86 @@ def plot_finish(fig, whichtype, whichtime, shelf_depth, itind):
     fig.savefig(fname)#, dpi=300)
     plt.close(fig)
 
+
 def plot_diff():
     '''
-    Plot difference in transport between two histograms. Plot separately for convenience.
+    Plot difference in transport between two histograms. Plot separately for convenience,
+    since this uses information previously calculated by other functions.
+    import make_plots
+    make_plots.plot_diff()
     '''
 
-    shelf_depth = 20
+    # Which timing of plot: 'interannual', 'seasonal'
+    whichtime = 'interannual'
+    # Which type of plot: 'cross'
+    whichtype = 'cross'
+
+    shelf_depth = 50
 
     # Grid info
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     grid = tracpy.inout.readgrid(loc, usebasemap=True)
     cmap = 'RdBu'
 
-    d = np.load('figures/cross/seasonal20H.npz')
-    Hboth = d['H']; xe=d['xe']; ye=d['ye']
-    d.close()
+    if whichtime == 'seasonal':
+        d = np.load('figures/cross/seasonal' + str(shelf_depth) + 'H.npz')
+        Hboth = d['H']; xe=d['xe']; ye=d['ye']
+        H = Hboth[0,:] - Hboth[1,:]
+        d.close()
+    elif whichtime == 'interannual':
+        dw = np.load('figures/cross/interannual-winter' + str(shelf_depth) + 'H.npz')
+        Hw = dw['H']; xe=dw['xe']; ye=dw['ye']
+        dw.close()
+        ds = np.load('figures/cross/interannual-summer' + str(shelf_depth) + 'H.npz')
+        Hs = ds['H']; xe=ds['xe']; ye=ds['ye']
+        ds.close()
+        H = Hw - Hs
 
-    H = Hboth[0,:] - Hboth[1,:]
+    if (shelf_depth==100) and (whichtime == 'seasonal'):
+        H *= 100 
 
-    fig = plt.figure(figsize=(6.8375, 6.6125))
-    ax = fig.add_subplot(111)
-    tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
-    mappable = plot_stuff(xe, ye, H*100, cmap, grid, shelf_depth, ax)
-    fig.colorbar(mappable)
 
-    pdb.set_trace()
+    if whichtime == 'seasonal':
+        if shelf_depth == 20:
+            levels = np.arange(-65,75,10)
+            ticks = [-65,-45,-25,0,25,45,65]
+        elif shelf_depth == 50:
+            levels = np.arange(-55,65,10)
+            ticks = [-55,-35,-15,0,15,35,55]
+        elif shelf_depth == 100:
+            levels = np.arange(-39,45,6)
+            ticks = [-39,-27,-15,0,15,27,39]
+        fig = plt.figure(figsize=(6.8375, 6.6125))
+        fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.07, hspace=0.04)
+        ax = fig.add_subplot(111)
+        tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
+        ax.set_title('Winter-Summer Transport')
+        mappable = plot_stuff(xe, ye, H.T, cmap, grid, shelf_depth, ax, levels=levels, extend='neither')
 
+        plot_colorbar(fig, mappable, 'diff', ticks=ticks)
+
+
+    elif whichtime == 'interannual':
+
+        fig, axarr = plot_setup('interannual', grid)
+
+        if shelf_depth == 20:
+            levels = np.arange(-95,105,10)
+            ticks = [-85,-65,-45,-25,0,25,45,65,85]
+        elif shelf_depth == 50:
+            levels = np.arange(-95,105,10)
+            ticks = [-85,-65,-45,-25,0,25,45,65,85]
+        elif shelf_depth == 100:
+            levels = np.arange(-85,95,10)
+            ticks = [-85,-65,-45,-25,0,25,45,65,85]
+
+        for i in xrange(H.shape[0]): # 1 for each subplot
+            mappable = plot_stuff(xe, ye, H[i,:,:].T, cmap, grid, shelf_depth, axarr.flatten()[i], 
+                                    levels=levels, extend='neither')
+            
+        plot_colorbar(fig, mappable, 'diff', ticks=ticks)
+            
+    fig.savefig('figures/cross/' + whichtime + 'diff' + str(shelf_depth) + '.png')#, dpi=300)
 
 
 def run():
