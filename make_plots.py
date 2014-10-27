@@ -34,7 +34,7 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-def init(whichtime, whichtype):
+def init(whichtime, whichtype, whichdir):
     '''
     Initialize necessary information for which type of plot/analysis we 
     are doing. 
@@ -54,19 +54,19 @@ def init(whichtime, whichtype):
         base = 'calcs/shelfconn/'
     elif whichtype == 'coastCH':
         cmap = 'YlGn'
-        base = 'calcs/coastconn/CH/'
+        base = 'calcs/coastconn/' + whichdir + '/CH/'
     elif whichtype == 'coastMX':
         cmap = 'YlGn'
-        base = 'calcs/coastconn/MX/'
+        base = 'calcs/coastconn/' + whichdir + '/MX/'
     elif whichtype == 'coastSTX':
         cmap = 'YlGn'
-        base = 'calcs/coastconn/STX/'
+        base = 'calcs/coastconn/' + whichdir + '/STX/'
     elif whichtype == 'coastNTX':
         cmap = 'YlGn'
-        base = 'calcs/coastconn/NTX/'
+        base = 'calcs/coastconn/' + whichdir + '/NTX/'
     elif whichtype == 'coastLA':
         cmap = 'YlGn'
-        base = 'calcs/coastconn/LA/'
+        base = 'calcs/coastconn/' + whichdir + '/LA/'
     elif whichtype == 'D2':
         cmap = 'BuPu'
         base = 'tracks/'
@@ -125,8 +125,9 @@ def calc_histogram(xp, yp, whichtype, bins=(60,60),
     if whichtype == 'cross' or 'coast' in whichtype:
         # Then we are finding the number of drifters starting in each
         # bin for division into a probability
+        # pdb.set_trace()
         if Xrange!=None and Yrange!=None:
-            H, xe, ye = np.histogram2d(xp, yp, bins=bins, 
+            H, xe, ye = np.histogram2d(xp.flatten(), yp.flatten(), bins=bins, 
                                 range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
         else:
             H, xe, ye = np.histogram2d(xp, yp, bins=bins)
@@ -367,10 +368,12 @@ def plot_diff():
 def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
-    whichtime = 'interannual-summer'#'interannual-winter'
+    whichtime = 'seasonal' #'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
-    whichtype = 'D2'
+    whichtype = 'coastSTX'
+    # 'forward' or 'back' in time
+    whichdir = 'back'
 
     #levels = np.linspace(0,1,11)
 
@@ -385,7 +388,7 @@ def run():
     bins = (100,100) #(30,30)
 
     # Load in Files to read from based on which type of plot is being run
-    Files, cmap = init(whichtime, whichtype)
+    Files, cmap = init(whichtime, whichtype, whichdir)
 
     # Grid info
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
@@ -396,7 +399,7 @@ def run():
     # Read in connectivity info (previously calculated). 
     # Drifters always start in the same place.
     # pdb.set_trace()
-    if whichtype == 'cross' or 'coast' in whichtype:
+    if (whichtype == 'cross') or ('coast' in whichtype and whichdir == 'forward'):
         d = np.load(Files[0][0])
 
         # Calculate xrange and yrange for histograms
@@ -410,6 +413,12 @@ def run():
             xp0 = d['xp0']; yp0 = d['yp0']
 
         d.close()
+
+    elif ('coast' in whichtype and whichdir == 'back'):
+
+        # Calculate xrange and yrange for histograms
+        Xrange = [grid['xpsi'].min(), grid['xpsi'].max()]
+        Yrange = [grid['ypsi'].min(), grid['ypsi'].max()]
 
     elif whichtype == 'D2': # results are in xg, yg
 
@@ -429,30 +438,42 @@ def run():
 
             d.close()
 
-    if os.path.exists(Hstartfile): # just read in info
+    if 'Hstartfile' in locals() and os.path.exists(Hstartfile): # just read in info
         Hstartf = np.load(Hstartfile)
         xe = Hstartf['xe']; ye = Hstartf['ye']
         Hstart = Hstartf['Hstart']
+    # elif 'coast' in whichtype and whichdir == 'back':
+    #     continue
     else:
-        # For D2 and fsle, Hstart contains indices of drifters seeded in bins
-        Hstart, xe, ye = calc_histogram(xp0, yp0, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
+        if whichdir == 'back': # aren't dividing at the end by the starting number
+            Hstart = np.ones(bins)
+        else:
+            # For D2 and fsle, Hstart contains indices of drifters seeded in bins
+            Hstart, xe, ye = calc_histogram(xp0, yp0, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
 
-        if whichtype == 'D2':
-            xe, ye = grid['basemap'](xe, ye) # change from lon/lat
-            np.savez(Hstartfile, Hstart=Hstart, xe=xe, ye=ye) 
+            if whichtype == 'D2':
+                xe, ye = grid['basemap'](xe, ye) # change from lon/lat
+                np.savez(Hstartfile, Hstart=Hstart, xe=xe, ye=ye) 
 
 
     # pdb.set_trace()
 
     if whichtype == 'D2':
         Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
+    elif 'coast' in whichtype:
+        Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
+    elif whichtype == 'cross':
+        Hfilename = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz'
 
     if not os.path.exists(Hfilename): 
 
         # For D2 and fsle, H contains the metric calculation averaged over that bin
-        # if whichtype == 'D2' or whichtype == 'fsle':
-        H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
-        nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
+        if whichtype == 'D2' or whichtype == 'fsle':
+            H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
+            nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
+        elif 'coast' in whichtype:
+            H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
+            nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
 
         # Loop through calculation files to calculate overall histograms
         # pdb.set_trace()
@@ -465,6 +486,7 @@ def run():
 
 
             for File in files: # now loop through the files for this subplot
+                print File
 
                 if whichtype == 'cross': # results are in xg, yg
                 # [number of depths,number of tracks] to store time of crossing or nan if it doesn't cross
@@ -475,13 +497,23 @@ def run():
                     ind = ~np.isnan(cross[ishelf_depth,:])
                     d.close()
                     xp, yp, _ = tracpy.tools.interpolate2d(xg0[ind], yg0[ind], grid, 'm_ij2xy')
-                elif 'coast' in whichtype:  # results are in xp, yp
+                elif ('coast' in whichtype) and (whichdir=='forward'):  # results are in xp, yp
                     # Read in info
                     d = np.load(File)
                     xp = d['xp0']; yp = d['yp0']
                     conn = d['conn'] 
                     ind = ~np.isnan(conn)
-                    xp = xp[ind]; yp = yp[ind]
+                    xp = xp[ind]; yp = yp[ind] # pick out the drifters that reach the coastline
+                    d.close()
+                elif ('coast' in whichtype) and (whichdir=='back'):  # results are in xp, yp
+                    # Read in info
+                    d = np.load(File)
+                    # backward tracks in time of drifters starting in the specified coastal area
+                    xp = d['xp0']; yp = d['yp0']
+                    conn = d['conn'] # indices of the drifters that started in the zone
+                    # can't send nan's to histogram calculation
+                    ind = ~np.isnan(xp)
+                    xp = xp[ind]; yp = yp[ind] # pick out the drifters that reach the coastline
                     d.close()
                 elif whichtype == 'D2' or whichtype == 'fsle':
                     sfile = 'calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0]) + '.npz'
@@ -545,15 +577,8 @@ def run():
         # save H
         if not os.path.exists('figures/' + whichtype): 
             os.makedirs('figures/' + whichtype)
-        # if not os.path.exists('figures/' + whichtype + '/' + whichtime): 
-        #     os.makedirs('figures/' + whichtype + '/' + whichtime)
 
-        if whichtype == 'cross':
-            np.savez('figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz', H=H, xe=xe, ye=ye)
-        elif 'coast' in whichtype: 
-            np.savez('figures/' + whichtype + '/' + whichtime + 'H.npz', H=H, xe=xe, ye=ye)
-        elif whichtype == 'D2': 
-            np.savez(Hfilename, H=H, xe=xe, ye=ye)
+        np.savez(Hfilename, H=H, xe=xe, ye=ye)
 
     else: # H has already been calculated
 
@@ -562,7 +587,11 @@ def run():
         #levels = np.linspace(0, np.nanmax(H), 11)
 
     # which time index to plot
-    itind = 100 # 100 # a number or 'mean'
+    # a number or 'mean' or 'none' (for coast and cross)
+    if whichtype == 'D2':
+        itind = 100 # 100 
+    elif (whichtype == 'cross') or ('coast' in whichtype):
+        itind = 'none'
     # Choose consistent levels to plot
     locator = ticker.MaxNLocator(11)
     locator.create_dummy_axis()
@@ -570,9 +599,10 @@ def run():
     #pdb.set_trace()
     # 12000 for mean interannual-summer, 20000 for mean, interannual-winter, 1400 for 100 seasonal
     # 1800 for 100 interannual-winter, 1800 for 100 interannual-summer
-    locator.set_bounds(0, 1800) 
-    #locator.set_bounds(0, 0.75*np.nanmax(np.nanmax(H[:,:,:,itind], axis=1), axis=1).mean())
-    levels = locator()
+    if whichtype == 'D2':
+        locator.set_bounds(0, 1800) 
+        #locator.set_bounds(0, 0.75*np.nanmax(np.nanmax(H[:,:,:,itind], axis=1), axis=1).mean())
+        levels = locator()
 
     # Set up overall plot, now that everything is calculated
     fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
@@ -589,6 +619,8 @@ def run():
             mappable = plot_stuff(xe, ye, H[i,:,:,itind], cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
         elif itind=='mean': # plot the mean over time
             mappable = plot_stuff(xe, ye, np.nansum(H[i,:,:,:], axis=-1)/np.sum(~np.isnan(H[i,:,:,:]), axis=-1), cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
+        elif itind=='none': # just plot what is there
+            mappable = plot_stuff(xe, ye, H[i,:,:].T, cmap, grid, shelf_depth, axarr.flatten()[i], extend='neither')
         #axarr.flatten()[i].set_title(np.nanmax(H[i,:,:,itind]))
         # Add coastline area if applicable
         if 'coast' in whichtype:
