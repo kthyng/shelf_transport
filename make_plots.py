@@ -292,12 +292,12 @@ def plot_diff():
     make_plots.plot_diff()
     '''
 
-    # Which timing of plot: 'interannual', 'seasonal'
-    whichtime = 'interannual'
-    # Which type of plot: 'cross'
-    whichtype = 'cross'
+    # Which timing of plot: 'interannual', 'seasonal'; 'interannual-summer', 'interannual-winter'
+    whichtime = 'interannual-summer'
+    # Which type of plot: 'cross'; 'mean' (difference from interannual mean)
+    whichtype = 'mean'
 
-    shelf_depth = 50
+    shelf_depth = 20
 
     # Grid info
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
@@ -340,6 +340,8 @@ def plot_diff():
         mappable = plot_stuff(xe, ye, H.T, cmap, grid, shelf_depth, ax, levels=levels, extend='neither')
 
         plot_colorbar(fig, mappable, 'diff', ticks=ticks)
+        fig.text(0.125, 0.075, 'Summer', color='#cc0027')
+        fig.text(0.760, 0.075, 'Winter', color='#1b72b7')
 
 
     elif whichtime == 'interannual':
@@ -361,6 +363,8 @@ def plot_diff():
                                     levels=levels, extend='neither')
             
         plot_colorbar(fig, mappable, 'diff', ticks=ticks)
+        fig.text(0.18, 0.075, 'Summer', color='#cc0027')
+        fig.text(0.760, 0.075, 'Winter', color='#1b72b7')
             
     fig.savefig('figures/cross/' + whichtime + 'diff' + str(shelf_depth) + '.png')#, dpi=300)
 
