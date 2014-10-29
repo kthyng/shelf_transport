@@ -293,16 +293,20 @@ def plot_diff():
     '''
 
     # Which timing of plot: 'interannual', 'seasonal'; 'interannual-summer', 'interannual-winter'
-    whichtime = 'interannual-summer'
+    whichtime = 'interannual-winter'
     # Which type of plot: 'cross'; 'mean' (difference from interannual mean)
     whichtype = 'mean'
 
-    shelf_depth = 20
+    shelf_depth = 50
 
     # Grid info
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     grid = tracpy.inout.readgrid(loc, usebasemap=True)
-    cmap = 'RdBu'
+
+    if whichtype == 'cross':
+        cmap = 'RdBu'
+    elif whichtype == 'mean':
+        cmap = 'PRGn'
 
     if whichtime == 'seasonal':
         d = np.load('figures/cross/seasonal' + str(shelf_depth) + 'H.npz')
@@ -317,6 +321,18 @@ def plot_diff():
         Hs = ds['H']; xe=ds['xe']; ye=ds['ye']
         ds.close()
         H = Hw - Hs
+    elif whichtime == 'interannual-summer':
+        ds = np.load('figures/cross/interannual-summer' + str(shelf_depth) + 'H.npz')
+        Hs = ds['H']; xe=ds['xe']; ye=ds['ye']
+        ds.close()
+        # pdb.set_trace()
+        H = Hs - Hs.mean(axis=0)
+    elif whichtime == 'interannual-winter':
+        ds = np.load('figures/cross/interannual-winter' + str(shelf_depth) + 'H.npz')
+        Hs = ds['H']; xe=ds['xe']; ye=ds['ye']
+        ds.close()
+        # pdb.set_trace()
+        H = Hs - Hs.mean(axis=0)
 
     if (shelf_depth==100) and (whichtime == 'seasonal'):
         H *= 100 
@@ -344,29 +360,59 @@ def plot_diff():
         fig.text(0.760, 0.075, 'Winter', color='#1b72b7')
 
 
-    elif whichtime == 'interannual':
+    elif 'interannual' in whichtime:
 
         fig, axarr = plot_setup('interannual', grid)
 
-        if shelf_depth == 20:
-            levels = np.arange(-95,105,10)
-            ticks = [-85,-65,-45,-25,0,25,45,65,85]
-        elif shelf_depth == 50:
-            levels = np.arange(-95,105,10)
-            ticks = [-85,-65,-45,-25,0,25,45,65,85]
-        elif shelf_depth == 100:
-            levels = np.arange(-85,95,10)
-            ticks = [-85,-65,-45,-25,0,25,45,65,85]
+        if whichtype == 'mean':
+            if 'summer' in whichtime:
+                if shelf_depth == 20:
+                    levels = np.arange(-45,48,6)
+                    ticks = [-45,-33,-21,-9,0,9,21,33,45]
+                elif shelf_depth == 50:
+                    levels = np.arange(-52,60,8)
+                    ticks = [-44,-28,-12,0,12,28,44]
+                elif shelf_depth == 100:
+                    levels = np.arange(-60,68,8)
+                    ticks = [-60,-44,-28,-12,0,12,28,44,60]
+            elif 'winter' in whichtime:
+                if shelf_depth == 20:
+                    levels = np.arange(-52,60,8)
+                    ticks = [-44,-28,-12,0,12,28,44]
+                elif shelf_depth == 50:
+                    levels = np.arange(-68,76,8)
+                    ticks = [-60,-44,-28,-12,0,12,28,44,60]
+                elif shelf_depth == 100:
+                    levels = np.arange(-60,68,8)
+                    ticks = [-60,-44,-28,-12,0,12,28,44,60]
+
+        elif whichtype == 'cross':
+            if shelf_depth == 20:
+                levels = np.arange(-95,105,10)
+                ticks = [-85,-65,-45,-25,0,25,45,65,85]
+            elif shelf_depth == 50:
+                levels = np.arange(-95,105,10)
+                ticks = [-85,-65,-45,-25,0,25,45,65,85]
+            elif shelf_depth == 100:
+                levels = np.arange(-85,95,10)
+                ticks = [-85,-65,-45,-25,0,25,45,65,85]
 
         for i in xrange(H.shape[0]): # 1 for each subplot
             mappable = plot_stuff(xe, ye, H[i,:,:].T, cmap, grid, shelf_depth, axarr.flatten()[i], 
                                     levels=levels, extend='neither')
             
         plot_colorbar(fig, mappable, 'diff', ticks=ticks)
-        fig.text(0.18, 0.075, 'Summer', color='#cc0027')
-        fig.text(0.760, 0.075, 'Winter', color='#1b72b7')
+
+        # Labels for colorbar ends
+        if ('summer' in whichtime) or ('winter' in whichtime):
+            fig.text(0.125, 0.075, 'Less than mean', color='#750077')
+            fig.text(0.760, 0.075, 'More than mean', color='#007432')
+        else:
+            fig.text(0.18, 0.075, 'Summer', color='#cc0027')
+            fig.text(0.760, 0.075, 'Winter', color='#1b72b7')
             
     fig.savefig('figures/cross/' + whichtime + 'diff' + str(shelf_depth) + '.png')#, dpi=300)
+    plt.close()
 
 
 def run():
