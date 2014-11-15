@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tracpy
 import op
+import matplotlib as mpl
 
 mpl.rcParams.update({'font.size': 14})
 mpl.rcParams['font.sans-serif'] = 'Arev Sans, Bitstream Vera Sans, Lucida Grande, Verdana, Geneva, Lucid, Helvetica, Avant Garde, sans-serif'
@@ -78,4 +79,4 @@ elif whichtime == 'interannual':
     plt.plot(Hwind_rel, dirs - 180, 'ko', ms=10)
     plt.xlabel('Transport relative to mean [%]')
     plt.ylabel('Mean winter wind direction [deg, relative to 180]')
-    plt.savefig('figures/cross/interannual-winter-transport-vs-wind.png', bbox_inches='tight')
+    plt.savefig('figures/cross/interannual-winter-transport-vs-wind.pdf', bbox_inches='tight')
