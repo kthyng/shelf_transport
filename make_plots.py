@@ -18,6 +18,7 @@ from glob import glob
 import op
 from matplotlib.mlab import find
 from matplotlib import ticker
+from matplotlib import cbook
 # from matplotlib.path import Path
 
 # mpl.rcParams['text.usetex'] = True
@@ -33,7 +34,7 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-def init(whichtime, whichtype):
+def init(whichtime, whichtype, whichdir):
     '''
     Initialize necessary information for which type of plot/analysis we 
     are doing. 
@@ -53,19 +54,19 @@ def init(whichtime, whichtype):
         base = 'calcs/shelfconn/'
     elif whichtype == 'coastCH':
         cmap = 'YlGn'
-        base = 'calcs/coastconn/CH/'
+        base = 'calcs/coastconn/' + whichdir + '/CH/'
     elif whichtype == 'coastMX':
         cmap = 'YlGn'
-        base = 'calcs/coastconn/MX/'
+        base = 'calcs/coastconn/' + whichdir + '/MX/'
     elif whichtype == 'coastSTX':
         cmap = 'YlGn'
-        base = 'calcs/coastconn/STX/'
+        base = 'calcs/coastconn/' + whichdir + '/STX/'
     elif whichtype == 'coastNTX':
         cmap = 'YlGn'
-        base = 'calcs/coastconn/NTX/'
+        base = 'calcs/coastconn/' + whichdir + '/NTX/'
     elif whichtype == 'coastLA':
         cmap = 'YlGn'
-        base = 'calcs/coastconn/LA/'
+        base = 'calcs/coastconn/' + whichdir + '/LA/'
     elif whichtype == 'D2':
         cmap = 'BuPu'
         base = 'tracks/'
@@ -124,8 +125,9 @@ def calc_histogram(xp, yp, whichtype, bins=(60,60),
     if whichtype == 'cross' or 'coast' in whichtype:
         # Then we are finding the number of drifters starting in each
         # bin for division into a probability
+        # pdb.set_trace()
         if Xrange!=None and Yrange!=None:
-            H, xe, ye = np.histogram2d(xp, yp, bins=bins, 
+            H, xe, ye = np.histogram2d(xp.flatten(), yp.flatten(), bins=bins, 
                                 range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
         else:
             H, xe, ye = np.histogram2d(xp, yp, bins=bins)
@@ -228,7 +230,7 @@ def plot_setup(whichtime, grid):
 
     return fig, axarr
 
-def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,11)):
+def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,11), extend='max'):
     '''
     Do the main plotting stuff.
     '''
@@ -237,13 +239,13 @@ def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,
 
     # Try with pcolor too
     #pdb.set_trace()
-    mappable = ax.contourf(XE, YE, H, cmap=cmap, levels=levels, extend='max')
+    mappable = ax.contourf(XE, YE, H, cmap=cmap, levels=levels, extend=extend)
     ax.contour(grid['xr'], grid['yr'], grid['h'], [shelf_depth], colors='0.1', linewidth=3)
 
     return mappable
 
 
-def plot_colorbar(fig, mappable, whichtype):
+def plot_colorbar(fig, mappable, whichtype, ticks=None, whichdir='forward'):
     '''
     Add colorbar to figure.
     '''
@@ -251,7 +253,6 @@ def plot_colorbar(fig, mappable, whichtype):
     # Make colorbar
     # Horizontal colorbar below plot
     cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
-    #pdb.set_trace()
     cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
 
     if whichtype == 'cross':
@@ -260,6 +261,15 @@ def plot_colorbar(fig, mappable, whichtype):
         cb.set_label('Probability of drifters reaching coastline region (%)')
     elif whichtype == 'D2':
         cb.set_label('Mean squared separation distance [km$^2\!$]', fontsize=13.5)
+    elif whichtype == 'diff':
+        cb.set_label('Probability difference [%]')
+
+    # this trumps other settings
+    if whichdir == 'back':
+        cb.set_label('Normalized drifter occurrence')
+
+    if not ticks==None:
+        cb.set_ticks(ticks)
 
 
 def plot_finish(fig, whichtype, whichtime, shelf_depth, itind):
@@ -277,41 +287,149 @@ def plot_finish(fig, whichtype, whichtime, shelf_depth, itind):
     fig.savefig(fname)#, dpi=300)
     plt.close(fig)
 
+
 def plot_diff():
     '''
-    Plot difference in transport between two histograms. Plot separately for convenience.
+    Plot difference in transport between two histograms. Plot separately for convenience,
+    since this uses information previously calculated by other functions.
+    import make_plots
+    make_plots.plot_diff()
     '''
 
-    shelf_depth = 20
+    # Which timing of plot: 'interannual', 'seasonal'; 'interannual-summer', 'interannual-winter'
+    whichtime = 'seasonal'
+    # Which type of plot: 'cross'; 'mean' (difference from interannual mean)
+    whichtype = 'cross'
+
+    shelf_depth = 100
 
     # Grid info
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     grid = tracpy.inout.readgrid(loc, usebasemap=True)
-    cmap = 'RdBu'
 
-    d = np.load('figures/cross/seasonal20H.npz')
-    Hboth = d['H']; xe=d['xe']; ye=d['ye']
-    d.close()
+    if whichtype == 'cross':
+        cmap = 'RdBu'
+    elif whichtype == 'mean':
+        cmap = 'PRGn'
 
-    H = Hboth[0,:] - Hboth[1,:]
+    if whichtime == 'seasonal':
+        d = np.load('figures/cross/seasonal' + str(shelf_depth) + 'H.npz')
+        Hboth = d['H']; xe=d['xe']; ye=d['ye']
+        H = Hboth[0,:] - Hboth[1,:]
+        d.close()
+    elif whichtime == 'interannual':
+        dw = np.load('figures/cross/interannual-winter' + str(shelf_depth) + 'H.npz')
+        Hw = dw['H']; xe=dw['xe']; ye=dw['ye']
+        dw.close()
+        ds = np.load('figures/cross/interannual-summer' + str(shelf_depth) + 'H.npz')
+        Hs = ds['H']; xe=ds['xe']; ye=ds['ye']
+        ds.close()
+        H = Hw - Hs
+    elif whichtime == 'interannual-summer':
+        ds = np.load('figures/cross/interannual-summer' + str(shelf_depth) + 'H.npz')
+        Hs = ds['H']; xe=ds['xe']; ye=ds['ye']
+        ds.close()
+        # pdb.set_trace()
+        H = Hs - Hs.mean(axis=0)
+    elif whichtime == 'interannual-winter':
+        ds = np.load('figures/cross/interannual-winter' + str(shelf_depth) + 'H.npz')
+        Hs = ds['H']; xe=ds['xe']; ye=ds['ye']
+        ds.close()
+        # pdb.set_trace()
+        H = Hs - Hs.mean(axis=0)
 
-    fig = plt.figure(figsize=(6.8375, 6.6125))
-    ax = fig.add_subplot(111)
-    tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
-    mappable = plot_stuff(xe, ye, H*100, cmap, grid, shelf_depth, ax)
-    fig.colorbar(mappable)
+    if (shelf_depth==100) and (whichtime == 'seasonal'):
+        H *= 100 
 
-    pdb.set_trace()
 
+    if whichtime == 'seasonal':
+        if shelf_depth == 20:
+            levels = np.arange(-65,75,10)
+            ticks = [-65,-45,-25,0,25,45,65]
+        elif shelf_depth == 50:
+            levels = np.arange(-55,65,10)
+            ticks = [-55,-35,-15,0,15,35,55]
+        elif shelf_depth == 100:
+            levels = np.arange(-39,45,6)
+            ticks = [-39,-27,-15,0,15,27,39]
+        fig = plt.figure(figsize=(6.8375, 6.6125))
+        fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.07, hspace=0.04)
+        ax = fig.add_subplot(111)
+        tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
+        ax.set_title('Winter-Summer Transport')
+        mappable = plot_stuff(xe, ye, H.T, cmap, grid, shelf_depth, ax, levels=levels, extend='neither')
+        # XE, YE = np.meshgrid(op.resize(xe, 0), op.resize(ye, 0))
+        # cs = ax.contour(XE, YE, H.T, [-21,21], colors='b')
+
+        plot_colorbar(fig, mappable, 'diff', ticks=ticks)
+        fig.text(0.125, 0.075, 'Summer', color='#cc0027')
+        fig.text(0.760, 0.075, 'Winter', color='#1b72b7')
+
+
+    elif 'interannual' in whichtime:
+
+        fig, axarr = plot_setup('interannual', grid)
+
+        if whichtype == 'mean':
+            if 'summer' in whichtime:
+                if shelf_depth == 20:
+                    levels = np.arange(-45,48,6)
+                    ticks = [-45,-33,-21,-9,0,9,21,33,45]
+                elif shelf_depth == 50:
+                    levels = np.arange(-52,60,8)
+                    ticks = [-44,-28,-12,0,12,28,44]
+                elif shelf_depth == 100:
+                    levels = np.arange(-60,68,8)
+                    ticks = [-60,-44,-28,-12,0,12,28,44,60]
+            elif 'winter' in whichtime:
+                if shelf_depth == 20:
+                    levels = np.arange(-52,60,8)
+                    ticks = [-44,-28,-12,0,12,28,44]
+                elif shelf_depth == 50:
+                    levels = np.arange(-68,76,8)
+                    ticks = [-60,-44,-28,-12,0,12,28,44,60]
+                elif shelf_depth == 100:
+                    levels = np.arange(-60,68,8)
+                    ticks = [-60,-44,-28,-12,0,12,28,44,60]
+
+        elif whichtype == 'cross':
+            if shelf_depth == 20:
+                levels = np.arange(-95,105,10)
+                ticks = [-85,-65,-45,-25,0,25,45,65,85]
+            elif shelf_depth == 50:
+                levels = np.arange(-95,105,10)
+                ticks = [-85,-65,-45,-25,0,25,45,65,85]
+            elif shelf_depth == 100:
+                levels = np.arange(-85,95,10)
+                ticks = [-85,-65,-45,-25,0,25,45,65,85]
+
+        for i in xrange(H.shape[0]): # 1 for each subplot
+            mappable = plot_stuff(xe, ye, H[i,:,:].T, cmap, grid, shelf_depth, axarr.flatten()[i], 
+                                    levels=levels, extend='neither')
+            
+        plot_colorbar(fig, mappable, 'diff', ticks=ticks)
+
+        # Labels for colorbar ends
+        if ('summer' in whichtime) or ('winter' in whichtime):
+            fig.text(0.125, 0.075, 'Less than mean', color='#750077')
+            fig.text(0.760, 0.075, 'More than mean', color='#007432')
+        else:
+            fig.text(0.18, 0.075, 'Summer', color='#cc0027')
+            fig.text(0.760, 0.075, 'Winter', color='#1b72b7')
+
+    fig.savefig('figures/cross/' + whichtime + 'diff' + str(shelf_depth) + '.png')#, dpi=300)
+    plt.close()
 
 
 def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
-    whichtime = 'interannual-summer'#'interannual-winter'
+    whichtime = 'seasonal' #'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
-    whichtype = 'D2'
+    whichtype = 'coastCH'
+    # 'forward' or 'back' in time
+    whichdir = 'back'
 
     #levels = np.linspace(0,1,11)
 
@@ -326,7 +444,7 @@ def run():
     bins = (100,100) #(30,30)
 
     # Load in Files to read from based on which type of plot is being run
-    Files, cmap = init(whichtime, whichtype)
+    Files, cmap = init(whichtime, whichtype, whichdir)
 
     # Grid info
     loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
@@ -337,7 +455,7 @@ def run():
     # Read in connectivity info (previously calculated). 
     # Drifters always start in the same place.
     # pdb.set_trace()
-    if whichtype == 'cross' or 'coast' in whichtype:
+    if (whichtype == 'cross') or ('coast' in whichtype and whichdir == 'forward'):
         d = np.load(Files[0][0])
 
         # Calculate xrange and yrange for histograms
@@ -351,6 +469,12 @@ def run():
             xp0 = d['xp0']; yp0 = d['yp0']
 
         d.close()
+
+    elif ('coast' in whichtype and whichdir == 'back'):
+
+        # Calculate xrange and yrange for histograms
+        Xrange = [grid['xpsi'].min(), grid['xpsi'].max()]
+        Yrange = [grid['ypsi'].min(), grid['ypsi'].max()]
 
     elif whichtype == 'D2': # results are in xg, yg
 
@@ -370,30 +494,42 @@ def run():
 
             d.close()
 
-    if os.path.exists(Hstartfile): # just read in info
+    if 'Hstartfile' in locals() and os.path.exists(Hstartfile): # just read in info
         Hstartf = np.load(Hstartfile)
         xe = Hstartf['xe']; ye = Hstartf['ye']
         Hstart = Hstartf['Hstart']
+    # elif 'coast' in whichtype and whichdir == 'back':
+    #     continue
     else:
-        # For D2 and fsle, Hstart contains indices of drifters seeded in bins
-        Hstart, xe, ye = calc_histogram(xp0, yp0, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
+        if whichdir == 'back': # aren't dividing at the end by the starting number
+            Hstart = np.ones(bins)
+        else:
+            # For D2 and fsle, Hstart contains indices of drifters seeded in bins
+            Hstart, xe, ye = calc_histogram(xp0, yp0, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
 
-        if whichtype == 'D2':
-            xe, ye = grid['basemap'](xe, ye) # change from lon/lat
-            np.savez(Hstartfile, Hstart=Hstart, xe=xe, ye=ye) 
+            if whichtype == 'D2':
+                xe, ye = grid['basemap'](xe, ye) # change from lon/lat
+                np.savez(Hstartfile, Hstart=Hstart, xe=xe, ye=ye) 
 
 
     # pdb.set_trace()
 
     if whichtype == 'D2':
         Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
+    elif 'coast' in whichtype:
+        Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
+    elif whichtype == 'cross':
+        Hfilename = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz'
 
     if not os.path.exists(Hfilename): 
 
         # For D2 and fsle, H contains the metric calculation averaged over that bin
-        # if whichtype == 'D2' or whichtype == 'fsle':
-        H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
-        nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
+        if whichtype == 'D2' or whichtype == 'fsle':
+            H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
+            nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
+        elif 'coast' in whichtype:
+            H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
+            nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
 
         # Loop through calculation files to calculate overall histograms
         # pdb.set_trace()
@@ -406,6 +542,7 @@ def run():
 
 
             for File in files: # now loop through the files for this subplot
+                print File
 
                 if whichtype == 'cross': # results are in xg, yg
                 # [number of depths,number of tracks] to store time of crossing or nan if it doesn't cross
@@ -416,13 +553,23 @@ def run():
                     ind = ~np.isnan(cross[ishelf_depth,:])
                     d.close()
                     xp, yp, _ = tracpy.tools.interpolate2d(xg0[ind], yg0[ind], grid, 'm_ij2xy')
-                elif 'coast' in whichtype:  # results are in xp, yp
+                elif ('coast' in whichtype) and (whichdir=='forward'):  # results are in xp, yp
                     # Read in info
                     d = np.load(File)
                     xp = d['xp0']; yp = d['yp0']
                     conn = d['conn'] 
                     ind = ~np.isnan(conn)
-                    xp = xp[ind]; yp = yp[ind]
+                    xp = xp[ind]; yp = yp[ind] # pick out the drifters that reach the coastline
+                    d.close()
+                elif ('coast' in whichtype) and (whichdir=='back'):  # results are in xp, yp
+                    # Read in info
+                    d = np.load(File)
+                    # backward tracks in time of drifters starting in the specified coastal area
+                    xp = d['xp0']; yp = d['yp0']
+                    conn = d['conn'] # indices of the drifters that started in the zone
+                    # can't send nan's to histogram calculation
+                    ind = ~np.isnan(xp)
+                    xp = xp[ind]; yp = yp[ind] # pick out the drifters that reach the coastline
                     d.close()
                 elif whichtype == 'D2' or whichtype == 'fsle':
                     sfile = 'calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0]) + '.npz'
@@ -448,7 +595,7 @@ def run():
                 # pdb.set_trace() 
                 if whichtype == 'cross' or 'coast' in whichtype:
                     # Calculate and accumulate histograms of starting locations of drifters that cross shelf
-                    Hcrosstemp, _, _ = calc_histogram(xp, yp, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
+                    Hcrosstemp, xe, ye = calc_histogram(xp, yp, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
                     Hcross = np.nansum( np.vstack((Hcross[np.newaxis,:,:], Hcrosstemp[np.newaxis,:,:])), axis=0)
                 elif whichtype == 'D2' or whichtype == 'fsle':
                     if not already_calculated:
@@ -486,15 +633,8 @@ def run():
         # save H
         if not os.path.exists('figures/' + whichtype): 
             os.makedirs('figures/' + whichtype)
-        # if not os.path.exists('figures/' + whichtype + '/' + whichtime): 
-        #     os.makedirs('figures/' + whichtype + '/' + whichtime)
 
-        if whichtype == 'cross':
-            np.savez('figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz', H=H, xe=xe, ye=ye)
-        elif 'coast' in whichtype: 
-            np.savez('figures/' + whichtype + '/' + whichtime + 'H.npz', H=H, xe=xe, ye=ye)
-        elif whichtype == 'D2': 
-            np.savez(Hfilename, H=H, xe=xe, ye=ye)
+        np.savez(Hfilename, H=H, xe=xe, ye=ye)
 
     else: # H has already been calculated
 
@@ -503,15 +643,33 @@ def run():
         #levels = np.linspace(0, np.nanmax(H), 11)
 
     # which time index to plot
-    itind = 100
+    # a number or 'mean' or 'none' (for coast and cross)
+    if whichtype == 'D2':
+        itind = 100 # 100 
+    elif (whichtype == 'cross') or ('coast' in whichtype):
+        itind = 'none'
     # Choose consistent levels to plot
     locator = ticker.MaxNLocator(11)
     locator.create_dummy_axis()
     # don't use highest max since everything is washed out then
-    #pdb.set_trace()
-    locator.set_bounds(0, 3000)
-    #locator.set_bounds(0, 0.75*np.nanmax(np.nanmax(H[:,:,:,itind], axis=1), axis=1).mean())
-    levels = locator()
+    # pdb.set_trace()
+    # 12000 for mean interannual-summer, 20000 for mean, interannual-winter, 1400 for 100 seasonal
+    # 1800 for 100 interannual-winter, 1800 for 100 interannual-summer
+    if whichtype == 'D2':
+        locator.set_bounds(0, 1800) 
+        #locator.set_bounds(0, 0.75*np.nanmax(np.nanmax(H[:,:,:,itind], axis=1), axis=1).mean())
+        levels = locator()
+    elif 'coast' in whichtype and whichdir == 'back':
+        hist, bin_edges = np.histogram(H.flat, bins=100) # find # of occurrences of histogram bin values
+        n = np.cumsum(hist)
+        Hmax = bin_edges[find(n<(n.max()-n.min())*.7+n.min())[-1]] # take the 80% of histogram occurrences as the max instead of actual max since too high
+        locator.set_bounds(0, 1) 
+        levels = locator()
+        extend = 'max'
+        H = H/Hmax
+    else:
+        extend = 'neither'
+
 
     # Set up overall plot, now that everything is calculated
     fig, axarr = plot_setup(whichtime, grid) # depends on which plot we're doing
@@ -524,7 +682,15 @@ def run():
         # pdb.set_trace()
         # which time index to plot?
         #itind = 100
-        mappable = plot_stuff(xe, ye, H[i,:,:,itind], cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
+        if cbook.is_numlike(itind): # plot a particular time
+            mappable = plot_stuff(xe, ye, H[i,:,:,itind], cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
+        elif itind=='mean': # plot the mean over time
+            mappable = plot_stuff(xe, ye, np.nansum(H[i,:,:,:], axis=-1)/np.sum(~np.isnan(H[i,:,:,:]), axis=-1), cmap, grid, shelf_depth, axarr.flatten()[i], levels=levels)
+        elif itind=='none': # just plot what is there
+            if 'levels' in locals():
+                mappable = plot_stuff(xe, ye, H[i,:,:].T, cmap, grid, shelf_depth, axarr.flatten()[i], extend=extend, levels=levels)
+            else:
+                mappable = plot_stuff(xe, ye, H[i,:,:].T, cmap, grid, shelf_depth, axarr.flatten()[i], extend=extend)
         #axarr.flatten()[i].set_title(np.nanmax(H[i,:,:,itind]))
         # Add coastline area if applicable
         if 'coast' in whichtype:
@@ -553,7 +719,7 @@ def run():
 
 
     # Add colorbar
-    plot_colorbar(fig, mappable, whichtype)
+    plot_colorbar(fig, mappable, whichtype, whichdir=whichdir)
     # pdb.set_trace()
 
     # save and close
@@ -561,4 +727,4 @@ def run():
 
 
 if __name__ == "__main__":
-    run()    
+    run()     
