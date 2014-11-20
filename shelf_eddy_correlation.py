@@ -88,8 +88,8 @@ for j,year in enumerate(years):
     # if year==2010:
     #     w = netCDF.MFDataset([baseloc + 'txla_blk_narr_2009.nc', baseloc + 'txla_blk_narr_2010.nc'])
     # else:
-    w = netCDF.MFDataset(np.sort(glob.glob(baseloc + 'txla_blk_narr_200[' + str(year-1)[-1] + '-' + str(year)[-1] + '].nc')))
-    # w = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year) + '.nc')
+    # w = netCDF.MFDataset(np.sort(glob.glob(baseloc + 'txla_blk_narr_200[' + str(year-1)[-1] + '-' + str(year)[-1] + '].nc')))
+    w = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year) + '.nc')
     # Wind time period to use
     unitsWind = w.variables['time'].units
     tWind = w.variables['time'][:]
@@ -155,7 +155,7 @@ headers = ('Transport', 'Instantaneous-discharge-Qi-Jun', 'Qi-Jul', 'Qi-Aug', 'Q
 #             'Wdvar-Jun', 'Wdvar-Jul', 'Wdvar-Aug', 'Wdvar-Sep')
 
 # write table to file
-with open('table.txt', 'w') as csvfile:
+with open('table-new.txt', 'w') as csvfile:
     writer = csv.writer(csvfile, delimiter="\t")
     writer.writerow(headers)
     [writer.writerow(r) for r in table]
