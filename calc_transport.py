@@ -25,8 +25,11 @@ whichtime = 'interannual' # 'seasonal' or 'interannual'
 whichseason = 'summer' # 'summer' or 'winter'
 
 # Find depths at the center of each histogram bin
-loc = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
-grid = tracpy.inout.readgrid(loc, usebasemap=True)
+# loc = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
+# grid = tracpy.inout.readgrid(loc, usebasemap=True)
+grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
+grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
 
 
 if whichtime == 'seasonal':
