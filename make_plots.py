@@ -91,6 +91,10 @@ def init(whichtime, whichtype, whichdir):
         Files.append(glob(base + '2008-0[1-2]-*.*'))#npz'))
         Files.append(glob(base + '2009-0[1-2]-*.*'))#npz'))
         Files.append(glob(base + '2010-0[1-2]-*.*'))#npz'))
+        Files.append(glob(base + '2011-0[1-2]-*.*'))#npz'))
+        Files.append(glob(base + '2012-0[1-2]-*.*'))#npz'))
+        Files.append(glob(base + '2013-0[1-2]-*.*'))#npz'))
+        Files.append(glob(base + '2014-0[1-2]-*.*'))#npz'))
     elif whichtime == 'interannual-summer':
         # interannual returns Files that has 12 entries of lists
         Files.append(glob(base + '2004-0[7-8]-*.*'))#npz'))
@@ -100,6 +104,10 @@ def init(whichtime, whichtype, whichdir):
         Files.append(glob(base + '2008-0[7-8]-*.*'))#npz'))
         Files.append(glob(base + '2009-0[7-8]-*.*'))#npz'))
         Files.append(glob(base + '2010-0[7-8]-*.*'))#npz'))
+        Files.append(glob(base + '2011-0[7-8]-*.*'))#npz'))
+        Files.append(glob(base + '2012-0[7-8]-*.*'))#npz'))
+        Files.append(glob(base + '2013-0[7-8]-*.*'))#npz'))
+        Files.append(glob(base + '2014-0[7-8]-*.*'))#npz'))
 
 
     # pdb.set_trace()
@@ -424,17 +432,17 @@ def plot_diff():
 def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
-    whichtime = 'seasonal' #'interannual-winter'
+    whichtime = 'interannual-summer' #'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
-    whichtype = 'coastCH'
+    whichtype = 'cross'
     # 'forward' or 'back' in time
-    whichdir = 'back'
+    whichdir = 'forward'
 
     #levels = np.linspace(0,1,11)
 
-    shelf_depth = -20 # do 100 50 and 20 
-    ishelf_depth = 0 # 2 1 0 index in cross array
+    shelf_depth = 100 # do 100 50 and 20 
+    ishelf_depth = 2 # 2 1 0 index in cross array
 
     # Whether to overlay previously-calculated wind stress arrows
     # from projects/txla_plots/plot_mean_wind.py on Rainier
@@ -447,9 +455,12 @@ def run():
     Files, cmap = init(whichtime, whichtype, whichdir)
 
     # Grid info
-    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
-    # loc = '/Users/kthyng/Documents/research/postdoc/grid.nc'
-    grid = tracpy.inout.readgrid(loc, usebasemap=True)
+    # loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    # # loc = '/Users/kthyng/Documents/research/postdoc/grid.nc'
+    # grid = tracpy.inout.readgrid(loc, usebasemap=True)
+    grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+    vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
+    grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
 
     ## Calculate starting position histogram just once ##
     # Read in connectivity info (previously calculated). 
@@ -527,7 +538,7 @@ def run():
         if whichtype == 'D2' or whichtype == 'fsle':
             H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
             nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1], 901))
-        elif 'coast' in whichtype:
+        elif ('coast' in whichtype) or (whichtype=='cross'):
             H = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
             nnans = np.zeros((len(Files), Hstart.shape[0], Hstart.shape[1]))
 
