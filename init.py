@@ -80,7 +80,12 @@ def init(name): #date, loc, grid=None):
 
     tic = time.time()
 
-    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    # # loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    # # can't aggregate years between 2012 and before with 2013 and 2014 bc they have different variables
+    # years = np.arange(2011,2013)
+    # loc = []
+    # for year in years:
+    #     loc.extend(np.sort(glob.glob('/home/kthyng/shelf/' + str(year) + '/ocean_his_????.nc')))
 
     # horizontal_diffusivity project showed that relative dispersion did not
     # change between nsteps=25 and 50, but does between nsteps=5 and 25, and
