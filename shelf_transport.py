@@ -13,8 +13,105 @@ import tracpy
 import init
 from datetime import datetime, timedelta
 import glob
+from tracpy.tracpy_class import Tracpy
 
-# npieces = 12 # number of pieces to divide starting locations for drifters into, in x direction
+
+grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
+# currents_filename = list(np.sort(glob.glob('/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_????.nc')))
+
+# loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+# can't aggregate years between 2012 and before with 2013 and 2014 bc they have different variables
+# years = np.arange(2011,2013)
+# currents_filename = []
+# for year in years:
+#     currents_filename.extend(np.sort(glob.glob('/home/kthyng/shelf/' + str(year) + '/ocean_his_????.nc')))
+
+years = np.arange(2013,2015)
+currents_filename = []
+for year in years:
+    currents_filename.extend(np.sort(glob.glob('/home/kthyng/shelf/' + str(year) + '/ocean_his_*.nc')))
+
+grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
+
+
+def init(name):
+    '''
+    Initialization for the simulation.
+    '''
+
+    # loc = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
+
+    time_units = 'seconds since 1970-01-01'
+
+    # horizontal_diffusivity project showed that relative dispersion did not
+    # change between nsteps=25 and 50, but does between nsteps=5 and 25, and
+    # interim numbers have not been tested yet.
+    nsteps = 25 # in-between tracks: 12 # old tracks: 25 
+
+    # Number of steps to divide model output for outputting drifter location
+    N = 5
+
+    # Number of days
+    ndays = 30
+
+    # This is a forward-moving simulation
+    ff = 1 
+
+    # Time between outputs
+    tseas = 4*3600 # 4 hours between outputs, in seconds, time between model outputs 
+    ah = 0. # old tracks: 5.
+    av = 0. # m^2/s
+
+    # surface drifters
+    z0 = 's'  
+    zpar = 29 
+
+    # for 3d flag, do3d=0 makes the run 2d and do3d=1 makes the run 3d
+    do3d = 0
+    doturb = 0
+
+    # Flag for streamlines.
+    dostream = 0
+
+    # Initialize Tracpy class
+    tp = Tracpy(currents_filename, grid_filename=grid_filename, name=name, tseas=tseas, ndays=ndays, nsteps=nsteps, dostream=dostream, savell=False, doperiodic=0, 
+                N=N, ff=ff, ah=ah, av=av, doturb=doturb, do3d=do3d, z0=z0, zpar=zpar, 
+                time_units=time_units, usebasemap=True, grid=grid, vert_filename=vert_filename)
+
+    # tp._readgrid()
+
+    if os.path.exists('calcs/seeds.npz'):
+        seeds = np.load('calcs/seeds.npz')
+        lon0 = seeds['lon0']; lat0 = seeds['lat0']
+        seeds.close()
+    else:
+        # Initial lon/lat locations for drifters
+        # Start uniform array of drifters across domain using x,y coords
+        dx = 1000 # initial separation distance of drifters, in meters, from sensitivity project
+        llcrnrlon = tp.grid['lonr'].min(); urcrnrlon = tp.grid['lonr'].max(); 
+        llcrnrlat = tp.grid['latr'].min(); urcrnrlat = tp.grid['latr'].max(); 
+        xcrnrs, ycrnrs = tp.grid['basemap']([llcrnrlon, urcrnrlon], [llcrnrlat, urcrnrlat])
+        X, Y = np.meshgrid(np.arange(xcrnrs[0], xcrnrs[1], dx), np.arange(ycrnrs[0], ycrnrs[1], dx))
+
+        lon0, lat0 = tp.grid['basemap'](X, Y, inverse=True)
+
+        # Eliminate points that are outside domain or in masked areas
+        lon0, lat0 = tracpy.tools.check_points(lon0, lat0, tp.grid)
+
+        # save starting locations for future use
+        np.savez('calcs/seeds.npz', lon0=lon0, lat0=lat0)
+
+    # # equal weightings for drifters for transport.
+    # T0 = np.ones(lon0.size, order='F')
+
+    # U = np.ma.zeros(tp.grid['xu'].shape, order='F')
+    # V = np.ma.zeros(tp.grid['xv'].shape, order='F')
+
+    # pdb.set_trace()
+       
+    return tp, lon0, lat0
+
 
 def run():
 
@@ -24,12 +121,8 @@ def run():
     if not os.path.exists('figures'):
         os.makedirs('figures')
         
-    #loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
-    #grid = tracpy.inout.readgrid(loc)
-
-    overallstartdate = datetime(2005, 8, 1, 0, 1)
-    overallstopdate = datetime(2006, 1, 1, 0, 1)
-    # overallstopdate = datetime(2011, 1, 1, 0, 1)
+    overallstartdate = datetime(2014, 6, 1, 4, 1)
+    overallstopdate = datetime(2014, 7, 1, 4, 1)
 
     date = overallstartdate
 
@@ -44,34 +137,15 @@ def run():
             not os.path.exists('tracks/' + name + 'gc.nc'):
 
             # Read in simulation initialization
-            tp, lon0, lat0 = init.init(name)
-            # pdb.set_trace()
+            tp, lon0, lat0 = init(name)
+
             # Run tracpy
             # Save directly to grid coordinates
             lonp, latp, zp, t, T0, U, V = tracpy.run.run(tp, date, lon0, lat0)
 
-        # # If basic figures don't exist, make them
-        # if not os.path.exists('figures/' + name + '*.png'):
-
-            # # Read in and plot tracks
-            # d = netCDF.Dataset('tracks/' + name + '.nc')
-            # lonp = d.variables['lonp'][:]
-            # latp = d.variables['latp'][:]
-            # # tracpy.plotting.tracks(lonp, latp, name, grid=grid)
-            # # tracpy.plotting.hist(lonp, latp, name, grid=grid, which='hexbin')
-            # d.close()
-            # # # Do transport plot
-            # tracpy.plotting.transport(name='all_f/N=5_dx=8/25days', fmod=date.isoformat()[0:13], 
-            #     extraname=date.isoformat()[0:13], 
-            #     Title='Transport on Shelf, for a week from ' + date.isoformat()[0:13], dmax=1.0)
 
         # Increment by 24 hours for next loop, to move through more quickly
-        # nh = nh + 24
         date = date + timedelta(hours=24)
-
-    # # Do transport plot
-    # tracpy.plotting.transport(name='all_f/N=5_dx=8/25days', fmod=startdate.isoformat()[0:7] + '*', 
-    #     extraname=startdate.isoformat()[0:7], Title='Transport on Shelf', dmax=1.0)
 
 
 if __name__ == "__main__":
