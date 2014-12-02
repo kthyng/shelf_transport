@@ -19,7 +19,7 @@ import glob
 from matplotlib.mlab import find, Path
 
 # 'cross' or 'coast' or 'coast-back' or 'galveston'
-which = 'coast-back'
+which = 'cross'
 
 def load_tracks(File):
     '''
@@ -48,14 +48,20 @@ def run():
 
     # Find files to run through
     # Files = glob.glob('/Volumes/Emmons/projects/gisr/tracks/all_f/*gc.npz')[0:2]
-    Files = glob.glob('tracks/back/2004-0[1-2,7-8]-*gc.nc')
+    # Files = glob.glob('tracks/back/2004-0[1-2,7-8]-*gc.nc')
     # Files = glob.glob('tracks/back/2010-0[4-9]-*gc.nc')
+    # Files = glob.glob('tracks/2014-0[1-4]-*gc.nc')
+    Files = glob.glob('tracks/2014-0[5-8]-*gc.nc')
+    # Files.extend(glob.glob('tracks/2013-1[0-2]-*gc.nc'))
 
     shelf_depths = [20, 50, 100, 200, 300, 400, 500]
 
-    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
-    # need to use basemap not pyproj bc path points were saved using basemap
-    grid = tracpy.inout.readgrid(loc, usebasemap=True)
+    # loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+    vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
+    grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
+    # # need to use basemap not pyproj bc path points were saved using basemap
+    # grid = tracpy.inout.readgrid(loc, usebasemap=True)
 
     # load in paths for coastline areas
     if 'coast' in which:
@@ -109,12 +115,13 @@ def run():
             if os.path.exists(shelffile): # don't repeat calc if last file was created
                 continue
 
-            xg, yg, tp = load_tracks(File)
+            # xg, yg, tp = load_tracks(File)
+            xg, yg, iday, days = load_tracks(File)
 
-            # Time information
-            days = (tp-tp[0])/(3600.*24)
-            iday = find(days==2) - find(days==1) # number of indices per day
-            iday = int(iday) 
+            # # Time information
+            # days = (tp-tp[0])/(3600.*24)
+            # iday = find(days==2) - find(days==1) # number of indices per day
+            # iday = int(iday) 
 
             # Calculate the depths for the drifter positions
             nanind = np.isnan(xg)# + xg==-1 # indices where nans are location in xg, yg; for reinstitution of nans
