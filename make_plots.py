@@ -204,37 +204,51 @@ def plot_setup(whichtime, grid):
         # fig = plt.figure(figsize=(22,10))
         fig, axarr = plt.subplots(1,2)#, sharex=True)
         # pdb.set_trace()
-        fig.set_size_inches(13.675, 6.6125)
-        fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.07, hspace=0.04)
+        fig.set_size_inches(13, 6.6125)
+        fig.subplots_adjust(left=0.045, bottom=0.15, right=1.0, top=0.96, wspace=0.005, hspace=0.04)
         # ax = fig.add_subplot(1,2,1)
         for i, ax in enumerate(axarr):
            # Titles for subplots
             if i==0:
                  tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
                  ax.set_title('Winter')
+                 # ax.text(0.45, 0.95, 'Winter', transform=ax.transAxes)#, bbox=dict(facecolor='white', edgecolor=None), fontsize=14)#, alpha=0.5))
             elif i==1:
                  tracpy.plotting.background(grid=grid, ax=ax, parslabels=[0,0,0,0], mers=np.arange(-100, -80, 2))
                  ax.set_title('Summer')
             # suptitle
             #fig.suptitle('Probability of material crossing the shelf in 30 days, 2004-2010', y=.94)
+            ax.set_frame_on(False)
+
     elif 'interannual' in whichtime: # summer or winter
 
-        fig, axarr = plt.subplots(2,4)
-        fig.set_size_inches(13.4, 6.6125)
-        fig.subplots_adjust(left=0.03, bottom=0.15, right=1.0, top=0.96, wspace=0.03, hspace=0.11)
+        fig, axarr = plt.subplots(4,3)
+        fig.set_size_inches(8.7, 11.5)
+        fig.subplots_adjust(left=0.008, bottom=0.1, right=1.0, top=0.98, wspace=0.005, hspace=0.1)
+
+        # fig, axarr = plt.subplots(2,4)
+        # fig.set_size_inches(13.4, 6.6125)
+        # fig.subplots_adjust(left=0.03, bottom=0.15, right=1.0, top=0.96, wspace=0.03, hspace=0.11)
 
         for i, ax in enumerate(axarr.flatten()):
            # Titles for subplots
-            if i==4:
-                tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
-                ax.set_title(str(2004+i))
-            elif i==7:
-                ax.set_frame_on(False)
+            if i==10:#4:
+                tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
+                    pars=np.arange(20, 36, 2), outline=False, parslabels=[0, 1, 0, 0])
+                # ax.set_title(str(2004+i))
+            elif i==11:#7:
+                # ax.set_frame_on(False)
                 ax.set_axis_off()
             else:
-                tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2), 
+                tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
+                    pars=np.arange(20, 36, 2), outline=False,
                     merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
-                ax.set_title(str(2004+i))
+                # ax.set_title(str(2004+i))
+
+            if i!=11:
+                ax.text(0.07, 0.88, str(2004+i), transform=ax.transAxes)
+
+            ax.set_frame_on(False)
 
     return fig, axarr
 
@@ -261,6 +275,7 @@ def plot_colorbar(fig, mappable, whichtype, ticks=None, whichdir='forward'):
     # Make colorbar
     # Horizontal colorbar below plot
     cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
+    # cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
     cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
 
     if whichtype == 'cross':
@@ -292,7 +307,7 @@ def plot_finish(fig, whichtype, whichtime, shelf_depth, itind):
     elif whichtype == 'D2':
         fname = 'figures/' + whichtype + '/' + whichtime + str(itind) + '.png'
 
-    fig.savefig(fname)#, dpi=300)
+    fig.savefig(fname, dpi=300)
     plt.close(fig)
 
 
@@ -312,8 +327,10 @@ def plot_diff():
     shelf_depth = 100
 
     # Grid info
-    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
-    grid = tracpy.inout.readgrid(loc, usebasemap=True)
+    # loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    # grid = tracpy.inout.readgrid(loc, usebasemap=True)
+    grid_filename = '../../grid.nc'
+    grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
 
     if whichtype == 'cross':
         cmap = 'RdBu'
@@ -321,7 +338,8 @@ def plot_diff():
         cmap = 'PRGn'
 
     if whichtime == 'seasonal':
-        d = np.load('figures/cross/seasonal' + str(shelf_depth) + 'H.npz')
+        d = np.load('calcs/shelfconn/seasonal' + str(shelf_depth) + 'H.npz')
+        # d = np.load('figures/cross/seasonal' + str(shelf_depth) + 'H.npz')
         Hboth = d['H']; xe=d['xe']; ye=d['ye']
         H = Hboth[0,:] - Hboth[1,:]
         d.close()
@@ -346,8 +364,8 @@ def plot_diff():
         # pdb.set_trace()
         H = Hs - Hs.mean(axis=0)
 
-    if (shelf_depth==100) and (whichtime == 'seasonal'):
-        H *= 100 
+    # if (shelf_depth==100) and (whichtime == 'seasonal'):
+    #     H *= 100 
 
 
     if whichtime == 'seasonal':
@@ -358,8 +376,10 @@ def plot_diff():
             levels = np.arange(-55,65,10)
             ticks = [-55,-35,-15,0,15,35,55]
         elif shelf_depth == 100:
-            levels = np.arange(-39,45,6)
+            levels = np.arange(-45,51,6)
             ticks = [-39,-27,-15,0,15,27,39]
+            # levels = np.arange(-39,45,6)
+            # ticks = [-39,-27,-15,0,15,27,39]
         fig = plt.figure(figsize=(6.8375, 6.6125))
         fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.07, hspace=0.04)
         ax = fig.add_subplot(111)
@@ -368,6 +388,7 @@ def plot_diff():
         mappable = plot_stuff(xe, ye, H.T, cmap, grid, shelf_depth, ax, levels=levels, extend='neither')
         # XE, YE = np.meshgrid(op.resize(xe, 0), op.resize(ye, 0))
         # cs = ax.contour(XE, YE, H.T, [-21,21], colors='b')
+        ax.set_axis_off()
 
         plot_colorbar(fig, mappable, 'diff', ticks=ticks)
         fig.text(0.125, 0.075, 'Summer', color='#cc0027')
@@ -425,14 +446,14 @@ def plot_diff():
             fig.text(0.18, 0.075, 'Summer', color='#cc0027')
             fig.text(0.760, 0.075, 'Winter', color='#1b72b7')
 
-    fig.savefig('figures/cross/' + whichtime + 'diff' + str(shelf_depth) + '.png')#, dpi=300)
+    fig.savefig('figures/cross/' + whichtime + 'diff' + str(shelf_depth) + '.png', dpi=300)
     plt.close()
 
 
 def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
-    whichtime = 'interannual-summer' #'interannual-winter'
+    whichtime = 'seasonal' #'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'cross'
@@ -458,81 +479,81 @@ def run():
     # loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     # # loc = '/Users/kthyng/Documents/research/postdoc/grid.nc'
     # grid = tracpy.inout.readgrid(loc, usebasemap=True)
-    grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
-    vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
-    grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
-
-    ## Calculate starting position histogram just once ##
-    # Read in connectivity info (previously calculated). 
-    # Drifters always start in the same place.
-    # pdb.set_trace()
-    if (whichtype == 'cross') or ('coast' in whichtype and whichdir == 'forward'):
-        d = np.load(Files[0][0])
-
-        # Calculate xrange and yrange for histograms
-        Xrange = [grid['xpsi'].min(), grid['xpsi'].max()]
-        Yrange = [grid['ypsi'].min(), grid['ypsi'].max()]
-
-        # Histogram of starting locations
-        if whichtype == 'cross': # results are in xg, yg
-            xp0, yp0, _ = tracpy.tools.interpolate2d(d['xg0'], d['yg0'], grid, 'm_ij2xy')
-        elif 'coast' in whichtype:  # results are in xp, yp
-            xp0 = d['xp0']; yp0 = d['yp0']
-
-        d.close()
-
-    elif ('coast' in whichtype and whichdir == 'back'):
-
-        # Calculate xrange and yrange for histograms
-        Xrange = [grid['xpsi'].min(), grid['xpsi'].max()]
-        Yrange = [grid['ypsi'].min(), grid['ypsi'].max()]
-
-    elif whichtype == 'D2': # results are in xg, yg
-
-        # Histogram of starting locations
-        Hstartfile = 'calcs/dispersion/hist/Hstart_bins' + str(bins[0]) + '.npz'
-
-        if not os.path.exists(Hstartfile): # just read in info
-            d = netCDF.Dataset(Files[0][0])
-
-            # Calculate xrange and yrange for histograms in ll
-            Xrange = [grid['lonpsi'].min(), grid['lonpsi'].max()]
-            Yrange = [grid['latpsi'].min(), grid['latpsi'].max()]
-        
-            # Histogram of starting locations
-            # xp0, yp0 are lonp, latp in this case
-            xp0, yp0, _ = tracpy.tools.interpolate2d(d.variables['xg'][:,0], d.variables['yg'][:,0], grid, 'm_ij2ll')
-
-            d.close()
-
-    if 'Hstartfile' in locals() and os.path.exists(Hstartfile): # just read in info
-        Hstartf = np.load(Hstartfile)
-        xe = Hstartf['xe']; ye = Hstartf['ye']
-        Hstart = Hstartf['Hstart']
-    # elif 'coast' in whichtype and whichdir == 'back':
-    #     continue
-    else:
-        if whichdir == 'back': # aren't dividing at the end by the starting number
-            Hstart = np.ones(bins)
-        else:
-            # For D2 and fsle, Hstart contains indices of drifters seeded in bins
-            Hstart, xe, ye = calc_histogram(xp0, yp0, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
-
-            if whichtype == 'D2':
-                xe, ye = grid['basemap'](xe, ye) # change from lon/lat
-                np.savez(Hstartfile, Hstart=Hstart, xe=xe, ye=ye) 
-
-
-    # pdb.set_trace()
+    # grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+    # vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
+    # grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
+    grid_filename = '../../grid.nc'
+    grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
 
     if whichtype == 'D2':
         Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
     elif 'coast' in whichtype:
         Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
     elif whichtype == 'cross':
-        Hfilename = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz'
+        # Hfilename = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz'
+        Hfilename = 'calcs/shelfconn/' + whichtime + str(shelf_depth) + 'H.npz'
 
     if not os.path.exists(Hfilename): 
+
+        ## Calculate starting position histogram just once ##
+        # Read in connectivity info (previously calculated). 
+        # Drifters always start in the same place.
+        # pdb.set_trace()
+        if (whichtype == 'cross') or ('coast' in whichtype and whichdir == 'forward'):
+            d = np.load(Files[0][0])
+
+            # Calculate xrange and yrange for histograms
+            Xrange = [grid['xpsi'].min(), grid['xpsi'].max()]
+            Yrange = [grid['ypsi'].min(), grid['ypsi'].max()]
+
+            # Histogram of starting locations
+            if whichtype == 'cross': # results are in xg, yg
+                xp0, yp0, _ = tracpy.tools.interpolate2d(d['xg0'], d['yg0'], grid, 'm_ij2xy')
+            elif 'coast' in whichtype:  # results are in xp, yp
+                xp0 = d['xp0']; yp0 = d['yp0']
+
+            d.close()
+
+        elif ('coast' in whichtype and whichdir == 'back'):
+
+            # Calculate xrange and yrange for histograms
+            Xrange = [grid['xpsi'].min(), grid['xpsi'].max()]
+            Yrange = [grid['ypsi'].min(), grid['ypsi'].max()]
+
+        elif whichtype == 'D2': # results are in xg, yg
+
+            # Histogram of starting locations
+            Hstartfile = 'calcs/dispersion/hist/Hstart_bins' + str(bins[0]) + '.npz'
+
+            if not os.path.exists(Hstartfile): # just read in info
+                d = netCDF.Dataset(Files[0][0])
+
+                # Calculate xrange and yrange for histograms in ll
+                Xrange = [grid['lonpsi'].min(), grid['lonpsi'].max()]
+                Yrange = [grid['latpsi'].min(), grid['latpsi'].max()]
+            
+                # Histogram of starting locations
+                # xp0, yp0 are lonp, latp in this case
+                xp0, yp0, _ = tracpy.tools.interpolate2d(d.variables['xg'][:,0], d.variables['yg'][:,0], grid, 'm_ij2ll')
+
+                d.close()
+
+        if 'Hstartfile' in locals() and os.path.exists(Hstartfile): # just read in info
+            Hstartf = np.load(Hstartfile)
+            xe = Hstartf['xe']; ye = Hstartf['ye']
+            Hstart = Hstartf['Hstart']
+        # elif 'coast' in whichtype and whichdir == 'back':
+        #     continue
+        else:
+            if whichdir == 'back': # aren't dividing at the end by the starting number
+                Hstart = np.ones(bins)
+            else:
+                # For D2 and fsle, Hstart contains indices of drifters seeded in bins
+                Hstart, xe, ye = calc_histogram(xp0, yp0, whichtype, bins=bins, Xrange=Xrange, Yrange=Yrange)
+
+                if whichtype == 'D2':
+                    xe, ye = grid['basemap'](xe, ye) # change from lon/lat
+                    np.savez(Hstartfile, Hstart=Hstart, xe=xe, ye=ye) 
 
         # For D2 and fsle, H contains the metric calculation averaged over that bin
         if whichtype == 'D2' or whichtype == 'fsle':
