@@ -206,6 +206,7 @@ if doplot:
                 ax = fig.add_subplot(111)
                 mappable = ax.plot(T, d[:,29]/1e5, 'o', ms=10, color='0.2', mec='k')
                 ax.set_xlim(T.min()-0.1, T.max()+0.1)
+                ax.set_ylim(3.5, 8.5)
                 ax.set_xlabel('Transport relative to mean [%]')
                 ax.set_ylabel('March river discharge/10^5 [m$^3\!$/s]')
                 ax.text(0.75, 0.15, 'p=%1.4f' % Qbestp, color='r', transform=ax.transAxes, alpha=0.7)
