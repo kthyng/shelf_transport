@@ -267,15 +267,17 @@ def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,
     return mappable
 
 
-def plot_colorbar(fig, mappable, whichtype, ticks=None, whichdir='forward'):
+def plot_colorbar(fig, mappable, whichtype, ticks=None, whichdir='forward', whichtime='seasonal'):
     '''
     Add colorbar to figure.
     '''
 
     # Make colorbar
     # Horizontal colorbar below plot
-    cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
-    # cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
+    if whichtime=='seasonal':
+        cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
+    elif 'interannual' in whichtime:
+        cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
     cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
 
     if whichtype == 'cross':
@@ -324,13 +326,16 @@ def plot_diff():
     # Which type of plot: 'cross'; 'mean' (difference from interannual mean)
     whichtype = 'cross'
 
-    shelf_depth = 100
+    shelf_depth = 20
 
     # Grid info
     # loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     # grid = tracpy.inout.readgrid(loc, usebasemap=True)
-    grid_filename = '../../grid.nc'
-    grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
+    # grid_filename = '../../grid.nc'
+    # grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
+    grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+    vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
+    grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
 
     if whichtype == 'cross':
         cmap = 'RdBu'
@@ -338,8 +343,8 @@ def plot_diff():
         cmap = 'PRGn'
 
     if whichtime == 'seasonal':
-        d = np.load('calcs/shelfconn/seasonal' + str(shelf_depth) + 'H.npz')
-        # d = np.load('figures/cross/seasonal' + str(shelf_depth) + 'H.npz')
+        # d = np.load('calcs/shelfconn/seasonal' + str(shelf_depth) + 'H.npz')
+        d = np.load('figures/cross/seasonal' + str(shelf_depth) + 'H.npz')
         Hboth = d['H']; xe=d['xe']; ye=d['ye']
         H = Hboth[0,:] - Hboth[1,:]
         d.close()
@@ -390,7 +395,7 @@ def plot_diff():
         # cs = ax.contour(XE, YE, H.T, [-21,21], colors='b')
         ax.set_axis_off()
 
-        plot_colorbar(fig, mappable, 'diff', ticks=ticks)
+        plot_colorbar(fig, mappable, 'diff', ticks=ticks, whichtime=whichtime)
         fig.text(0.125, 0.075, 'Summer', color='#cc0027')
         fig.text(0.760, 0.075, 'Winter', color='#1b72b7')
 
@@ -436,7 +441,7 @@ def plot_diff():
             mappable = plot_stuff(xe, ye, H[i,:,:].T, cmap, grid, shelf_depth, axarr.flatten()[i], 
                                     levels=levels, extend='neither')
             
-        plot_colorbar(fig, mappable, 'diff', ticks=ticks)
+        plot_colorbar(fig, mappable, 'diff', ticks=ticks, whichtime=whichtime)
 
         # Labels for colorbar ends
         if ('summer' in whichtime) or ('winter' in whichtime):
@@ -453,7 +458,7 @@ def plot_diff():
 def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
-    whichtime = 'seasonal' #'interannual-winter'
+    whichtime = 'interannual-winter' #'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'cross'
@@ -467,7 +472,8 @@ def run():
 
     # Whether to overlay previously-calculated wind stress arrows
     # from projects/txla_plots/plot_mean_wind.py on Rainier
-    addwind = 0
+    addwind = 1
+    years = np.arange(2004,2015) # for adding the wind on
 
     # Number of bins to use in histogram
     bins = (100,100) #(30,30)
@@ -479,19 +485,19 @@ def run():
     # loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
     # # loc = '/Users/kthyng/Documents/research/postdoc/grid.nc'
     # grid = tracpy.inout.readgrid(loc, usebasemap=True)
-    # grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
-    # vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
-    # grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
-    grid_filename = '../../grid.nc'
-    grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
+    grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+    vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
+    grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
+    # grid_filename = '../../grid.nc'
+    # grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
 
     if whichtype == 'D2':
         Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
     elif 'coast' in whichtype:
         Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
     elif whichtype == 'cross':
-        # Hfilename = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz'
-        Hfilename = 'calcs/shelfconn/' + whichtime + str(shelf_depth) + 'H.npz'
+        Hfilename = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz'
+        # Hfilename = 'calcs/shelfconn/' + whichtime + str(shelf_depth) + 'H.npz'
 
     if not os.path.exists(Hfilename): 
 
@@ -737,21 +743,22 @@ def run():
         # Overlay mean wind arrows
         if addwind:
             # Right now is just for cross, interannual, winter
-            year = File.split('/')[-1].split('-')[0]
+            year = years[i]
+            # year = File.split('/')[-1].split('-')[0]
             season = whichtime.split('-')[-1]
-            wind = np.load('calcs/wind_stress/' + year + season +  '.npz')
+            wind = np.load('../txla_plots/calcs/wind_stress/' + str(year) + season +  '.npz')
             x = wind['x']; y = wind['y']; u = wind['u']; v = wind['v']
             q = axarr.flatten()[i].quiver(x, y, u, v, color = '0.3',
                         pivot='middle', zorder=1e35, width=0.003)
                         # scale=1.0/scale, pivot='middle', zorder=1e35, width=0.003)
 
-            if year == 2008:
-                plt.quiverkey(q, 0.85, 0.07, 0.1, label=r'0.1 N m$^{2}$', coordinates='axes')
+            # if year == 2008:
+            #     plt.quiverkey(q, 0.85, 0.07, 0.1, label=r'0.1 N m$^{2}$', coordinates='axes')
 
 
 
     # Add colorbar
-    plot_colorbar(fig, mappable, whichtype, whichdir=whichdir)
+    plot_colorbar(fig, mappable, whichtype, whichdir=whichdir, whichtime=whichtime)
     # pdb.set_trace()
 
     # save and close
