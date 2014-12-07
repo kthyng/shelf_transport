@@ -82,13 +82,13 @@ elif whichtime == 'interannual':
             d.close()
 
         Hwind_rel = (Hwind - Hwind.mean())/(Hwind.max() - Hwind.min())
+        np.savez('calcs/shelfconn/' + whichtime + '-' + whichseason + 'transportsum.npz', transport=Hwind_rel)
         fig = plt.figure(figsize=(8.1375,6.9))
         ax = fig.add_subplot(111)
         ax.plot(Hwind_rel, dirs, 'o', color='0.2', ms=10)
         ax.set_xlabel('Transport relative to mean [%]')
         ax.set_ylabel('Mean winter wind direction [deg]')
         fig.savefig('figures/cross/interannual-winter-transport-vs-wind.pdf', bbox_inches='tight')
-        np.savez('calcs/shelfconn/' + whichtime + '-' + whichseason + 'transportsum.npz', transport=Hwind_rel)
 
     elif whichseason == 'summer':
 
