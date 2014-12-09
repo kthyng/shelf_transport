@@ -86,6 +86,86 @@ if runcorr:
             # pdb.set_trace()
             d[:,i] = np.rad2deg(np.unwrap(np.deg2rad(d[:,i])))
 
+    # Change running sum river discharges to be means
+    # do this brute force to be lazy
+    for i in xrange(d.shape[1]):
+        if 'Q1' in headers[i]: # but is for the month before
+            if 'Jan' in headers[i]:
+                d[:,i] = d[:,i]/31.
+            elif 'Feb' in headers[i]:
+                d[:,i] = d[:,i]/31.
+            elif 'Mar' in headers[i]:
+                d[:,i] = d[:,i]/28.
+            elif 'Apr' in headers[i]:
+                d[:,i] = d[:,i]/31.
+            elif 'May' in headers[i]:
+                d[:,i] = d[:,i]/30.
+            elif 'Jun' in headers[i]:
+                d[:,i] = d[:,i]/31.
+            elif 'Jul' in headers[i]:
+                d[:,i] = d[:,i]/30.
+            elif 'Aug' in headers[i]:
+                d[:,i] = d[:,i]/31.
+            elif 'Sep' in headers[i]:
+                d[:,i] = d[:,i]/31.
+            elif 'Oct' in headers[i]:
+                d[:,i] = d[:,i]/30.
+            elif 'Nov' in headers[i]:
+                d[:,i] = d[:,i]/31.
+            elif 'Dec' in headers[i]:
+                d[:,i] = d[:,i]/30.
+        if 'Q2' in headers[i]: # for two months before
+            if 'Jan' in headers[i]:
+                d[:,i] = d[:,i]/(31.+30)
+            elif 'Feb' in headers[i]:
+                d[:,i] = d[:,i]/(31.+31)
+            elif 'Mar' in headers[i]:
+                d[:,i] = d[:,i]/(28.+31)
+            elif 'Apr' in headers[i]:
+                d[:,i] = d[:,i]/(31.+28)
+            elif 'May' in headers[i]:
+                d[:,i] = d[:,i]/(30.+31)
+            elif 'Jun' in headers[i]:
+                d[:,i] = d[:,i]/(31.+30)
+            elif 'Jul' in headers[i]:
+                d[:,i] = d[:,i]/(30.+31)
+            elif 'Aug' in headers[i]:
+                d[:,i] = d[:,i]/(31.+30)
+            elif 'Sep' in headers[i]:
+                d[:,i] = d[:,i]/(31.+31)
+            elif 'Oct' in headers[i]:
+                d[:,i] = d[:,i]/(30.+31)
+            elif 'Nov' in headers[i]:
+                d[:,i] = d[:,i]/(31.+30)
+            elif 'Dec' in headers[i]:
+                d[:,i] = d[:,i]/(30.+31)
+        if 'Q3' in headers[i]: # for three months before
+            if 'Jan' in headers[i]:
+                d[:,i] = d[:,i]/(31.+30+31)
+            elif 'Feb' in headers[i]:
+                d[:,i] = d[:,i]/(31.+31+30)
+            elif 'Mar' in headers[i]:
+                d[:,i] = d[:,i]/(28.+31+31)
+            elif 'Apr' in headers[i]:
+                d[:,i] = d[:,i]/(31.+28+31)
+            elif 'May' in headers[i]:
+                d[:,i] = d[:,i]/(30.+31+28)
+            elif 'Jun' in headers[i]:
+                d[:,i] = d[:,i]/(31.+30+31)
+            elif 'Jul' in headers[i]:
+                d[:,i] = d[:,i]/(30.+31+30)
+            elif 'Aug' in headers[i]:
+                d[:,i] = d[:,i]/(31.+30+31)
+            elif 'Sep' in headers[i]:
+                d[:,i] = d[:,i]/(31.+31+30)
+            elif 'Oct' in headers[i]:
+                d[:,i] = d[:,i]/(30.+31+31)
+            elif 'Nov' in headers[i]:
+                d[:,i] = d[:,i]/(31.+30+31)
+            elif 'Dec' in headers[i]:
+                d[:,i] = d[:,i]/(30.+31+30)
+
+
     whichseason = 'summer' # 'winter' or 'summer'
 
     without2008 = False
@@ -204,11 +284,11 @@ if doplot:
                 # with one variable
                 fig = plt.figure(figsize=(6,6))
                 ax = fig.add_subplot(111)
-                mappable = ax.plot(T, d[:,29]/1e5, 'o', ms=10, color='0.2', mec='k')
+                mappable = ax.plot(T, d[:,29]/1e4, 'o', ms=10, color='0.2', mec='k')
                 ax.set_xlim(T.min()-0.1, T.max()+0.1)
-                ax.set_ylim(3.5, 8.5)
+                ax.set_ylim(1.0, 2.8)
                 ax.set_xlabel('Transport relative to mean [%]')
-                ax.set_ylabel('March river discharge/10^5 [m$^3\!$/s]')
+                ax.set_ylabel('Mean March river discharge [$10^5$m$^3\!$/s]')
                 ax.text(0.75, 0.15, 'p=%1.4f' % Qbestp, color='r', transform=ax.transAxes, alpha=0.7)
                 ax.text(0.75, 0.1, 'r=%1.2f' % Qbestr, color='r', transform=ax.transAxes, alpha=0.7)
                 ax.set_frame_on(False)
