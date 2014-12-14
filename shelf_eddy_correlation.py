@@ -35,10 +35,11 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-maketable = False
-runcorr = True # run correlation coefficients
-doplot = True
+maketable = True
+runcorr = False # run correlation coefficients
+doplot = False
 explore = False # True to do exploratory plots, False to do polished plot
+whichseason = 'winter' # 'winter' or 'summer'
 
 
 headers = ('Transport_winter', 'Transport_summer', 
@@ -166,7 +167,13 @@ if runcorr:
                 d[:,i] = d[:,i]/(30.+31+30)
 
 
-    whichseason = 'summer' # 'winter' or 'summer'
+    # Change angles to be compass instead of geometric
+    for i in xrange(d.shape[1]):
+        if 'Wdm' in headers[i]: # only unwrap if is a mean wind direction metric
+            # pdb.set_trace()
+            d[:,i] = -d[:,i] + 90 # change to compass
+            ind = d[:,i]<0 # get between 0 and 360
+            d[ind,i] = d[ind,i] + 360   
 
     without2008 = False
 
@@ -194,7 +201,7 @@ if runcorr:
     # save best entries to plot
     # Top river one
     inan = ~(np.isnan(r)) * ~(r==1)
-    ind = np.argmax(r[inan])
+    ind = np.argmax(abs(r[inan]))
     while ('Qbest' not in locals()):
         if 'Q' in np.asarray(headers)[inan][ind]:
             Qbestr = r[inan][ind]
@@ -206,7 +213,7 @@ if runcorr:
 
     # Top wind one
     inan = ~(np.isnan(r)) * ~(r==1)
-    ind = np.argmax(r[inan])
+    ind = np.argmax(abs(r[inan]))
     while ('Wbest' not in locals()):
         if 'W' in np.asarray(headers)[inan][ind]:
             Wbestr = r[inan][ind]
@@ -258,12 +265,13 @@ if doplot:
             if whichseason == 'winter':
                 fig = plt.figure(figsize=(6,6))
                 ax = fig.add_subplot(111)
-                ax.plot(T, Wbest+360, 'o', ms=10, color='0.2', mec='k')
+                ax.plot(T, Wbest, 'o', ms=10, color='0.2', mec='k')
                 ax.set_xlim(T.min()-0.1, T.max()+0.1)
+                ax.set_ylim(Wbest.min()-5, Wbest.max()+5)
                 ax.set_xlabel('Transport relative to mean [%]')
                 ax.set_ylabel('January-February mean wind direction [deg]')
-                ax.text(0.75, 0.15, 'p=%1.4f' % Wbestp, color='r', transform=ax.transAxes, alpha=0.7)
-                ax.text(0.75, 0.1, 'r=%1.2f' % Wbestr, color='r', transform=ax.transAxes, alpha=0.7)
+                ax.text(0.1, 0.15, 'r=%1.2f' % Wbestr, color='r', transform=ax.transAxes, alpha=0.7)
+                ax.text(0.1, 0.1, 'p=%1.4f' % Wbestp, color='r', transform=ax.transAxes, alpha=0.7)
                 ax.set_frame_on(False)
                 fig.savefig('figures/winter-transport-correlations.pdf', bbox_inches='tight')
             elif whichseason == 'summer':
@@ -288,9 +296,9 @@ if doplot:
                 ax.set_xlim(T.min()-0.1, T.max()+0.1)
                 ax.set_ylim(1.0, 2.8)
                 ax.set_xlabel('Transport relative to mean [%]')
-                ax.set_ylabel('Mean March river discharge [$10^5$m$^3\!$/s]')
-                ax.text(0.75, 0.15, 'p=%1.4f' % Qbestp, color='r', transform=ax.transAxes, alpha=0.7)
-                ax.text(0.75, 0.1, 'r=%1.2f' % Qbestr, color='r', transform=ax.transAxes, alpha=0.7)
+                ax.set_ylabel('Mean March river discharge [$10^4$m$^3\!$/s]')
+                ax.text(0.75, 0.15, 'r=%1.2f' % Qbestr, color='r', transform=ax.transAxes, alpha=0.7)
+                ax.text(0.75, 0.1, 'p=%1.4f' % Qbestp, color='r', transform=ax.transAxes, alpha=0.7)
                 ax.set_frame_on(False)
                 fig.savefig('figures/summer-transport-correlations1.pdf', bbox_inches='tight')
 
@@ -321,9 +329,9 @@ if maketable:
 
     # Combine river info into one dataset
     iend1 = find(datesr1<datetime(2012,1,1,0,0,0))[-1] # ending index for file 1
-    tr = np.concatenate((tr1, tr2[:]), axis=0)
-    datesr = np.concatenate((datesr1, datesr2))
-    Q = np.concatenate((Q1, Q2))
+    tr = np.concatenate((tr1[:iend1], tr2[:]), axis=0)
+    datesr = np.concatenate((datesr1[:iend1], datesr2))
+    Q = np.concatenate((Q1[:iend1], Q2))
     r1.close(); r2.close()
 
     grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
