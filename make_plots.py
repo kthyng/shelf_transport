@@ -109,7 +109,7 @@ def init(whichtime, whichtype, whichdir):
         Files.append(glob(base + '2012-0[7-8]-*.*'))#npz'))
         Files.append(glob(base + '2013-0[7-8]-*.*'))#npz'))
         Files.append(glob(base + '2014-0[7-8]-*.*'))#npz'))
-    elif 'interannual' in whichtime:
+    elif ('interannual' in whichtime) and not ('mean' in whichtime):
         month = whichtime.split('-')[-1]
         Files.append(glob(base + '2004-' + month + '-*.*'))#npz'))
         Files.append(glob(base + '2005-' + month + '-*.*'))#npz'))
@@ -122,7 +122,20 @@ def init(whichtime, whichtype, whichdir):
         Files.append(glob(base + '2012-' + month + '-*.*'))#npz'))
         Files.append(glob(base + '2013-' + month + '-*.*'))#npz'))
         Files.append(glob(base + '2014-' + month + '-*.*'))#npz'))
-    elif 'monthly' in whichtime:
+    elif whichtime == 'interannual-mean':
+        month = whichtime.split('-')[-1]
+        Files.append(glob(base + '2004-*.*'))#npz'))
+        Files.append(glob(base + '2005-*.*'))#npz'))
+        Files.append(glob(base + '2006-*.*'))#npz'))
+        Files.append(glob(base + '2007-*.*'))#npz'))
+        Files.append(glob(base + '2008-*.*'))#npz'))
+        Files.append(glob(base + '2009-*.*'))#npz'))
+        Files.append(glob(base + '2010-*.*'))#npz'))
+        Files.append(glob(base + '2011-*.*'))#npz'))
+        Files.append(glob(base + '2012-*.*'))#npz'))
+        Files.append(glob(base + '2013-*.*'))#npz'))
+        Files.append(glob(base + '2014-*.*'))#npz'))
+    elif ('monthly' in whichtime) and not ('mean' in whichtime):
         year = whichtime.split('-')[-1]
         Files.append(glob(base + year + '-01-*.*'))#npz'))
         Files.append(glob(base + year + '-02-*.*'))#npz'))
@@ -136,6 +149,19 @@ def init(whichtime, whichtype, whichdir):
         Files.append(glob(base + year + '-10-*.*'))#npz'))
         Files.append(glob(base + year + '-11-*.*'))#npz'))
         Files.append(glob(base + year + '-12-*.*'))#npz'))
+    elif whichtime == 'monthly-mean':
+        Files.append(glob(base + '20??-01-*.*'))#npz'))
+        Files.append(glob(base + '20??-02-*.*'))#npz'))
+        Files.append(glob(base + '20??-03-*.*'))#npz'))
+        Files.append(glob(base + '20??-04-*.*'))#npz'))
+        Files.append(glob(base + '20??-05-*.*'))#npz'))
+        Files.append(glob(base + '20??-06-*.*'))#npz'))
+        Files.append(glob(base + '20??-07-*.*'))#npz'))
+        Files.append(glob(base + '20??-08-*.*'))#npz'))
+        Files.append(glob(base + '20??-09-*.*'))#npz'))
+        Files.append(glob(base + '20??-10-*.*'))#npz'))
+        Files.append(glob(base + '20??-11-*.*'))#npz'))
+        Files.append(glob(base + '20??-12-*.*'))#npz'))
 
     # pdb.set_trace()
 
@@ -507,7 +533,8 @@ def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
     # 'interannual-01' through 'interannual-12', 'monthly-2004' through 'monthly-2014'
-    whichtime = 'monthly-2014'
+    # 'interannual-mean' 'monthly-mean'
+    whichtime = 'monthly-mean'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'cross'
@@ -516,8 +543,8 @@ def run():
 
     #levels = np.linspace(0,1,11)
 
-    shelf_depth = 20 # do 100 50 and 20 
-    ishelf_depth = 0 # 2 1 0 index in cross array
+    shelf_depth = 100 # do 100 50 and 20 
+    ishelf_depth = 2 # 2 1 0 index in cross array
 
     # Whether to overlay previously-calculated wind stress arrows
     # from projects/txla_plots/plot_mean_wind.py on Rainier
