@@ -19,6 +19,7 @@ import op
 from matplotlib.mlab import find
 from matplotlib import ticker
 from matplotlib import cbook
+import calendar
 # from matplotlib.path import Path
 
 # mpl.rcParams['text.usetex'] = True
@@ -121,7 +122,20 @@ def init(whichtime, whichtype, whichdir):
         Files.append(glob(base + '2012-' + month + '-*.*'))#npz'))
         Files.append(glob(base + '2013-' + month + '-*.*'))#npz'))
         Files.append(glob(base + '2014-' + month + '-*.*'))#npz'))
-
+    elif 'monthly' in whichtime:
+        year = whichtime.split('-')[-1]
+        Files.append(glob(base + year + '-01-*.*'))#npz'))
+        Files.append(glob(base + year + '-02-*.*'))#npz'))
+        Files.append(glob(base + year + '-03-*.*'))#npz'))
+        Files.append(glob(base + year + '-04-*.*'))#npz'))
+        Files.append(glob(base + year + '-05-*.*'))#npz'))
+        Files.append(glob(base + year + '-06-*.*'))#npz'))
+        Files.append(glob(base + year + '-07-*.*'))#npz'))
+        Files.append(glob(base + year + '-08-*.*'))#npz'))
+        Files.append(glob(base + year + '-09-*.*'))#npz'))
+        Files.append(glob(base + year + '-10-*.*'))#npz'))
+        Files.append(glob(base + year + '-11-*.*'))#npz'))
+        Files.append(glob(base + year + '-12-*.*'))#npz'))
 
     # pdb.set_trace()
 
@@ -263,6 +277,27 @@ def plot_setup(whichtime, grid):
 
             ax.set_frame_on(False)
 
+    elif 'monthly' in whichtime:
+
+        fig, axarr = plt.subplots(4,3)
+        fig.set_size_inches(8.7, 11.5)
+        fig.subplots_adjust(left=0.008, bottom=0.1, right=1.0, top=0.98, wspace=0.005, hspace=0.1)
+
+        for i, ax in enumerate(axarr.flatten()):
+            if i==10:
+                tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
+                    pars=np.arange(20, 36, 2), outline=False, parslabels=[0, 1, 0, 0])
+            # elif i==11:
+            #     ax.set_axis_off()
+            else:
+                tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
+                    pars=np.arange(20, 36, 2), outline=False,
+                    merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
+
+            ax.text(0.07, 0.88, calendar.month_name[i+1], transform=ax.transAxes)
+
+            ax.set_frame_on(False)
+
     return fig, axarr
 
 def plot_stuff(xe, ye, H, cmap, grid, shelf_depth, ax, levels=np.linspace(0,100,11), extend='max'):
@@ -289,7 +324,7 @@ def plot_colorbar(fig, mappable, whichtype, ticks=None, whichdir='forward', whic
     # Horizontal colorbar below plot
     if whichtime=='seasonal':
         cax = fig.add_axes([0.25, 0.075, 0.5, 0.02]) #colorbar axes
-    elif 'interannual' in whichtime:
+    elif ('interannual' in whichtime) or ('monthly' in whichtime):
         cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
     cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
 
@@ -472,7 +507,7 @@ def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
     # 'interannual-01' through 'interannual-12', 'monthly-2004' through 'monthly-2014'
-    whichtime = 'interannual-12'
+    whichtime = 'monthly-2014'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'cross'
@@ -481,8 +516,8 @@ def run():
 
     #levels = np.linspace(0,1,11)
 
-    shelf_depth = 100 # do 100 50 and 20 
-    ishelf_depth = 2 # 2 1 0 index in cross array
+    shelf_depth = 20 # do 100 50 and 20 
+    ishelf_depth = 0 # 2 1 0 index in cross array
 
     # Whether to overlay previously-calculated wind stress arrows
     # from projects/txla_plots/plot_mean_wind.py on Rainier
