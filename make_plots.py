@@ -108,6 +108,19 @@ def init(whichtime, whichtype, whichdir):
         Files.append(glob(base + '2012-0[7-8]-*.*'))#npz'))
         Files.append(glob(base + '2013-0[7-8]-*.*'))#npz'))
         Files.append(glob(base + '2014-0[7-8]-*.*'))#npz'))
+    elif 'interannual' in whichtime:
+        month = whichtime.split('-')[-1]
+        Files.append(glob(base + '2004-' + month + '-*.*'))#npz'))
+        Files.append(glob(base + '2005-' + month + '-*.*'))#npz'))
+        Files.append(glob(base + '2006-' + month + '-*.*'))#npz'))
+        Files.append(glob(base + '2007-' + month + '-*.*'))#npz'))
+        Files.append(glob(base + '2008-' + month + '-*.*'))#npz'))
+        Files.append(glob(base + '2009-' + month + '-*.*'))#npz'))
+        Files.append(glob(base + '2010-' + month + '-*.*'))#npz'))
+        Files.append(glob(base + '2011-' + month + '-*.*'))#npz'))
+        Files.append(glob(base + '2012-' + month + '-*.*'))#npz'))
+        Files.append(glob(base + '2013-' + month + '-*.*'))#npz'))
+        Files.append(glob(base + '2014-' + month + '-*.*'))#npz'))
 
 
     # pdb.set_trace()
@@ -458,7 +471,8 @@ def plot_diff():
 def run():
 
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
-    whichtime = 'interannual-winter' #'interannual-winter'
+    # 'interannual-01' through 'interannual-12', 'monthly-2004' through 'monthly-2014'
+    whichtime = 'interannual-12'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'cross'
@@ -472,7 +486,7 @@ def run():
 
     # Whether to overlay previously-calculated wind stress arrows
     # from projects/txla_plots/plot_mean_wind.py on Rainier
-    addwind = 1
+    addwind = 0
     years = np.arange(2004,2015) # for adding the wind on
 
     # Number of bins to use in histogram
