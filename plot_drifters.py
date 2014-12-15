@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib as mpl
 import os
 import tracpy.calcs
+import glob
 
 mpl.rcParams.update({'font.size': 20})
 mpl.rcParams['font.sans-serif'] = 'Arev Sans, Bitstream Vera Sans, Lucida Grande, Verdana, Geneva, Lucid, Helvetica, Avant Garde, sans-serif'
@@ -25,27 +26,36 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 # read in grid
-loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
 # loc = '/home/kthyng/shelf/grid.nc'
-grid = tracpy.inout.readgrid(loc, usebasemap=True)
+grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
 
 # whether to do tails on drifters or not (don't with low decimation)
 dotails = False # True or False
 
 # Read in drifter tracks
 dd = 1 # 500 # drifter decimation
-startdate = '2010-01-15T00'
+startdate = '2011-07-15T04'
 d = netCDF.Dataset('tracks/' + startdate + 'gc.nc')
 xg = d.variables['xg'][::dd,:]
 yg = d.variables['yg'][::dd,:]
 ind = (xg == -1)
 xp, yp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2xy')
 xp[ind] = np.nan; yp[ind] = np.nan
-tp = d.variables['tp'][:]
+# index of a drifter that lasts the whole time
+itp = np.argmax(np.max(d.variables['tp'][:], axis=1))
+tp = d.variables['tp'][itp,:]
+units = d.variables['tp'].units
 # d.close()
 
 # txla output
-nc = netCDF.Dataset(loc)
+## Model output ##
+year = int(startdate.split('-')[0])
+if year <= 2013:
+    currents_filenames = np.sort(glob.glob('/home/kthyng/shelf/' + str(year) + '/ocean_his_????.nc'))
+elif year == 2014:
+    currents_filenames = np.sort(glob.glob('/home/kthyng/shelf/' + str(year) + '/ocean_his_??.nc'))
+nc = netCDF.MFDataset(currents_filenames)
 datestxla = netCDF.num2date(nc.variables['ocean_time'][:], nc.variables['ocean_time'].units)
 
 if not dotails:
@@ -74,8 +84,9 @@ if not dotails:
 # Plot drifters, starting 5 days into simulation
 # 2 days for one tail, 3 days for other tail
 # t = tp-tp[0]
+# pdb.set_trace()
 days = (tp-tp[0])/(3600.*24)
-dates = netCDF.num2date(tp, d.variables['tp'].units)
+dates = netCDF.num2date(tp, units)
 # Find indices relative to present time
 i5daysago = 0 # keeps track of index 5 days ago
 i2daysago = find(days>=3)[0] # index for 2 days ago, which starts as 3 days in
