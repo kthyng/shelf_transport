@@ -45,8 +45,8 @@ while dd.max()>100:
     d = np.zeros(x.size)
     d[1:] = np.cumsum(dd)
 
-# spacing at 3 km along the coast
-d3 = np.arange(d.min(), d.max(), 3000)
+ds = 5 # spacing at 3 km along the coast
+d3 = np.arange(d.min(), d.max(), 1000*ds)
 x3 = np.interp(d3, d, x)
 y3 = np.interp(d3, d, y)
 
@@ -54,15 +54,35 @@ y3 = np.interp(d3, d, y)
 dx = x3[1:] - x3[:-1]
 dy = y3[1:] - y3[:-1]
 mag = np.sqrt(dx**2 + dy**2)
-xn = x3[:-1] + (dy/mag)*3000
-yn = y3[:-1] - (dx/mag)*3000
+xn = x3[:-1] + (dy/mag)*1000*ds
+yn = y3[:-1] - (dx/mag)*1000*ds
+
+lonn, latn = grid['basemap'](xn, yn, inverse=True)
+lon3, lat3 = grid['basemap'](x3, y3, inverse=True)
+xg3, yg3, _ = tracpy.tools.interpolate2d(x3, y3, grid, 'd_xy2ij')
+xgn, ygn, _ = tracpy.tools.interpolate2d(xn, yn, grid, 'd_xy2ij')
 
 # put the 4 parts together to make path for each box along-shore
-paths = []
+paths = []; pathsxy = []; pathsg = []
 for i in xrange(xn.size-1):
-    verts = [(x3[i+1],y3[i+1]), (xn[i+1],yn[i+1]), 
+    vertsg = [(xg3[i+1],yg3[i+1]), (xgn[i+1],ygn[i+1]), 
+            (xgn[i],ygn[i]), (xg3[i],yg3[i])]
+    vertsxy = [(x3[i+1],y3[i+1]), (xn[i+1],yn[i+1]), 
             (xn[i],yn[i]), (x3[i],y3[i])]
+    verts = [(lon3[i+1],lat3[i+1]), (lonn[i+1],latn[i+1]), 
+            (lonn[i],latn[i]), (lon3[i],lat3[i])]
+    pathsg.append(Path(vertsg))
+    pathsxy.append(Path(vertsxy))
     paths.append(Path(verts))
+
+# make outer path of all boxes
+verts_outer = np.vstack((np.vstack((xg3,yg3)).T, 
+                        np.vstack((xgn[::-1],ygn[::-1])).T,
+                        [xg3[0],yg3[0]]))
+outerpath = Path(verts_outer)
+
+np.savez('calcs/coastpaths.npz', paths=paths, pathsg=pathsg, 
+            pathsxy=pathsxy, outerpathg=outerpath)
 
 # Plot up
 fig = plt.figure()
@@ -71,6 +91,6 @@ tracpy.plotting.background(grid, ax=ax)
 plt.plot(grid['xpsi'], grid['ypsi'], 'k', grid['xpsi'].T, grid['ypsi'].T, 'k')
 ind = grid['mask'].astype(bool)
 plt.plot(grid['xr'][ind], grid['yr'][ind], 'bs')
-for path in paths:
+for path in pathsxy:
     patch = patches.PathPatch(path, facecolor='orange', lw=2, zorder=10)
     ax.add_patch(patch)
