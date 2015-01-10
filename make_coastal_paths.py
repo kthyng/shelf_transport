@@ -54,8 +54,13 @@ y3 = np.interp(d3, d, y)
 dx = x3[1:] - x3[:-1]
 dy = y3[1:] - y3[:-1]
 mag = np.sqrt(dx**2 + dy**2)
-xn = x3[:-1] + (dy/mag)*1000*ds
-yn = y3[:-1] - (dx/mag)*1000*ds
+# subtract one since also backing up the x3, y3 line in the following chunk of code
+xn = x3[:-1] + (dy/mag)*1000*(ds-1)
+yn = y3[:-1] - (dx/mag)*1000*(ds-1)
+
+# Shift the original line back onto land to capture all active space
+x3 = x3[:-1] - (dy/mag)*1000
+y3 = y3[:-1] + (dx/mag)*1000
 
 lonn, latn = grid['basemap'](xn, yn, inverse=True)
 lon3, lat3 = grid['basemap'](x3, y3, inverse=True)
@@ -76,13 +81,17 @@ for i in xrange(xn.size-1):
     paths.append(Path(verts))
 
 # make outer path of all boxes
-verts_outer = np.vstack((np.vstack((xg3,yg3)).T, 
+verts_outerg = np.vstack((np.vstack((xg3,yg3)).T, 
                         np.vstack((xgn[::-1],ygn[::-1])).T,
                         [xg3[0],yg3[0]]))
-outerpath = Path(verts_outer)
+outerpathg = Path(verts_outerg)
+verts_outerxy = np.vstack((np.vstack((x3,y3)).T, 
+                        np.vstack((xn[::-1],yn[::-1])).T,
+                        [x3[0],y3[0]]))
+outerpathxy = Path(verts_outerxy)
 
 np.savez('calcs/coastpaths.npz', paths=paths, pathsg=pathsg, 
-            pathsxy=pathsxy, outerpathg=outerpath)
+            pathsxy=pathsxy, outerpathg=outerpathg, outerpathxy=outerpathxy)
 
 # Plot up
 fig = plt.figure()
@@ -94,3 +103,4 @@ plt.plot(grid['xr'][ind], grid['yr'][ind], 'bs')
 for path in pathsxy:
     patch = patches.PathPatch(path, facecolor='orange', lw=2, zorder=10)
     ax.add_patch(patch)
+plt.plot(verts_outerxy[:,0], verts_outerxy[:,1], 'r-', lw=5, zorder=15)
