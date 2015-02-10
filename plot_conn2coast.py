@@ -22,6 +22,7 @@ from matplotlib import ticker, colors, cbook
 import calendar
 import matplotlib.patches as Patches
 import matplotlib.cm as cm
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes, mark_inset
 
 
 # of the drifters that at some point enter the coastal boxes
@@ -71,6 +72,7 @@ def plot_seasonal():
 
     cmap = 'YlGn'
     log = False
+    zoomed = True # True to add in a magnified region, for the 30 days advection timing
 
     d = np.load('calcs/coastpaths.npz')
     pathsxy = d['pathsxy']
@@ -83,8 +85,9 @@ def plot_seasonal():
         Files.append(glob.glob('calcs/coastconn/likelihood/hist-20??-0[1,2].npz'))
         Files.append(glob.glob('calcs/coastconn/likelihood/hist-20??-0[7,8].npz'))
         H = np.zeros((2,6,100,100))
+        ndbox = np.zeros((2,6,342))
         for i,files in enumerate(Files): # winter and summer
-            numfiles = 0; ndbox = 0
+            numfiles = 0
             for File in files: # months/years within winter or summer
                 print File
                 d = np.load(File)
@@ -95,7 +98,8 @@ def plot_seasonal():
                 H[i,:,:,:] += Htemp
                 days = d['days']
                 xe = d['xe']; ye = d['ye']
-                ndbox += d['ndbox']
+                # pdb.set_trace()
+                ndbox[i,:,:] += d['ndbox']
                 d.close()
             # pdb.set_trace()
             # Divide by number of starting drifters
@@ -142,7 +146,7 @@ def plot_seasonal():
                 # http://matplotlib.org/1.2.1/examples/pylab_examples/hist_colormapped.html
                 # we need to normalize the data to 0..1 for the full
                 # range of the colormap
-                fracs = ndbox[j,:].astype(float)/ndbox[j,:].max()
+                fracs = ndbox[i,j,:].astype(float)/ndbox[i,j,:].max()
                 norm = colors.normalize(fracs.min(), fracs.max())
     
                 # Save patches together
@@ -151,16 +155,48 @@ def plot_seasonal():
                     patches.append(Patches.PathPatch(path, facecolor='orange', lw=0, zorder=10, edgecolor=None))
                     # ax.add_patch(patch)
 
-                # pdb.set_trace()
+                # assign shades of colormap to the patches according to values, and plot
                 for thisfrac, thispatch in zip(fracs, patches):
                     color = cm.Oranges(norm(thisfrac))
                     thispatch.set_facecolor(color)
                     ax.add_patch(thispatch)
+
+                if zoomed and j==H.shape[1]-1: # magnification for longest advection time available
+
+                    # pdb.set_trace()
+
+                    # Save patches together
+                    patches = []
+                    for path in pathsxy:
+                        patches.append(Patches.PathPatch(path, facecolor='orange', lw=0, zorder=10, edgecolor=None))
+                        # ax.add_patch(patch)
+
+                    # Inset image
+                    axins = zoomed_inset_axes(ax, 2.0, loc=4) # zoom=6
+                    tracpy.plotting.background(grid=grid, ax=axins, merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
+                    axins.contourf(XE, YE, H[i,j,:,:].T*100., cmap=cmap, levels=levels)
+                    # assign shades of colormap to the patches according to values, and plot
+                    for thisfrac, thispatch in zip(fracs, patches):
+                        color = cm.Oranges(norm(thisfrac))
+                        thispatch.set_facecolor(color)
+                        axins.add_patch(thispatch)
+
+                    # pdb.set_trace()
+
+                    # subregion of the original image
+                    x1, x2, y1, y2 = 86000, 340800, 465000, 715000
+                    axins.set_xlim(x1,x2)
+                    axins.set_ylim(y1,y2)
+                    plt.xticks(visible=False)
+                    plt.yticks(visible=False)
+                    plt.setp(axins,xticks=[],yticks=[])
+                    # draw a bbox of the region of the inset axes in the parent axes and
+                    # connecting lines between the bbox and the inset axes area
+                    mark_inset(ax, axins, loc1=1, loc2=3, fc="none", ec="0.5")
+                    plt.draw()
+                    plt.show()
+
     
-                # for patch in patches:
-                #     # patch = patches.PathPatch(path, facecolor='orange', lw=2, zorder=10)
-                #     ax.add_patch(patch)
-                # pdb.set_trace()
                 
             ax.set_frame_on(False)
         cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
