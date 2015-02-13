@@ -37,13 +37,15 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 maketable = False
 runcorr = True # run correlation coefficients
-doplot = False
+doplot = True
 explore = True # True to do exploratory plots, False to do polished plot
 whichseason = 'winter' # 'winter' or 'summer'
 
 
 headers = ('V_winter-3', 'V_winter-5', 'V_winter-10', 'V_winter-15', 'V_winter-20', 'V_winter-30',
+            'V_PA_winter-30', 'V_G_winter-30',
             'V_summer-3', 'V_summer-5', 'V_summer-10', 'V_summer-15', 'V_summer-20', 'V_summer-30', 
+            'V_PA_summer-30', 'V_G_summer-30',
             'Instantaneous-discharge-Qi-Jan', 'Qi-Feb', 'Qi-Mar', 'Qi-Apr', 'Qi-May', 'Qi-Jun', 'Qi-Jul',
             'Qi-Aug', 'Qi-Sep', 'Qi-Oct', 'Qi-Nov', 'Qi-Dec', 
             'Cumulative-discharge-Qcum-Jan', 'Qcum-Feb', 'Qcum-Mar', 'Qcum-Apr', 'Qcum-May', 'Qcum-Jun', 'Qcum-Jul',
@@ -172,11 +174,13 @@ if runcorr:
     for i in xrange(d.shape[1]):
         if 'Wdm' in headers[i]: # only unwrap if is a mean wind direction metric
             d[:,i] = -d[:,i] + 90 # change to compass
-            if headers[i]=='Wdm2-Sep' or headers[i]=='Wdm3-Oct':
-                pass
-            else:
-                ind = d[:,i]<0 # get between 0 and 360
-                d[ind,i] = d[ind,i] + 360   
+            # pdb.set_trace()
+            # if headers[i]=='Wdm2-Sep' or headers[i]=='Wdm3-Oct':
+            #     pass
+            # else:
+            #     pdb.set_trace()
+            #     ind = d[:,i]<0 # get between 0 and 360
+            #     d[ind,i] = d[ind,i] + 360   
 
     without2008 = False
 
@@ -186,9 +190,9 @@ if runcorr:
         d = d2.copy()
 
     if whichseason == 'winter':
-        T = d[:,5] # the transport is the first column
+        T = d[:,6] # the transport is the first column
     elif whichseason == 'summer':
-        T = d[:,11] # the transport is the first column
+        T = d[:,15] # the transport is the first column
     r = np.empty(d.shape[1]) # to store the correlation coefficients
     p = np.empty(d.shape[1]) # to store the correlation coefficients
     for i in xrange(d.shape[1]):
@@ -219,7 +223,8 @@ if runcorr:
     inan = ~(np.isnan(r)) * ~(r==1)
     ind = np.argmax(abs(r[inan]))
     while ('Wbest' not in locals()):
-        if 'W' in np.asarray(headers)[inan][ind]:
+        if ('Wdm' in np.asarray(headers)[inan][ind]) and ('Wdv' not in np.asarray(headers)[inan][ind]) \
+                and np.isnan(d[:,inan][:,ind]).sum()==0:
             Wbestr = r[inan][ind]
             Wbestp = p[inan][ind]
             Wbest = d[:,inan][:,ind]
@@ -268,6 +273,8 @@ if doplot:
 
         else:
             if whichseason == 'winter':
+
+                # For all coastline
                 fig = plt.figure(figsize=(6,6))
                 ax = fig.add_subplot(111)
                 ax.plot(T, Wbest, 'o', ms=10, color='0.2', mec='k')
@@ -275,28 +282,42 @@ if doplot:
                 # ax.set_xlim(T.min()-1e6, T.max()+1e6)
                 ax.set_ylim(Wbest.min()-5, Wbest.max()+5)
                 # ax.set_ylim(Wbest.min()-0.5, Wbest.max()+0.5)
-                ax.set_xlabel('Integrated likelihood of connection from domain [%]')
-                # ax.set_xlabel('Integrated coastline vulnerability')
+                # ax.set_xlabel('Integrated likelihood of connection from domain [%]')
+                ax.set_xlabel('Integrated coastline vulnerability')
                 # ax.set_ylabel('Dec-Jan-Mar wind speed variance [ms$^{-1}\!$]')
                 ax.set_ylabel('Nov-Dec-Jan mean wind direction [deg]')
                 ax.text(0.1, 0.15, 'r=%1.2f' % Wbestr, color='r', transform=ax.transAxes, alpha=0.7)
                 ax.text(0.1, 0.1, 'p=%1.4f' % Wbestp, color='r', transform=ax.transAxes, alpha=0.7)
                 ax.set_frame_on(False)
                 fig.savefig('figures/coastconn/likelihood/winter-correlations.pdf', bbox_inches='tight')
-            elif whichseason == 'summer':
 
-                # with one variable
-                fig = plt.figure(figsize=(6,6))
+            elif whichseason == 'summer':
+                # for all coastline
+                fig = plt.figure()
                 ax = fig.add_subplot(111)
-                mappable = ax.plot(T, Wbest, 'o', ms=10, color='0.2', mec='k')
-                ax.set_xlim(T.min()-50, T.max()+50)
-                ax.set_ylim(Wbest.min()-5, Wbest.max()+5)
-                ax.set_xlabel('Integrated likelihood of connection from domain [%]')
-                ax.set_ylabel('July-August mean wind direction [deg]')
-                ax.text(0.1, 0.15, 'r=%1.2f' % Wbestr, color='r', transform=ax.transAxes, alpha=0.7)
-                ax.text(0.1, 0.1, 'p=%1.4f' % Wbestp, color='r', transform=ax.transAxes, alpha=0.7)
+                mappable = ax.scatter(Qbest, Wbest, c=T, cmap='Oranges', s=300)
+                ax.set_xlabel('River discharge on August 1st; ' + 'r$^2\!$=%1.2f' % Qbestr**2 + ', p=%1.4f' % Qbestp)
+                ax.set_ylabel('April mean wind direction [deg]; ' + 'r$^2\!$=%1.2f' % Wbestr**2 + ', p=%1.4f' % Wbestp)
+                cb = fig.colorbar(mappable)
+                cb.set_label('Integrated coastline impact')
+                ax.text(0.1, 0.05, 'Combined, adjusted r$^2\!$=0.78', color='r', transform=ax.transAxes, alpha=0.7)
                 ax.set_frame_on(False)
                 fig.savefig('figures/coastconn/likelihood/summer-correlations.pdf', bbox_inches='tight')
+
+
+
+                # # with one variable
+                # fig = plt.figure(figsize=(6,6))
+                # ax = fig.add_subplot(111)
+                # mappable = ax.plot(T, Wbest, 'o', ms=10, color='0.2', mec='k')
+                # ax.set_xlim(T.min()-50, T.max()+50)
+                # ax.set_ylim(Wbest.min()-5, Wbest.max()+5)
+                # ax.set_xlabel('Integrated likelihood of connection from domain [%]')
+                # ax.set_ylabel('July-August mean wind direction [deg]')
+                # ax.text(0.1, 0.15, 'r=%1.2f' % Wbestr, color='r', transform=ax.transAxes, alpha=0.7)
+                # ax.text(0.1, 0.1, 'p=%1.4f' % Wbestp, color='r', transform=ax.transAxes, alpha=0.7)
+                # ax.set_frame_on(False)
+                # fig.savefig('figures/coastconn/likelihood/summer-correlations.pdf', bbox_inches='tight')
 
 
 if maketable:
