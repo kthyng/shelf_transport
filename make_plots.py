@@ -229,6 +229,7 @@ def calc_metric(xp, yp, Hstart, whichtype):
 
                 # D^2 is already averaged
                 # Picks out the drifters (xp,yp) that are in the j,i-th histogram bin, and looks at their statistics
+                # metric[j,i,:], nnans[j,i,:], pairs = tracpy.calcs.rel_dispersion(xp[Hstart[j,i][0],:], yp[Hstart[j,i][0],:], r=1.05, squared=False)
                 metric[j,i,:], nnans[j,i,:], pairs = tracpy.calcs.rel_dispersion(xp[Hstart[j,i][0],:], yp[Hstart[j,i][0],:], r=1.05, squared=True)
                 # np.savez('calcs/pairs/bin' + str(i) + '_' + str(H.size) + '.npz')
             
@@ -534,12 +535,15 @@ def run():
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
     # 'interannual-01' through 'interannual-12', 'monthly-2004' through 'monthly-2014'
     # 'interannual-mean' 'monthly-mean'
-    whichtime = 'monthly-mean'
+    whichtime = 'seasonal'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
-    whichtype = 'cross'
+    whichtype = 'D2'
     # 'forward' or 'back' in time
     whichdir = 'forward'
+
+    # if doing D2, choose the initial separation distance too. And give a little extra for roundoff and projections
+    r = 5.25 # 5.25 and 1.05
 
     #levels = np.linspace(0,1,11)
 
@@ -548,8 +552,8 @@ def run():
 
     # Whether to overlay previously-calculated wind stress arrows
     # from projects/txla_plots/plot_mean_wind.py on Rainier
-    addwind = 0
-    years = np.arange(2004,2015) # for adding the wind on
+    addwind = 0 # for adding the wind on
+    years = np.arange(2012,2015) 
 
     # Number of bins to use in histogram
     bins = (100,100) #(30,30)
@@ -568,7 +572,7 @@ def run():
     # grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
 
     if whichtype == 'D2':
-        Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
+        Hfilename = 'figures/' + whichtype + '/r' + str(int(r)) + '/' + whichtime + 'H.npz'
     elif 'coast' in whichtype:
         Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
     elif whichtype == 'cross':
@@ -686,7 +690,7 @@ def run():
                     xp = xp[ind]; yp = yp[ind] # pick out the drifters that reach the coastline
                     d.close()
                 elif whichtype == 'D2' or whichtype == 'fsle':
-                    sfile = 'calcs/dispersion/hist/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0]) + '.npz'
+                    sfile = 'calcs/dispersion/hist/D2/r' + str(int(r)) + '/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0]) + '.npz'
                     if os.path.exists(sfile): # just read in info
                         already_calculated = 1
                     else:
@@ -770,7 +774,7 @@ def run():
     # 12000 for mean interannual-summer, 20000 for mean, interannual-winter, 1400 for 100 seasonal
     # 1800 for 100 interannual-winter, 1800 for 100 interannual-summer
     if whichtype == 'D2':
-        locator.set_bounds(0, 1800) 
+        locator.set_bounds(0, 160) 
         #locator.set_bounds(0, 0.75*np.nanmax(np.nanmax(H[:,:,:,itind], axis=1), axis=1).mean())
         levels = locator()
     elif 'coast' in whichtype and whichdir == 'back':
