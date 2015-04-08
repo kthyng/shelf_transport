@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import tracpy
 import op
 import matplotlib as mpl
+import pdb
 
 mpl.rcParams.update({'font.size': 18})
 mpl.rcParams['font.sans-serif'] = 'Arev Sans, Bitstream Vera Sans, Lucida Grande, Verdana, Geneva, Lucid, Helvetica, Avant Garde, sans-serif'
@@ -23,13 +24,15 @@ shelf_depth = 100
 
 whichtime = 'interannual' # 'seasonal' or 'interannual'
 whichseason = 'summer' # 'summer' or 'winter'
+region = 1 # 1, 2, 3, 4
 
 # Find depths at the center of each histogram bin
 # loc = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
 # grid = tracpy.inout.readgrid(loc, usebasemap=True)
-grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
-vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
-grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
+# grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+# vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
+# grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
+grid = tracpy.inout.readgrid('grid.nc', usebasemap=True)
 
 
 if whichtime == 'seasonal':
@@ -70,25 +73,30 @@ elif whichtime == 'interannual':
 
         # Calculate the transport for each year for the winter wind transport area.
         # Want places where the depth is less than 100 meters and west of 90 deg.
-        iwind = ishallow * (lons<-90) * (lats>27.5)
+        if region == 1: # shelf bend
+            iwind = ideep * (lons<-95) * (lons>-97) * (lats>26) * (lats<28)
+        elif region == 2: # Mississippi region
+            iwind = ishallow * (lons<-88) * (lons>-89.3) * (lats>28.7) * (lats<30)
+        elif region == 3: # winter wind transport region
+            iwind = ishallow * (lons<-90) * (lats>27.5)
         Hwind = np.nansum(H[:,iwind.T], axis=1)
 
-        # Plot against calculated mean wind direction
-        years = np.arange(2004,2011)
-        dirs = np.empty(years.size)
-        for i,year in enumerate(years):
-            d = np.load('../txla_plots/calcs/wind_stress/calcs' + str(year) + 'winter.npz')
-            dirs[i] = d['angle']
-            d.close()
+        # # Plot against calculated mean wind direction
+        # years = np.arange(2004,2014)
+        # dirs = np.empty(years.size)
+        # for i,year in enumerate(years):
+        #     d = np.load('../txla_plots/calcs/wind_stress/calcs' + str(year) + 'winter.npz')
+        #     dirs[i] = d['angle']
+        #     d.close()
 
         Hwind_rel = (Hwind - Hwind.mean())/(Hwind.max() - Hwind.min())
-        np.savez('calcs/shelfconn/' + whichtime + '-' + whichseason + 'transportsum.npz', transport=Hwind_rel)
-        fig = plt.figure(figsize=(8.1375,6.9))
-        ax = fig.add_subplot(111)
-        ax.plot(Hwind_rel, dirs, 'o', color='0.2', ms=10)
-        ax.set_xlabel('Transport relative to mean [%]')
-        ax.set_ylabel('Mean winter wind direction [deg]')
-        fig.savefig('figures/cross/interannual-winter-transport-vs-wind.pdf', bbox_inches='tight')
+        np.savez('calcs/shelfconn/' + whichtime + '-' + whichseason + str(region) + 'transportsum.npz', transport=Hwind_rel)
+        # fig = plt.figure(figsize=(8.1375,6.9))
+        # ax = fig.add_subplot(111)
+        # ax.plot(Hwind_rel, dirs, 'o', color='0.2', ms=10)
+        # ax.set_xlabel('Transport relative to mean [%]')
+        # ax.set_ylabel('Mean winter wind direction [deg]')
+        # fig.savefig('figures/cross/interannual-winter-transport-vs-wind.pdf', bbox_inches='tight')
 
     elif whichseason == 'summer':
 
@@ -109,46 +117,51 @@ elif whichtime == 'interannual':
 
         # Calculate the transport for each year for the winter wind transport area.
         # Want places where the depth is less than 100 meters and west of 90 deg.
-        iwind = ishallow * (lons<-90) * (lats>27.5)
+        if region == 1: # shelf bend
+            iwind = ideep * (lons<-95) * (lons>-97) * (lats>26) * (lats<28)
+        elif region == 2: # Mississippi region
+            iwind = ishallow * (lons<-88) * (lons>-89.3) * (lats>28.7) * (lats<30)
+        elif region == 4: # summer river transport region
+            iwind = ishallow * (lons<-90) * (lats>27.5)
         Hwind = np.nansum(H[:,iwind.T], axis=1)
         Hwind_rel = (Hwind - Hwind.mean())/(Hwind.max() - Hwind.min())
-        np.savez('calcs/shelfconn/' + whichtime + '-' + whichseason + 'transportsum.npz', transport=Hwind_rel)
+        np.savez('calcs/shelfconn/' + whichtime + '-' + whichseason + str(region) + 'transportsum.npz', transport=Hwind_rel)
 
-        # plot vs. wind direction and discharge from Forest et al paper
-        # river discharge, m^3/s
-        Q = np.array([25800.,17500.,19500.,25400.,44400.,42000.,31300.])
-        # wind speed, m/s
-        U = np.array([-0.141,-0.472,-1.614,0.426,0.781,2.054,-2.240])
-        V = np.array([2.30,0.67,1.81,1.29,1.48,0.91,1.66])
-        Dir = np.rad2deg(np.arctan2(V,U))
-        S = np.sqrt(U**2+V**2)
+        # # plot vs. wind direction and discharge from Forest et al paper
+        # # river discharge, m^3/s
+        # Q = np.array([25800.,17500.,19500.,25400.,44400.,42000.,31300.])
+        # # wind speed, m/s
+        # U = np.array([-0.141,-0.472,-1.614,0.426,0.781,2.054,-2.240])
+        # V = np.array([2.30,0.67,1.81,1.29,1.48,0.91,1.66])
+        # Dir = np.rad2deg(np.arctan2(V,U))
+        # S = np.sqrt(U**2+V**2)
 
-        # wind angle and discharge vs. transport magnitude
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.scatter(Q, Dir, c=Hwind_rel, cmap='Reds', s=300)#, linewidths=0.
+        # # wind angle and discharge vs. transport magnitude
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.scatter(Q, Dir, c=Hwind_rel, cmap='Reds', s=300)#, linewidths=0.
 
-        # wind magnitude and discharge vs. transport magnitude
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.scatter(Q, S, c=Hwind_rel, cmap='Reds', s=300)#, linewidths=0.
+        # # wind magnitude and discharge vs. transport magnitude
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.scatter(Q, S, c=Hwind_rel, cmap='Reds', s=300)#, linewidths=0.
 
-        # wind magnitude and angle vs. transport magnitude
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.scatter(Dir, S, c=Hwind_rel, cmap='Reds', s=300)#, linewidths=0.
+        # # wind magnitude and angle vs. transport magnitude
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.scatter(Dir, S, c=Hwind_rel, cmap='Reds', s=300)#, linewidths=0.
 
-        # U wind and discharge vs. transport magnitude
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.scatter(Q, U, c=Hwind_rel, cmap='Reds', s=300)#, linewidths=0.
+        # # U wind and discharge vs. transport magnitude
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.scatter(Q, U, c=Hwind_rel, cmap='Reds', s=300)#, linewidths=0.
 
-        # V wind and discharge vs. transport magnitude
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.scatter(Q, V, c=Hwind_rel, cmap='Reds', s=300)#, linewidths=0.
+        # # V wind and discharge vs. transport magnitude
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.scatter(Q, V, c=Hwind_rel, cmap='Reds', s=300)#, linewidths=0.
 
-        # U wind * cos(angle) and discharge vs. transport magnitude
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.scatter(Q, U*np.cosd(Dir), c=Hwind_rel, cmap='Reds', s=300)#, linewidths=0.
+        # # U wind * cos(angle) and discharge vs. transport magnitude
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.scatter(Q, U*np.cosd(Dir), c=Hwind_rel, cmap='Reds', s=300)#, linewidths=0.
