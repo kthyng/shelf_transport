@@ -35,14 +35,16 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-maketable = True
-runcorr = False # run correlation coefficients
+maketable = False
+runcorr = True # run correlation coefficients
 doplot = False
 explore = False # True to do exploratory plots, False to do polished plot
-whichseason = 'winter' # 'winter' or 'summer'
+whichseason = 'summer' # 'winter' or 'summer'
+col = 3 # index for column in table, starting from 0 
 
 
-headers = ('Transport_winter', 'Transport_summer', 
+headers = ('Transport_winter_R1', 'Transport_winter_R2', 'Transport_winter_R3', 
+            'Transport_summer_R1', 'Transport_summer_R2', 'Transport_summer_R4', 
             'Instantaneous-discharge-Qi-Jan', 'Qi-Feb', 'Qi-Mar', 'Qi-Apr', 'Qi-May', 'Qi-Jun', 'Qi-Jul',
             'Qi-Aug', 'Qi-Sep', 'Qi-Oct', 'Qi-Nov', 'Qi-Dec', 
             'Cumulative-discharge-Qcum-Jan', 'Qcum-Feb', 'Qcum-Mar', 'Qcum-Apr', 'Qcum-May', 'Qcum-Jun', 'Qcum-Jul',
@@ -182,10 +184,12 @@ if runcorr:
         d2 = np.vstack((d[0:4,:], d[5:,:]))
         d = d2.copy()
 
-    if whichseason == 'winter':
-        T = d[:,0] # the transport is the first column
-    elif whichseason == 'summer':
-        T = d[:,1] # the transport is the first column
+    T = d[:,col] # which column to use for transport
+    
+    # if whichseason == 'winter':
+    #     T = d[:,0] # the transport is the first column
+    # elif whichseason == 'summer':
+    #     T = d[:,1] # the transport is the first column
     r = np.empty(d.shape[1]) # to store the correlation coefficients
     p = np.empty(d.shape[1]) # to store the correlation coefficients
     for i in xrange(d.shape[1]):
