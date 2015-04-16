@@ -335,41 +335,22 @@ def plot_seasonal():
     pathsxy = d['pathsxy']
     d.close()
 
-                        # # loop over one simulation
-                        # idstest = [] #np.empty(0)
-                        # [idstest.extend(ids[0,0,j]) for j in xrange(342)]
-                        # idstest = set(idstest) # eliminate extras
-                        # # loop over another simulation
-                        # idstest2 = [] #np.empty(0)
-                        # [idstest2.extend(ids[1,0,j]) for j in xrange(342)]
-                        # idstest2 = set(idstest2) # eliminate extras
-                        # Htemp, _, _ = np.histogram2d(xp0[list(idstest)+list(idstest2)], yp0[list(idstest)+list(idstest2)], bins=bins, 
-                        #                 range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
-
-
     ## Read in files ##
     filename = 'calcs/coastconn/likelihood/hist-seasonal-' + whichboxes + '.npz'
     if not os.path.exists(filename):
         Files = []
-        # Files.append(glob.glob('calcs/coastconn/likelihood/hist-201[0,1]-0[1].npz'))
         Files.append(glob.glob('calcs/coastconn/likelihood/hist-20??-0[1,2].npz'))
-        # Files.append(glob.glob('calcs/coastconn/likelihood/hist-201[0,1]-0[7].npz'))
         Files.append(glob.glob('calcs/coastconn/likelihood/hist-20??-0[7,8].npz'))
         H = np.zeros((len(Files),6,100,100))
         ndbox = np.zeros((len(Files),6,342))
-        # # drifter ids, will have to convert to starting location later
-        # # will be size [season x advection days x drifters (varying length)]
-        # ids = defaultdict(lambda  : defaultdict(list))      
         for i,files in enumerate(Files): # winter and summer
             numfiles = 0
             for File in files: # months/years within winter or summer
                 print File
                 d = np.load(File)
-                # Htemp = d[whichH] # 6x100x100, overall histogram
                 numfiles += d['numfiles']
                 # size [simulations in file x advection days x coast box]
                 idstemp = d['ids'].item()
-                # pdb.set_trace()
                 for k in xrange(d['numfiles']): # loop over simulations in file which don't want to mix up
                     for j in xrange(6): #advection days
                         # add together the drifters for the desired boxes
@@ -379,43 +360,13 @@ def plot_seasonal():
                         Htemp, _, _ = np.histogram2d(xp0[ids], yp0[ids], bins=bins, 
                                         range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
                         H[i,j] += Htemp
-
-
-                    # for k, box in enumerate(boxes): # loop over desired boxes
-                    #     # add on drifter ids from j advection time and coastal box box
-                    #     if len(ids[i,j]) == 0:
-                    #         ids[i,j] = set(idstemp[j,box])
-                    #     else:
-                    #         ids[i,j] |= set(idstemp[j,box]) # union operator
-                    #         # ids[i,j] = set(np.concatenate((ids[i,j], idstemp[j,box])))
-                # pdb.set_trace()
-                # idstemp = np.concatenate(d['ids'].item().values())
-                # need to loop through advection times and boxes
-                # ids = np.concatenate((ids,idstemp))
-                # idstemp = d['ids'].item()
-                # combine all the ids and find the unique set
-                # for j in xrange(len(pts)):
-                #     ids = np.concatenate((ids, idstemp))
-                #     ids = set(ids)
-                # if whichH=='Hall':
-                #     H[i] += Htemp
-                # elif whichH=='H':
-                #     H[i] = Htemp[:,boxes,:,:].sum(axis=1)
                 days = d['days']
                 xe = d['xe']; ye = d['ye']
                 ndbox[i,:,:] += d['ndbox']
                 d.close()
-            # pdb.set_trace()
-            # for j in xrange(6): #advection days
-            #     # ids[i,j] = set(ids[i,j])
-            #     H[i,j], _, _ = np.histogram2d(xp0[list(ids[i,j])], yp0[list(ids[i,j])], bins=bins, 
-            #                     range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
             # Divide by number of starting drifters
-            # pdb.set_trace()
             if (whichH=='Hall'):
                 H[i] /= (numfiles*Hstart)
-        # pdb.set_trace()
-        # np.savez(filename, H=H, days=days, xe=xe, ye=ye, ndbox=ndbox, ids=dict(ids))
         np.savez(filename, H=H, days=days, xe=xe, ye=ye, ndbox=ndbox)
     else:
         d = np.load(filename)
@@ -548,8 +499,6 @@ def likelihood():
                 Hall = np.zeros((days.size, bins[0], bins[1]))
                 # number of drifters reaching each coast box (yes or no, no weighting) in day days
                 ndbox = np.zeros((days.size, len(pts)))
-                # Histograms of where drifters originate for advection times by coast box
-                # H = np.zeros((days.size, len(pts), bins[0], bins[1]))
                 # http://stackoverflow.com/questions/4064277/2d-array-of-lists-in-python
                 # will be size [days in month/year x advection days x coast box x drifters added for files]
                 ids = defaultdict(lambda  : defaultdict(list)) # drifter ids, will have to convert to starting location later     
@@ -592,12 +541,9 @@ def likelihood():
                         # xpsaveall = xp0temp[ind]; ypsaveall = yp0temp[ind]
                         # xpsaveall = xp0[code][tocoast]; ypsaveall = yp0[code][tocoast];
                         # # add in starting locations for drifters that don't exit a coast box
-                        # pdb.set_trace()
                         pttemp = []
                         [pttemp.extend(pts[j]) for j in xrange(len(pts))]
                         inds2use = set(np.concatenate((code[tocoast], pttemp)))
-                        # pdb.set_trace()
-                        # xpsaveall = set(np.concatenate((xpsaveall, xp0[pttemp])))
                         Halltemp, _, _ = np.histogram2d(xp0[list(inds2use)], yp0[list(inds2use)], bins=bins, 
                                             range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
                         Hall[i,:,:] += Halltemp
@@ -609,27 +555,8 @@ def likelihood():
                             # indices of drifters that start in this box, referenced to shelf transport seeding
                             pt = pts[j] 
 
-                            # # projected drifter origin locations that end up in this coast box in day days
-                            # xpsave = xp0[code][ind[j,:]]; ypsave = yp0[code][ind[j,:]]
-
-                            # # Add in drifters that start in coast boxes
-                            # xpcoast = set(xp0[pt]) - set(xpsave)
-                            # xpsave = np.concatenate((xpsave, list(xpcoast)))
-                            # ypcoast = set(yp0[pt]) - set(ypsave)
-                            # ypsave = np.concatenate((ypsave, list(ypcoast)))
-
-                            # # Find histogram of xpsave, ypsave points for this simulation/box origin points
-                            # Htemp, _, _ = np.histogram2d(xpsave, ypsave, bins=bins, 
-                            #                 range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
-                            # # pdb.set_trace()
-                            # # aggregate number of drifters starting in different histogram bins 
-                            # # that reach coastline for each month/year combination
-                            # H[i,j,:,:] += Htemp 
-                            # if len(ids[k,i,j]) == 0:
                             # Keep every simulation set of drifters separate
                             ids[k,i,j] = code[ind[j,:]] # drifter indices/ids as referenced to original seed locations
-                            # else:
-                            #     ids[k,i,j] = np.concatenate((ids[k,i,j],code[ind[j,:]])) # drifter indices/ids as referenced to original seed locations
 
                             # add in drifters that start in box in case they didn't exit and so haven't been counted
                             ids[k,i,j] = np.concatenate((ids[k,i,j], pt))
@@ -653,8 +580,6 @@ def likelihood():
                 # numfiles is to calculate the number drifters from bins for the the number of runs
                 # aggregated together, compared with the appropriate number of starting drifters overall
                 np.savez(fname, ids=dict(ids), xe=xe, ye=ye, days=days, numfiles=len(Files), ndbox=ndbox, Hall=Hall)
-                # np.savez(fname, H=H, xe=xe, ye=ye, days=days, numfiles=len(Files), ndbox=ndbox, Hall=Hall)
-                # pdb.set_trace()
    
 
 def calc_metrics():
