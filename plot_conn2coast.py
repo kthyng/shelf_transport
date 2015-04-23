@@ -81,7 +81,7 @@ def plot_interannual():
 
     cmap = 'YlGn'
     log = False
-    season = 'winter' # 'winter' or 'summer'
+    season = 'summer' # 'winter' or 'summer'
     # zoomed = True
     whichboxes = 'porta' # 'all', 'porta', 'galveston'
     # which boxes along coast to use for vulnerability. 0:342 for all
@@ -105,13 +105,14 @@ def plot_interannual():
         elif season == 'summer':
             x1, x2, y1, y2 = 86000, 277100, 465000, 652500
         zoom = 2.5
-        plume = True
+        plume = False
     elif whichboxes=='galveston':
         boxes = np.arange(160,180) 
         whichH = 'H'
         zoomed = True
         x1, x2, y1, y2 = 277100, 531900, 660000, 810000
         zoom = 2.75
+        plume = False
         # x1, x2, y1, y2 = 277100, 531900, 560000, 810000
         # zoom = 2.0
 
@@ -146,20 +147,25 @@ def plot_interannual():
             for File in files: # months/years within winter or summer
                 print File
                 d = np.load(File)
-                Htemp = d[whichH] # 6x100x100, overall histogram
                 numfiles += d['numfiles']
-                if whichH=='Hall':
-                    H[i] += Htemp
-                elif whichH=='H':
-                    H[i] = Htemp[:,boxes,:,:].sum(axis=1)
+                idstemp = d['ids'].item()
+                for k in xrange(d['numfiles']): # loop over simulations in file which don't want to mix up
+                    for j in xrange(6): #advection days
+                        # add together the drifters for the desired boxes
+                        ids = []
+                        [ids.extend(idstemp[k,j,box]) for box in boxes]
+                        ids = list(set(ids)) # eliminate nonunique drifters
+                        Htemp, _, _ = np.histogram2d(xp0[ids], yp0[ids], bins=bins, 
+                                        range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
+                        H[i,j] += Htemp
                 days = d['days']
                 xe = d['xe']; ye = d['ye']
                 ndbox[i,:,:] += d['ndbox']
                 d.close()
             # Divide by number of starting drifters
-            if whichH=='Hall':
-                H[i,:,:,:] /= (numfiles*Hstart)
+            H[i,:,:,:] /= (numfiles*Hstart)
         np.savez(filename, H=H, days=days, xe=xe, ye=ye, ndbox=ndbox)
+
     else:
         d = np.load(filename)
         H = d['H']; days = d['days']; xe = d['xe']; ye = d['ye']; ndbox = d['ndbox']
@@ -193,12 +199,12 @@ def plot_interannual():
                 pars=np.arange(20, 36, 2), outline=False,
                 merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
         if i!=11:
-            if whichH=='Hall':
-                levels = np.linspace(0,100,11)
-                var = H[i,j].T*100.
-            elif whichH=='H':
-                levels = np.linspace(0,1,11)
-                var = H[i,j].T/H[:,j].max()
+            # if whichH=='Hall':
+            levels = np.linspace(0,100,11)
+            var = H[i,j].T*100.
+            # elif whichH=='H':
+            #     levels = np.linspace(0,1,11)
+            #     var = H[i,j].T/H[:,j].max()
             ax.text(0.07, 0.88, str(2004+i), transform=ax.transAxes)
             if log:
                 mappable = ax.contourf(XE, YE, var, cmap=cmap, levels=levels, norm=colors.LogNorm())
@@ -282,10 +288,10 @@ def plot_interannual():
             fig.savefig('figures/coastconn/likelihood/interannual-log-' + season + str(days[j]) + 'days' + whichboxes + '.png', bbox_inches='tight')
         else:
             cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
-            if whichH=='Hall':
-                cb.set_label('Likelihood of hitting the coast in ' + str(days[j]) + ' days [%]')
-            elif whichH=='H':
-                cb.set_label('Connection to coastal boxes in ' + str(days[j]) + ' days')
+            # if whichH=='Hall':
+            cb.set_label('Likelihood of hitting the coast in ' + str(days[j]) + ' days [%]')
+            # elif whichH=='H':
+            #     cb.set_label('Connection to coastal boxes in ' + str(days[j]) + ' days')
             if zoomed:
                 fig.savefig('figures/coastconn/likelihood/interannual-' + season + str(days[j]) + 'days' + whichboxes + 'zoomed.png', bbox_inches='tight')
             else:
@@ -302,7 +308,7 @@ def plot_seasonal():
     cmap = 'YlGn'
     log = False
     # zoomed = True # True to add in a magnified region, for the 30 days advection timing
-    whichboxes = 'all' # 'all', 'porta', 'galveston'
+    whichboxes = 'galveston' # 'all', 'porta', 'galveston'
     # which boxes along coast to use for vulnerability. 0:342 for all
     # Port A: 
     if whichboxes=='all':
@@ -365,8 +371,8 @@ def plot_seasonal():
                 ndbox[i,:,:] += d['ndbox']
                 d.close()
             # Divide by number of starting drifters
-            if (whichH=='Hall'):
-                H[i] /= (numfiles*Hstart)
+            # if (whichH=='Hall'):
+            H[i] /= (numfiles*Hstart)
         np.savez(filename, H=H, days=days, xe=xe, ye=ye, ndbox=ndbox)
     else:
         d = np.load(filename)
@@ -395,12 +401,12 @@ def plot_seasonal():
             elif i==1:
                 tracpy.plotting.background(grid=grid, ax=ax, parslabels=[0,0,0,0], mers=np.arange(-100, -80, 2))
                 ax.set_title('Summer')
-            if whichH=='Hall':
-                levels = np.linspace(0,100,11)
-                var = H[i,j].T*100.
-            elif whichH=='H':
-                levels = np.linspace(0,1,11)
-                var = H[i,j].T/H[:,j].max()
+            # if whichH=='Hall':
+            levels = np.linspace(0,100,11)
+            var = H[i,j].T*100.
+            # elif whichH=='H':
+                # levels = np.linspace(0,1,11)
+                # var = H[i,j].T/H[:,j].max()
             if log:
                 mappable = ax.contourf(XE, YE, var, cmap=cmap, levels=levels, norm=colors.LogNorm())
             else:
@@ -464,10 +470,10 @@ def plot_seasonal():
             fig.savefig('figures/coastconn/likelihood/seasonal-log-' + str(days[j]) + 'days' + whichboxes + '.png', bbox_inches='tight')
         else:
             cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
-            if whichH=='Hall':
-                cb.set_label('Likelihood of hitting the coast in ' + str(days[j]) + ' days [%]')
-            elif whichH=='H':
-                cb.set_label('Connection to coastal boxes in ' + str(days[j]) + ' days')
+            # if whichH=='Hall':
+            cb.set_label('Likelihood of hitting the coast in ' + str(days[j]) + ' days [%]')
+            # elif whichH=='H':
+            #     cb.set_label('Connection to coastal boxes in ' + str(days[j]) + ' days')
             if zoomed:
                 fig.savefig('figures/coastconn/likelihood/seasonal-' + str(days[j]) + 'days' + whichboxes + 'zoomed.png', bbox_inches='tight')
             else:
