@@ -213,7 +213,7 @@ def calc_histogram(xp, yp, whichtype, bins=(60,60),
     return H, xe, ye
 
 
-def calc_metric(xp, yp, Hstart, whichtype):
+def calc_metric(xp, yp, Hstart, whichtype, r=[0,1.05]):
     '''
     Calculate metric given by whichtype 
     '''
@@ -230,7 +230,7 @@ def calc_metric(xp, yp, Hstart, whichtype):
                 # D^2 is already averaged
                 # Picks out the drifters (xp,yp) that are in the j,i-th histogram bin, and looks at their statistics
                 # metric[j,i,:], nnans[j,i,:], pairs = tracpy.calcs.rel_dispersion(xp[Hstart[j,i][0],:], yp[Hstart[j,i][0],:], r=1.05, squared=False)
-                metric[j,i,:], nnans[j,i,:], pairs = tracpy.calcs.rel_dispersion(xp[Hstart[j,i][0],:], yp[Hstart[j,i][0],:], r=1.05, squared=True)
+                metric[j,i,:], nnans[j,i,:], pairs = tracpy.calcs.rel_dispersion(xp[Hstart[j,i][0],:], yp[Hstart[j,i][0],:], r=r, squared=True)
                 # np.savez('calcs/pairs/bin' + str(i) + '_' + str(H.size) + '.npz')
             
             elif whichtype == 'fsle':
@@ -372,7 +372,7 @@ def plot_colorbar(fig, mappable, whichtype, ticks=None, whichdir='forward', whic
         cb.set_ticks(ticks)
 
 
-def plot_finish(fig, whichtype, whichtime, shelf_depth, itind):
+def plot_finish(fig, whichtype, whichtime, shelf_depth, itind, r):
     '''
     Save and close figure
     '''
@@ -382,7 +382,7 @@ def plot_finish(fig, whichtype, whichtime, shelf_depth, itind):
     elif 'coast' in whichtype: 
         fname = 'figures/' + whichtype + '/' + whichtime + '.png'
     elif whichtype == 'D2':
-        fname = 'figures/' + whichtype + '/' + whichtime + str(itind) + '.png'
+        fname = 'figures/' + whichtype + '/r' + str(int(r[1])) + '/' + whichtime + str(itind) + '.png'
 
     fig.savefig(fname, dpi=300)
     plt.close(fig)
@@ -535,7 +535,7 @@ def run():
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
     # 'interannual-01' through 'interannual-12', 'monthly-2004' through 'monthly-2014'
     # 'interannual-mean' 'monthly-mean'
-    whichtime = 'seasonal'
+    whichtime = 'monthly-mean'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'D2'
@@ -543,7 +543,8 @@ def run():
     whichdir = 'forward'
 
     # if doing D2, choose the initial separation distance too. And give a little extra for roundoff and projections
-    r = 5.25 # 5.25 and 1.05
+    # Also, now given as an interval.
+    r = [4.75, 5.25] # [0.95, 1.05] # [4.75, 5.25] # 5.25 and 1.05
 
     #levels = np.linspace(0,1,11)
 
@@ -553,7 +554,7 @@ def run():
     # Whether to overlay previously-calculated wind stress arrows
     # from projects/txla_plots/plot_mean_wind.py on Rainier
     addwind = 0 # for adding the wind on
-    years = np.arange(2012,2015) 
+    years = np.arange(2012,2015) # this is just for the wind I think
 
     # Number of bins to use in histogram
     bins = (100,100) #(30,30)
@@ -572,7 +573,7 @@ def run():
     # grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
 
     if whichtype == 'D2':
-        Hfilename = 'figures/' + whichtype + '/r' + str(int(r)) + '/' + whichtime + 'H.npz'
+        Hfilename = 'figures/' + whichtype + '/r' + str(int(r[1])) + '/' + whichtime + 'H.npz'
     elif 'coast' in whichtype:
         Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
     elif whichtype == 'cross':
@@ -690,7 +691,7 @@ def run():
                     xp = xp[ind]; yp = yp[ind] # pick out the drifters that reach the coastline
                     d.close()
                 elif whichtype == 'D2' or whichtype == 'fsle':
-                    sfile = 'calcs/dispersion/hist/D2/r' + str(int(r)) + '/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0]) + '.npz'
+                    sfile = 'calcs/dispersion/hist/D2/r' + str(int(r[1])) + '/' + File.split('/')[-1][:-5] + '_bins' + str(bins[0]) + '.npz'
                     if os.path.exists(sfile): # just read in info
                         already_calculated = 1
                     else:
@@ -718,7 +719,7 @@ def run():
                 elif whichtype == 'D2' or whichtype == 'fsle':
                     if not already_calculated:
                         # Calculate the metric in each bin and combine for all files
-                        metric_temp, nnanstemp = calc_metric(xp, yp, Hstart, whichtype)
+                        metric_temp, nnanstemp = calc_metric(xp, yp, Hstart, whichtype, r=r)
                         # Save calculations by bins for each file
                         # pdb.set_trace()
                         np.savez(sfile, D2=metric_temp, nnans=nnanstemp) 
@@ -774,7 +775,19 @@ def run():
     # 12000 for mean interannual-summer, 20000 for mean, interannual-winter, 1400 for 100 seasonal
     # 1800 for 100 interannual-winter, 1800 for 100 interannual-summer
     if whichtype == 'D2':
-        locator.set_bounds(0, 160) 
+        if itind == 30:
+            locator.set_bounds(0, 10)
+        elif itind == 100: 
+            locator.set_bounds(0, 160) 
+        elif itind == 150: 
+            locator.set_bounds(0, 450) 
+        elif itind == 300: 
+            locator.set_bounds(0, 2200) 
+        elif itind == 600: 
+            locator.set_bounds(0, 8000) 
+        elif itind == 900: 
+            locator.set_bounds(0, 15000) 
+        # locator.set_bounds(0, 0.2*np.nanmax(H[:,:,:,itind]))
         #locator.set_bounds(0, 0.75*np.nanmax(np.nanmax(H[:,:,:,itind], axis=1), axis=1).mean())
         levels = locator()
     elif 'coast' in whichtype and whichdir == 'back':
@@ -842,7 +855,7 @@ def run():
     # pdb.set_trace()
 
     # save and close
-    plot_finish(fig, whichtype, whichtime, shelf_depth, itind)
+    plot_finish(fig, whichtype, whichtime, shelf_depth, itind, r)
 
 
 if __name__ == "__main__":
