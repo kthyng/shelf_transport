@@ -20,7 +20,7 @@ import csv
 import dateutil.relativedelta
 import op
 import scipy.stats
-
+from calendar import monthrange
 
 # mpl.rcParams['text.usetex'] = True
 mpl.rcParams.update({'font.size': 14})
@@ -35,16 +35,28 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-maketable = False
-runcorr = True # run correlation coefficients
+maketable = True
+runcorr = False  # run correlation coefficients
 doplot = False
-explore = False # True to do exploratory plots, False to do polished plot
-whichseason = 'summer' # 'winter' or 'summer'
-col = 3 # index for column in table, starting from 0 
+explore = False  # True to do exploratory plots, False to do polished plot
+whichseason = 'winter'  # 'winter' or 'summer'
+makesmalltable = False  # create a subset table for analysis in R
+if whichseason == 'winter':
+    col = 0
+elif whichseason == 'summer':
+    col = 1
+
+# If doing small table creation, need a list of things to include
+if makesmalltable:
+    if whichseason == 'winter':
+        Vars = ['Transport_winter_R3', 'Wdm2-Mar', 'Wdm2-Nov_previous', 'Q1-Dec_previous']
+        name = 'table-redo-shelf-winter'
+    elif whichseason == 'summer':
+        Vars = ['Transport_summer_R4', 'Q1-Apr', 'Wsm1-Oct', 'Qi-Aug_previous', 'Wdm3-Feb_previous']
+        name = 'table-redo-shelf-summer'
 
 
-headers = ('Transport_winter_R1', 'Transport_winter_R2', 'Transport_winter_R3', 
-            'Transport_summer_R1', 'Transport_summer_R2', 'Transport_summer_R4', 
+headers = ('Transport_winter_R3', 'Transport_summer_R4',
             'Instantaneous-discharge-Qi-Jan', 'Qi-Feb', 'Qi-Mar', 'Qi-Apr', 'Qi-May', 'Qi-Jun', 'Qi-Jul',
             'Qi-Aug', 'Qi-Sep', 'Qi-Oct', 'Qi-Nov', 'Qi-Dec', 
             'Cumulative-discharge-Qcum-Jan', 'Qcum-Feb', 'Qcum-Mar', 'Qcum-Apr', 'Qcum-May', 'Qcum-Jun', 'Qcum-Jul',
@@ -80,102 +92,46 @@ headers = ('Transport_winter_R1', 'Transport_winter_R2', 'Transport_winter_R3',
             'Wind-direction-variance-Wdv3-Jan', 'Wdv3-Feb', 'Wdv3-Mar', 'Wdv3-Apr', 'Wdv3-May',
             'Wdv3-Jun', 'Wdv3-Jul', 'Wdv3-Aug', 'Wdv3-Sep', 'Wdv3-Oct', 'Wdv3-Nov', 'Wdv3-Dec')
 
-if runcorr:
-    d = np.loadtxt('table.txt', skiprows=1)
 
-    # check for loop direction problems
-    for i in xrange(d.shape[1]):
-        if 'Wdm' in headers[i]: # only unwrap if is a mean wind direction metric
-            # pdb.set_trace()
-            d[:,i] = np.rad2deg(np.unwrap(np.deg2rad(d[:,i])))
+def rot2d(x, y, ang):
+    '''rotate vectors by geometric angle'''
+    xr = x*np.cos(ang) - y*np.sin(ang)
+    yr = x*np.sin(ang) + y*np.cos(ang)
+    return xr, yr
 
-    # Change running sum river discharges to be means
-    # do this brute force to be lazy
-    for i in xrange(d.shape[1]):
-        if 'Q1' in headers[i]: # but is for the month before
-            if 'Jan' in headers[i]:
-                d[:,i] = d[:,i]/31.
-            elif 'Feb' in headers[i]:
-                d[:,i] = d[:,i]/31.
-            elif 'Mar' in headers[i]:
-                d[:,i] = d[:,i]/28.
-            elif 'Apr' in headers[i]:
-                d[:,i] = d[:,i]/31.
-            elif 'May' in headers[i]:
-                d[:,i] = d[:,i]/30.
-            elif 'Jun' in headers[i]:
-                d[:,i] = d[:,i]/31.
-            elif 'Jul' in headers[i]:
-                d[:,i] = d[:,i]/30.
-            elif 'Aug' in headers[i]:
-                d[:,i] = d[:,i]/31.
-            elif 'Sep' in headers[i]:
-                d[:,i] = d[:,i]/31.
-            elif 'Oct' in headers[i]:
-                d[:,i] = d[:,i]/30.
-            elif 'Nov' in headers[i]:
-                d[:,i] = d[:,i]/31.
-            elif 'Dec' in headers[i]:
-                d[:,i] = d[:,i]/30.
-        if 'Q2' in headers[i]: # for two months before
-            if 'Jan' in headers[i]:
-                d[:,i] = d[:,i]/(31.+30)
-            elif 'Feb' in headers[i]:
-                d[:,i] = d[:,i]/(31.+31)
-            elif 'Mar' in headers[i]:
-                d[:,i] = d[:,i]/(28.+31)
-            elif 'Apr' in headers[i]:
-                d[:,i] = d[:,i]/(31.+28)
-            elif 'May' in headers[i]:
-                d[:,i] = d[:,i]/(30.+31)
-            elif 'Jun' in headers[i]:
-                d[:,i] = d[:,i]/(31.+30)
-            elif 'Jul' in headers[i]:
-                d[:,i] = d[:,i]/(30.+31)
-            elif 'Aug' in headers[i]:
-                d[:,i] = d[:,i]/(31.+30)
-            elif 'Sep' in headers[i]:
-                d[:,i] = d[:,i]/(31.+31)
-            elif 'Oct' in headers[i]:
-                d[:,i] = d[:,i]/(30.+31)
-            elif 'Nov' in headers[i]:
-                d[:,i] = d[:,i]/(31.+30)
-            elif 'Dec' in headers[i]:
-                d[:,i] = d[:,i]/(30.+31)
-        if 'Q3' in headers[i]: # for three months before
-            if 'Jan' in headers[i]:
-                d[:,i] = d[:,i]/(31.+30+31)
-            elif 'Feb' in headers[i]:
-                d[:,i] = d[:,i]/(31.+31+30)
-            elif 'Mar' in headers[i]:
-                d[:,i] = d[:,i]/(28.+31+31)
-            elif 'Apr' in headers[i]:
-                d[:,i] = d[:,i]/(31.+28+31)
-            elif 'May' in headers[i]:
-                d[:,i] = d[:,i]/(30.+31+28)
-            elif 'Jun' in headers[i]:
-                d[:,i] = d[:,i]/(31.+30+31)
-            elif 'Jul' in headers[i]:
-                d[:,i] = d[:,i]/(30.+31+30)
-            elif 'Aug' in headers[i]:
-                d[:,i] = d[:,i]/(31.+30+31)
-            elif 'Sep' in headers[i]:
-                d[:,i] = d[:,i]/(31.+31+30)
-            elif 'Oct' in headers[i]:
-                d[:,i] = d[:,i]/(30.+31+31)
-            elif 'Nov' in headers[i]:
-                d[:,i] = d[:,i]/(31.+30+31)
-            elif 'Dec' in headers[i]:
-                d[:,i] = d[:,i]/(30.+31+30)
+grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+dtemp = netCDF.Dataset(grid_filename)
+anglev = dtemp.variables['angle'][:]
+dtemp.close()
+
+if makesmalltable:
+    d = np.loadtxt('table-redo-shelf.txt', skiprows=1)
+
+    # double the headers for the correlations
+    headers2 = list(headers)
+    for i in xrange(len(headers2)):
+        headers2[i] += '_previous'
+    headers = np.hstack((headers, headers2))
+
+    table = np.empty((11, len(Vars))) # Vars metrics being included and also 1 transport
+
+    for j, Var in enumerate(Vars):
+        ind = list(headers).index(Var) # find index of var
+        if 'previous' in Var:  # need to shift accordingly
+            table[:,j] = d[:-1, ind-206]
+        else:  # need to shift accordingly
+            table[:,j] = d[1:, ind]
+
+    # write table to file
+    with open('table-redo-shelf-' + whichseason + '.txt', 'w') as csvfile:
+        writer = csv.writer(csvfile, delimiter="\t")
+        writer.writerow(Vars)
+        [writer.writerow(r) for r in table]
 
 
-    # Change angles to be compass instead of geometric
-    for i in xrange(d.shape[1]):
-        if 'Wdm' in headers[i]: # only unwrap if is a mean wind direction metric
-            # pdb.set_trace()
-            d[:,i] = -d[:,i] + 90 # change to compass
-            ind = d[:,i]<0 # get between 0 and 360
-            d[ind,i] = d[ind,i] + 360   
+
+elif runcorr:
+    d = np.loadtxt('table-redo-shelf.txt', skiprows=1)
 
     without2008 = False
 
@@ -184,48 +140,70 @@ if runcorr:
         d2 = np.vstack((d[0:4,:], d[5:,:]))
         d = d2.copy()
 
-    T = d[:,col] # which column to use for transport
-    
+    # which column to use for transport; skip fake 2003
+    T = d[1:, col]
+
     # if whichseason == 'winter':
     #     T = d[:,0] # the transport is the first column
     # elif whichseason == 'summer':
     #     T = d[:,1] # the transport is the first column
-    r = np.empty(d.shape[1]) # to store the correlation coefficients
-    p = np.empty(d.shape[1]) # to store the correlation coefficients
+    r = np.empty(d.shape[1]*2)  # to store the correlation coefficients
+    p = np.empty(d.shape[1]*2)  # to store the correlation coefficients
     for i in xrange(d.shape[1]):
-        comp = d[:,i]
+        # metric to compare with, 2004-2014, year before transport
+        # store in the immediate location
+        comp = d[1:, i]
         ind = ~np.isnan(comp)
         r[i], p[i] = scipy.stats.pearsonr(T[ind], comp[ind])
+        # metric to compare with, 2003-2013, year before transport
+        # store in the index+d.shape[1]
+        comp = d[:-1, i]
+        ind = ~np.isnan(comp)
+        r[i+d.shape[1]], p[i+d.shape[1]] = scipy.stats.pearsonr(T[ind], comp[ind])
 
-    ind = np.argsort(p) # indices that would sort p in ascending order
+    # double the headers for the correlations
+    headers2 = list(headers)
+    for i in xrange(len(headers2)):
+        headers2[i] += '_previous'
+    headers = np.hstack((headers, headers2))
+
+    ind = np.argsort(p)  # indices that would sort p in ascending order
     # print the best ones
     for i in xrange(20):
         print headers[ind[i]] + ': p=%1.4f, r=%1.2f' % (p[ind[i]], r[ind[i]])
 
-    # save best entries to plot
-    # Top river one
-    inan = ~(np.isnan(r)) * ~(r==1)
-    ind = np.argmax(abs(r[inan]))
-    while ('Qbest' not in locals()):
-        if 'Q' in np.asarray(headers)[inan][ind]:
-            Qbestr = r[inan][ind]
-            Qbestp = p[inan][ind]
-            Qbest = d[:,inan][:,ind]
-            Qbestname = np.asarray(headers)[inan][ind]
-        inan *= ~(r==r[inan][ind])
-        ind = np.argmax(r[inan])
+    # hard wiring this for now. Sorry future Kristen!
+    if whichseason == 'winter':
+        ind = list(headers).index('Wdm2-Mar')
+        Wbest = d[1:, ind]
+        Wbestr = r[ind]
+        Wbestp = p[ind]
 
-    # Top wind one
-    inan = ~(np.isnan(r)) * ~(r==1)
-    ind = np.argmax(abs(r[inan]))
-    while ('Wbest' not in locals()):
-        if 'W' in np.asarray(headers)[inan][ind]:
-            Wbestr = r[inan][ind]
-            Wbestp = p[inan][ind]
-            Wbest = d[:,inan][:,ind]
-            Wbestname = np.asarray(headers)[inan][ind]
-        inan *= ~(r==r[inan][ind])
-        ind = np.argmax(r[inan])
+    # # save best entries to plot
+    # # Top river one
+    # inan = ~(np.isnan(r)) * ~(r==1)
+    # ind = np.argmax(abs(r[inan]))
+    # while ('Qbest' not in locals()):
+    #     if 'Q' in np.asarray(headers)[inan][ind]:
+    #         Qbestr = r[inan][ind]
+    #         Qbestp = p[inan][ind]
+    #         import pdb; pdb.set_trace()
+    #         Qbest = d[:,inan][:,ind]
+    #         Qbestname = np.asarray(headers)[inan][ind]
+    #     inan *= ~(r==r[inan][ind])
+    #     ind = np.argmax(r[inan])
+
+    # # Top wind one
+    # inan = ~(np.isnan(r)) * ~(r==1)
+    # ind = np.argmax(abs(r[inan]))
+    # while ('Wbest' not in locals()):
+    #     if 'W' in np.asarray(headers)[inan][ind]:
+    #         Wbestr = r[inan][ind]
+    #         Wbestp = p[inan][ind]
+    #         Wbest = d[:,inan][:,ind]
+    #         Wbestname = np.asarray(headers)[inan][ind]
+    #     inan *= ~(r==r[inan][ind])
+    #     ind = np.argmax(r[inan])
 
 
 # use info from runcorr
@@ -309,13 +287,15 @@ if doplot:
 
 if maketable:
 
-    years = np.arange(2004,2015)
-    months = np.arange(1,13)
+    # for years, include year before simulations so that I can look at metrics from beforehand
+    # for all seasons
+    years = np.arange(2003, 2015)
+    months = np.arange(1, 13)
 
     ## River forcing ##
     # r1 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/txla_nesting6/TXLA_river_4dyes_2011.nc')
-    r1 = netCDF.Dataset('/rho/raid/home/kthyng/txla/TXLA_river_4dyes_2012.nc') # use for through 2011
-    r2 = netCDF.Dataset('/rho/raid/home/kthyng/txla/TXLA_river_4dyes_2012_2014.nc') # use for 2012-2014
+    r1 = netCDF.Dataset('/rho/raid/home/kthyng/txla/TXLA_river_4dyes_2012.nc')  # use for through 2011
+    r2 = netCDF.Dataset('/rho/raid/home/kthyng/txla/TXLA_river_4dyes_2012_2014.nc')  # use for 2012-2014
     # River timing
     tr1 = r1.variables['river_time']
     tunitsr1 = tr1.units
@@ -340,11 +320,13 @@ if maketable:
 
     grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
     gridnc = netCDF.Dataset(grid_filename)
-    iwind = gridnc.variables['lat_rho'][:]>27.5
+    iwind = gridnc.variables['lat_rho'][:] > 27.5
 
     # transport calculated previously
-    Tw = np.load('calcs/shelfconn/interannual-wintertransportsum.npz')['transport']
-    Ts = np.load('calcs/shelfconn/interannual-summertransportsum.npz')['transport']
+    Tw = np.load('calcs/shelfconn/interannual-winter3transportsum.npz')['transport']
+    Ts = np.load('calcs/shelfconn/interannual-summer4transportsum.npz')['transport']
+    Tw = np.hstack((0, Tw))  # add a spot for 2003, which is run up time
+    Ts = np.hstack((0, Ts))  # add a spot for 2003, which is run up time
 
     table = np.empty((years.size,17*months.size+2)) # 17 metrics being calculated and also 2 transports
 
@@ -369,40 +351,51 @@ if maketable:
             iend = find(datesr<datetime(year,month,1,0,0,0))[-1] # ending index, current month
             Qcum[i] = Q[istart:iend].sum()
 
-        # Discharge running sum over 1 month, Q1
+        # Discharge running mean over 1 month, Q1
         Q1 = np.zeros(months.size)
-        for i,month in enumerate(months):
-            # datetime three months ago
-            dt = datetime(year,month,1,0,0,0) - dateutil.relativedelta.relativedelta(months=1)
-            istart = find(datesr<dt)[-1] # starting index
-            iend = find(datesr<datetime(year,month,1,0,0,0))[-1] # ending index, current month
-            Q1[i] = Q[istart:iend].sum()
+        for i, month in enumerate(months):
+            # datetime 1 month ago
+            dt = datetime(year, month, 1, 0, 0, 0) - dateutil.relativedelta.relativedelta(months=1)
+            istart = find(datesr < dt)[-1]  # starting index
+            iend = find(datesr < datetime(year, month, 1, 0, 0, 0))[-1]  # ending index, current month
+            ndays = monthrange(dt.year, dt.month)[1]  # number of days in the month before
+            Q1[i] = Q[istart:iend].sum()/ndays
 
-        # Discharge running sum over 2 months, Q2
+        # Discharge running mean over 2 months, Q2
         Q2 = np.zeros(months.size)
-        for i,month in enumerate(months):
-            # datetime three months ago
-            dt = datetime(year,month,1,0,0,0) - dateutil.relativedelta.relativedelta(months=2)
-            istart = find(datesr<dt)[-1] # starting index
-            iend = find(datesr<datetime(year,month,1,0,0,0))[-1] # ending index, current month
-            Q2[i] = Q[istart:iend].sum()
+        for i, month in enumerate(months):
+            # datetime 2 months ago
+            dt = datetime(year, month, 1, 0, 0, 0) - dateutil.relativedelta.relativedelta(months=2)
+            istart = find(datesr < dt)[-1]  # starting index
+            iend = find(datesr < datetime(year, month, 1, 0, 0, 0))[-1]  # ending index, current month
+            ndays = monthrange(dt.year, dt.month)[1]  # days from 1st month
+            dt = dt + dateutil.relativedelta.relativedelta(months=1)  # just to step forward for ndays
+            ndays += monthrange(dt.year, dt.month)[1]  # days from 2nd month
+            Q2[i] = Q[istart:iend].sum()/ndays
 
-        # Discharge running sum over three months, Q3
+        # Discharge running mean over three months, Q3
         Q3 = np.zeros(months.size)
-        for i,month in enumerate(months):
+        for i, month in enumerate(months):
             # datetime three months ago
-            dt = datetime(year,month,1,0,0,0) - dateutil.relativedelta.relativedelta(months=3)
-            istart = find(datesr<dt)[-1] # starting index
-            iend = find(datesr<datetime(year,month,1,0,0,0))[-1] # ending index, current month
-            Q3[i] = Q[istart:iend].sum()
-
-
+            dt = datetime(year, month, 1, 0, 0, 0) - dateutil.relativedelta.relativedelta(months=3)
+            istart = find(datesr < dt)[-1]  # starting index
+            iend = find(datesr < datetime(year, month, 1, 0, 0, 0))[-1]  # ending index, current month
+            ndays = monthrange(dt.year, dt.month)[1]  # days from 1st month
+            dt = dt + dateutil.relativedelta.relativedelta(months=1)  # just to step forward for ndays
+            ndays += monthrange(dt.year, dt.month)[1]  # days from 2nd month
+            dt = dt + dateutil.relativedelta.relativedelta(months=1)  # just to step forward for ndays
+            ndays += monthrange(dt.year, dt.month)[1]  # days from 3rd month
+            Q3[i] = Q[istart:iend].sum()/ndays
 
         ## Wind forcing: averaged over the broad shelf region and taken over 1, 2, and 3 months ##
-
         # There are multiple file locations
         if year <= 2012:
-            w1 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year-1) + '.nc')
+            # have to fudge for the metrics early in 2003 that should be calculated from late 2002,
+            # but should be ok since nothing should really depend on those things.
+            if year == 2003:
+                w1 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year) + '.nc')
+            else:
+                w1 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year-1) + '.nc')
             w2 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year) + '.nc')
         elif year == 2013:
             w1 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_2012.nc')
@@ -410,25 +403,35 @@ if maketable:
         elif year == 2014:
             w1 = netCDF.Dataset('/rho/raid/home/kthyng/txla/txla_wind_narr_2013.nc')
             w2 = netCDF.Dataset('/rho/raid/home/kthyng/txla/txla_wind_narr_2014.nc')
-            
+
         # Wind timing
         # pdb.set_trace()
         tw1 = w1.variables['time']
-        datesw1 = netCDF.num2date(tw1[:], tw1.units.replace('/', '-'))
+        if year == 2003:  # fake the year
+            datesw1 = netCDF.num2date(tw1[:], tw1.units.replace('/', '-')) - \
+                         dateutil.relativedelta.relativedelta(years=1)
+        else:
+            datesw1 = netCDF.num2date(tw1[:], tw1.units.replace('/', '-'))
         tw2 = w2.variables['time']
         datesw2 = netCDF.num2date(tw2[:], tw2.units.replace('/', '-'))
 
         # Combine wind info here since files can't be combined in MFDataset
         Uwind1 = w1.variables['Uwind'][:]
-        Uwind2 = w2.variables['Uwind'][:]
-        Uwind = np.concatenate((Uwind1, Uwind2[1:,:,:]), axis=0)
-        Uwind = Uwind[:,iwind] # only use winds from certain area of domain
-        del(Uwind1, Uwind2)
         Vwind1 = w1.variables['Vwind'][:]
+        # rotate onto cartesian grid
+        Uwind1, Vwind1 = rot2d(Uwind1, Vwind1, anglev)
+        Uwind2 = w2.variables['Uwind'][:]
         Vwind2 = w2.variables['Vwind'][:]
-        Vwind = np.concatenate((Vwind1, Vwind2[1:,:,:]), axis=0)
-        Vwind = Vwind[:,iwind] # only use winds from certain area of domain
-        del(Vwind1, Vwind2)            
+        # rotate onto cartesian grid
+        Uwind2, Vwind2 = rot2d(Uwind2, Vwind2, anglev)
+        Uwind = np.concatenate((Uwind1, Uwind2[1:, :, :]), axis=0)
+        import pdb; pdb.set_trace()
+        del(Uwind1, Uwind2)
+        Uwind = Uwind[:, iwind]  # only use winds from certain area of domain
+
+        Vwind = np.concatenate((Vwind1, Vwind2[1:, :, :]), axis=0)
+        del(Vwind1, Vwind2)
+        Vwind = Vwind[:, iwind]  # only use winds from certain area of domain
         Swind = np.sqrt(Uwind**2 + Vwind**2)
 
         tw = np.concatenate((tw1, tw2[1:]), axis=0)
@@ -455,24 +458,50 @@ if maketable:
             iend = find(datesw<datetime(year,month,1,0,0,0))[-1] # ending index, current month
 
             # Wind magnitude mean, Wsm
-            Wsm1[i] = Swind[istart1:iend,:].mean()
-            Wsm2[i] = Swind[istart2:iend,:].mean()
-            Wsm3[i] = Swind[istart3:iend,:].mean()
+            Wsm1[i] = Swind[istart1:iend, :].mean()
+            Wsm2[i] = Swind[istart2:iend, :].mean()
+            Wsm3[i] = Swind[istart3:iend, :].mean()
 
             # Wind magnitude var, Wsv
-            Wsv1[i] = np.var(Swind[istart1:iend,:])
-            Wsv2[i] = np.var(Swind[istart2:iend,:])
-            Wsv3[i] = np.var(Swind[istart3:iend,:])
+            Wsv1[i] = np.var(Swind[istart1:iend, :])
+            Wsv2[i] = np.var(Swind[istart2:iend, :])
+            Wsv3[i] = np.var(Swind[istart3:iend, :])
 
             # Wind direction mean, Wdm
-            Wdm1[i] = np.rad2deg(np.arctan2(Vwind[istart1:iend,:].mean(), Uwind[istart1:iend,:].mean()))
-            Wdm2[i] = np.rad2deg(np.arctan2(Vwind[istart2:iend,:].mean(), Uwind[istart2:iend,:].mean()))
-            Wdm3[i] = np.rad2deg(np.arctan2(Vwind[istart3:iend,:].mean(), Uwind[istart3:iend,:].mean()))
+            Wdm1[i] = np.rad2deg(np.arctan2(Vwind[istart1:iend, :].mean(), Uwind[istart1:iend, :].mean()))
+            Wdm2[i] = np.rad2deg(np.arctan2(Vwind[istart2:iend, :].mean(), Uwind[istart2:iend, :].mean()))
+            Wdm3[i] = np.rad2deg(np.arctan2(Vwind[istart3:iend, :].mean(), Uwind[istart3:iend, :].mean()))
 
             # Wind direction var, Wdv
-            Wdv1[i] = np.var(np.arctan2(Vwind[istart1:iend,:], Uwind[istart1:iend,:]))
-            Wdv2[i] = np.var(np.arctan2(Vwind[istart2:iend,:], Uwind[istart2:iend,:]))
-            Wdv3[i] = np.var(np.arctan2(Vwind[istart3:iend,:], Uwind[istart3:iend,:]))
+            ang = np.arctan2(Vwind[istart1:iend, :], Uwind[istart1:iend, :])
+            # unwrap angles before taking the variance
+            ang = np.rad2deg(np.unwrap(np.deg2rad(ang)))
+            Wdv1[i] = np.var(ang)
+
+            ang = np.arctan2(Vwind[istart2:iend, :], Uwind[istart2:iend, :])
+            ang = np.rad2deg(np.unwrap(np.deg2rad(ang)))
+            Wdv2[i] = np.var(ang)
+
+            ang = np.arctan2(Vwind[istart3:iend, :], Uwind[istart3:iend, :])
+            ang = np.rad2deg(np.unwrap(np.deg2rad(ang)))
+            Wdv3[i] = np.var(ang)
+
+        # Unwrap mean directions
+        Wdm1 = np.rad2deg(np.unwrap(np.deg2rad(Wdm1)))
+        Wdm2 = np.rad2deg(np.unwrap(np.deg2rad(Wdm2)))
+        Wdm3 = np.rad2deg(np.unwrap(np.deg2rad(Wdm3)))
+
+        # Change to compass coordinates instead of geometric and make positive
+        # between 0 and 360
+        Wdm1 = -Wdm1 + 90  # change to compass
+        ind = Wdm1 < 0  # get between 0 and 360
+        Wdm1[ind] = Wdm1[ind] + 360
+        Wdm2 = -Wdm2 + 90  # change to compass
+        ind = Wdm2 < 0  # get between 0 and 360
+        Wdm2[ind] = Wdm2[ind] + 360
+        Wdm3 = -Wdm3 + 90  # change to compass
+        ind = Wdm3 < 0  # get between 0 and 360
+        Wdm3[ind] = Wdm3[ind] + 360
 
 
         # Combine together into one row (actually put into matrix)
@@ -493,4 +522,4 @@ if maketable:
 #    .....:     rr.append(r)
 #    .....:     pp.append(p)
 #    .....:     
-# hist(rr, bins=100)
+# hist(rr, bins=100)100)
