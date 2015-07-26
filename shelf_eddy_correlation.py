@@ -289,8 +289,23 @@ if maketable:
 
     # for years, include year before simulations so that I can look at metrics from beforehand
     # for all seasons
-    years = np.arange(2003, 2015)
+    years = np.arange(2014, 2015)
     months = np.arange(1, 13)
+
+    # Model output ##
+    # currents_filenames = []
+    # currents_filenames.extend(np.sort(glob.glob('/home/kthyng/shelf/200[3-9]/ocean_his_????.nc')))
+    # currents_filenames.extend(np.sort(glob.glob('/home/kthyng/shelf/201[0-3]/ocean_his_????.nc')))
+    # currents_filenames.extend((glob.glob('/home/kthyng/shelf/2014/ocean_his_??.nc')))
+    # m = netCDF.MFDataset(currents_filenames)
+
+    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    nc = netCDF.Dataset(loc)  # for wind
+    t = nc.variables['ocean_time']
+    datesw = netCDF.num2date(t[:], t.units)
+
+    # Surface stress
+    sustr = nc.variables['sustr']; svstr = nc.variables['svstr']
 
     ## River forcing ##
     # r1 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/txla_nesting6/TXLA_river_4dyes_2011.nc')
@@ -318,9 +333,11 @@ if maketable:
     Q = np.concatenate((Q1[:iend1], Q2))
     r1.close(); r2.close()
 
-    grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
-    gridnc = netCDF.Dataset(grid_filename)
-    iwind = gridnc.variables['lat_rho'][:] > 27.5
+    # grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+    # gridnc = netCDF.Dataset(grid_filename)
+    iwind = nc.variables['lat_rho'][:] > 27.5
+    iwindu = nc.variables['lat_u'][:] > 27.5
+    iwindv = nc.variables['lat_v'][:] > 27.5
 
     # transport calculated previously
     Tw = np.load('calcs/shelfconn/interannual-winter3transportsum.npz')['transport']
@@ -388,55 +405,55 @@ if maketable:
             Q3[i] = Q[istart:iend].sum()/ndays
 
         ## Wind forcing: averaged over the broad shelf region and taken over 1, 2, and 3 months ##
-        # There are multiple file locations
-        if year <= 2012:
-            # have to fudge for the metrics early in 2003 that should be calculated from late 2002,
-            # but should be ok since nothing should really depend on those things.
-            if year == 2003:
-                w1 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year) + '.nc')
-            else:
-                w1 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year-1) + '.nc')
-            w2 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year) + '.nc')
-        elif year == 2013:
-            w1 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_2012.nc')
-            w2 = netCDF.Dataset('/rho/raid/home/kthyng/txla/txla_wind_narr_2013.nc')
-        elif year == 2014:
-            w1 = netCDF.Dataset('/rho/raid/home/kthyng/txla/txla_wind_narr_2013.nc')
-            w2 = netCDF.Dataset('/rho/raid/home/kthyng/txla/txla_wind_narr_2014.nc')
+        # # There are multiple file locations
+        # if year <= 2012:
+        #     # have to fudge for the metrics early in 2003 that should be calculated from late 2002,
+        #     # but should be ok since nothing should really depend on those things.
+        #     if year == 2003:
+        #         w1 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year) + '.nc')
+        #     else:
+        #         w1 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year-1) + '.nc')
+        #     w2 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year) + '.nc')
+        # elif year == 2013:
+        #     w1 = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_2012.nc')
+        #     w2 = netCDF.Dataset('/rho/raid/home/kthyng/txla/txla_wind_narr_2013.nc')
+        # elif year == 2014:
+        #     w1 = netCDF.Dataset('/rho/raid/home/kthyng/txla/txla_wind_narr_2013.nc')
+        #     w2 = netCDF.Dataset('/rho/raid/home/kthyng/txla/txla_wind_narr_2014.nc')
 
-        # Wind timing
-        # pdb.set_trace()
-        tw1 = w1.variables['time']
-        if year == 2003:  # fake the year
-            datesw1 = netCDF.num2date(tw1[:], tw1.units.replace('/', '-')) - \
-                         dateutil.relativedelta.relativedelta(years=1)
-        else:
-            datesw1 = netCDF.num2date(tw1[:], tw1.units.replace('/', '-'))
-        tw2 = w2.variables['time']
-        datesw2 = netCDF.num2date(tw2[:], tw2.units.replace('/', '-'))
+        # # Wind timing
+        # # pdb.set_trace()
+        # tw1 = w1.variables['time']
+        # if year == 2003:  # fake the year
+        #     datesw1 = netCDF.num2date(tw1[:], tw1.units.replace('/', '-')) - \
+        #                  dateutil.relativedelta.relativedelta(years=1)
+        # else:
+        #     datesw1 = netCDF.num2date(tw1[:], tw1.units.replace('/', '-'))
+        # tw2 = w2.variables['time']
+        # datesw2 = netCDF.num2date(tw2[:], tw2.units.replace('/', '-'))
 
-        # Combine wind info here since files can't be combined in MFDataset
-        Uwind1 = w1.variables['Uwind'][:]
-        Vwind1 = w1.variables['Vwind'][:]
-        # rotate onto cartesian grid
-        Uwind1, Vwind1 = rot2d(Uwind1, Vwind1, anglev)
-        Uwind2 = w2.variables['Uwind'][:]
-        Vwind2 = w2.variables['Vwind'][:]
-        # rotate onto cartesian grid
-        Uwind2, Vwind2 = rot2d(Uwind2, Vwind2, anglev)
-        Uwind = np.concatenate((Uwind1, Uwind2[1:, :, :]), axis=0)
-        import pdb; pdb.set_trace()
-        del(Uwind1, Uwind2)
-        Uwind = Uwind[:, iwind]  # only use winds from certain area of domain
+        # # Combine wind info here since files can't be combined in MFDataset
+        # Uwind1 = w1.variables['Uwind'][:]
+        # Vwind1 = w1.variables['Vwind'][:]
+        # # rotate onto cartesian grid
+        # Uwind1, Vwind1 = rot2d(Uwind1, Vwind1, anglev)
+        # Uwind2 = w2.variables['Uwind'][:]
+        # Vwind2 = w2.variables['Vwind'][:]
+        # # rotate onto cartesian grid
+        # Uwind2, Vwind2 = rot2d(Uwind2, Vwind2, anglev)
+        # Uwind = np.concatenate((Uwind1, Uwind2[1:, :, :]), axis=0)
+        # import pdb; pdb.set_trace()
+        # del(Uwind1, Uwind2)
+        # Uwind = Uwind[:, iwind]  # only use winds from certain area of domain
 
-        Vwind = np.concatenate((Vwind1, Vwind2[1:, :, :]), axis=0)
-        del(Vwind1, Vwind2)
-        Vwind = Vwind[:, iwind]  # only use winds from certain area of domain
-        Swind = np.sqrt(Uwind**2 + Vwind**2)
+        # Vwind = np.concatenate((Vwind1, Vwind2[1:, :, :]), axis=0)
+        # del(Vwind1, Vwind2)
+        # Vwind = Vwind[:, iwind]  # only use winds from certain area of domain
+        # Swind = np.sqrt(Uwind**2 + Vwind**2)
 
-        tw = np.concatenate((tw1, tw2[1:]), axis=0)
-        datesw = np.concatenate((datesw1, datesw2[1:]), axis=0)
-        w1.close(); w2.close()
+        # tw = np.concatenate((tw1, tw2[1:]), axis=0)
+        # datesw = np.concatenate((datesw1, datesw2[1:]), axis=0)
+        # w1.close(); w2.close()
 
         Wsm1 = np.zeros(months.size); Wsv1 = np.zeros(months.size)
         Wdm1 = np.zeros(months.size); Wdv1 = np.zeros(months.size)
@@ -446,45 +463,98 @@ if maketable:
         Wdm3 = np.zeros(months.size); Wdv3 = np.zeros(months.size)
         for i, month in enumerate(months):
 
+            if (year == 2003) and ((month == 1) or (month == 2) or (month == 3) or (month == 4) or (month == 5)):
+                continue  # don't have info for here
+            elif (year == 2014) and (month >= 9):
+                continue  # don't have info for here
+
             # datetime 1 month ago
             dt = datetime(year,month,1,0,0,0) - dateutil.relativedelta.relativedelta(months=1)
             istart1 = find(datesw<dt)[-1] # starting index
+            iend1 = find(datesw<datetime(year,month,1,0,0,0))[-1] # ending index, current month
             # datetime 2 months ago
+            # pdb.set_trace()
             dt = datetime(year,month,1,0,0,0) - dateutil.relativedelta.relativedelta(months=2)
             istart2 = find(datesw<dt)[-1] # starting index
+            # do each month incrementally since not enough memory otherwise
+            iend2 = find(datesw<(datetime(year,month,1,0,0,0)-dateutil.relativedelta.relativedelta(months=1)))[-1] # ending index, current month
             # datetime 3 months ago
             dt = datetime(year,month,1,0,0,0) - dateutil.relativedelta.relativedelta(months=3)
             istart3 = find(datesw<dt)[-1] # starting index
-            iend = find(datesw<datetime(year,month,1,0,0,0))[-1] # ending index, current month
+            iend3 = find(datesw<(datetime(year,month,1,0,0,0)-dateutil.relativedelta.relativedelta(months=2)))[-1] # ending index, current month
 
-            # Wind magnitude mean, Wsm
-            Wsm1[i] = Swind[istart1:iend, :].mean()
-            Wsm2[i] = Swind[istart2:iend, :].mean()
-            Wsm3[i] = Swind[istart3:iend, :].mean()
+            # 1st month
+            # if month==2:
+            #     pdb.set_trace()
+            sustr1 = sustr[istart1:iend1, :]; svstr1 = svstr[istart1:iend1, :]
+            sustr1 = op.resize(sustr1, 2)[:,1:-1,:]
+            svstr1 = op.resize(svstr1, 1)[:,:,1:-1]
+            # rotate onto cartesian grid
+            sustr1, svstr1 = rot2d(sustr1, svstr1, anglev[1:-1,1:-1])
+            sustr1 = sustr1[:, iwind[1:-1,1:-1]]
+            svstr1 = svstr1[:, iwind[1:-1,1:-1]]
+            # sum for later
+            l1 = sustr1.shape[0]  # to divide by later for mean
+            ssstrsum = np.sqrt(sustr1**2 + svstr1**2).sum()
+            sustrsum = sustr1.sum()
+            svstrsum = svstr1.sum()
+            del(sustr1,svstr1)
+            # pdb.set_trace()
+            Wsm1[i] = ssstrsum/l1  # Wind magnitude mean, Wsm
+            Wdm1[i] = np.rad2deg(np.arctan2(svstrsum/l1, sustrsum/l1))  # Wind direction mean, Wdm
 
-            # Wind magnitude var, Wsv
-            Wsv1[i] = np.var(Swind[istart1:iend, :])
-            Wsv2[i] = np.var(Swind[istart2:iend, :])
-            Wsv3[i] = np.var(Swind[istart3:iend, :])
+            # 2nd month
+            sustr2 = sustr[istart2:iend2, :]; svstr2 = svstr[istart2:iend2, :]
+            sustr2 = op.resize(sustr2, 2)[:,1:-1,:]
+            svstr2 = op.resize(svstr2, 1)[:,:,1:-1]
+            # rotate onto cartesian grid
+            sustr2, svstr2 = rot2d(sustr2, svstr2, anglev[1:-1,1:-1])
+            sustr2 = sustr2[:, iwind[1:-1,1:-1]]
+            svstr2 = svstr2[:, iwind[1:-1,1:-1]]
+            # sum for later
+            l2 = sustr2.shape[0]  # to divide by later for mean
+            ssstrsum += np.sqrt(sustr2**2 + svstr2**2).sum()
+            sustrsum += sustr2.sum()
+            svstrsum += svstr2.sum()
+            del(sustr2,svstr2)
+            Wsm2[i] = ssstrsum/(l1 + l2)  # Wind magnitude mean, Wsm
+            Wdm2[i] = np.rad2deg(np.arctan2(svstrsum/(l1+l2), sustrsum/(l1+l2)))  # Wind direction mean, Wdm
 
-            # Wind direction mean, Wdm
-            Wdm1[i] = np.rad2deg(np.arctan2(Vwind[istart1:iend, :].mean(), Uwind[istart1:iend, :].mean()))
-            Wdm2[i] = np.rad2deg(np.arctan2(Vwind[istart2:iend, :].mean(), Uwind[istart2:iend, :].mean()))
-            Wdm3[i] = np.rad2deg(np.arctan2(Vwind[istart3:iend, :].mean(), Uwind[istart3:iend, :].mean()))
+            # 3rd month
+            sustr3 = sustr[istart3:iend3, :]; svstr3 = svstr[istart3:iend3, :]
+            sustr3 = op.resize(sustr3, 2)[:,1:-1,:]
+            svstr3 = op.resize(svstr3, 1)[:,:,1:-1]
+            # rotate onto cartesian grid
+            sustr3, svstr3 = rot2d(sustr3, svstr3, anglev[1:-1,1:-1])
+            sustr3 = sustr3[:, iwind[1:-1,1:-1]]
+            svstr3 = svstr3[:, iwind[1:-1,1:-1]]
+            # sum for later
+            l3 = sustr3.shape[0]  # to divide by later for mean
+            ssstrsum += np.sqrt(sustr3**2 + svstr3**2).sum()
+            sustrsum += sustr3.sum()
+            svstrsum += svstr3.sum()
+            del(sustr3,svstr3)
+            Wsm3[i] = ssstrsum/(l1 + l2 + l3)  # Wind magnitude mean, Wsm
+            Wdm3[i] = np.rad2deg(np.arctan2(svstrsum/(l1+l2+l3), sustrsum/(l1+l2+l3)))  # Wind direction mean, Wdm
+            # pdb.set_trace()
+            # # Wind magnitude var, Wsv
+            # Wsv1[i] = np.var(ssstr1)
+            # Wsv2[i] = np.var(ssstr2)
+            # Wsv3[i] = np.var(ssstr3)
 
-            # Wind direction var, Wdv
-            ang = np.arctan2(Vwind[istart1:iend, :], Uwind[istart1:iend, :])
-            # unwrap angles before taking the variance
-            ang = np.rad2deg(np.unwrap(np.deg2rad(ang)))
-            Wdv1[i] = np.var(ang)
+            # # Wind direction var, Wdv
+            # ang = np.arctan2(svstr1, sustr1)
+            # # unwrap angles before taking the variance
+            # ang = np.rad2deg(np.unwrap(np.deg2rad(ang)))
+            # Wdv1[i] = np.var(ang)
 
-            ang = np.arctan2(Vwind[istart2:iend, :], Uwind[istart2:iend, :])
-            ang = np.rad2deg(np.unwrap(np.deg2rad(ang)))
-            Wdv2[i] = np.var(ang)
+            # ang = np.arctan2(svstr2, sustr2)
+            # ang = np.rad2deg(np.unwrap(np.deg2rad(ang)))
+            # Wdv2[i] = np.var(ang)
 
-            ang = np.arctan2(Vwind[istart3:iend, :], Uwind[istart3:iend, :])
-            ang = np.rad2deg(np.unwrap(np.deg2rad(ang)))
-            Wdv3[i] = np.var(ang)
+            # ang = np.arctan2(svstr3, sustr3)
+            # ang = np.rad2deg(np.unwrap(np.deg2rad(ang)))
+            # Wdv3[i] = np.var(ang)
 
         # Unwrap mean directions
         Wdm1 = np.rad2deg(np.unwrap(np.deg2rad(Wdm1)))
@@ -507,6 +577,12 @@ if maketable:
         # Combine together into one row (actually put into matrix)
         table[j,:] = np.hstack((Tw[j], Ts[j], Qi, Qcum, Q1, Q2, Q3, Wsm1, Wsm2, Wsm3, 
             Wsv1, Wsv2, Wsv3, Wdm1, Wdm2, Wdm3, Wdv1, Wdv2, Wdv3))
+
+        # write table to file - to have something in case it breaks
+        with open('table' + str(year) + '.txt', 'w') as csvfile:
+            writer = csv.writer(csvfile, delimiter="\t")
+            writer.writerow(headers)
+            [writer.writerow(r) for r in table]
 
     # write table to file
     with open('table.txt', 'w') as csvfile:
