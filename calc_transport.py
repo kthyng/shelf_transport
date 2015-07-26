@@ -20,11 +20,11 @@ mpl.rcParams['mathtext.bf'] = 'sans:bold'
 mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
-shelf_depth = 100
+shelf_depth = 20
 
-whichtime = 'interannual' # 'seasonal' or 'interannual'
-whichseason = 'summer' # 'summer' or 'winter'
-region = 1 # 1, 2, 3, 4
+whichtime = 'interannual'  # 'seasonal' or 'interannual'
+whichseason = 'winter'  # 'summer' or 'winter'
+region = 3  # 1, 2, 3, 4
 
 # Find depths at the center of each histogram bin
 # loc = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
@@ -57,7 +57,7 @@ elif whichtime == 'interannual':
     if whichseason == 'winter':
 
         # Load in histogram
-        d = np.load('figures/cross/interannual-winter100H.npz')
+        d = np.load('figures/cross/interannual-winter' + str(shelf_depth) + 'H.npz')
         H = d['H']
         X, Y = np.meshgrid(op.resize(d['xe'],0), op.resize(d['ye'],0))
         fh = grid['trir'].nn_interpolator(grid['h'].flatten())
@@ -74,9 +74,11 @@ elif whichtime == 'interannual':
         # Calculate the transport for each year for the winter wind transport area.
         # Want places where the depth is less than 100 meters and west of 90 deg.
         if region == 1: # shelf bend
-            iwind = ideep * (lons<-95) * (lons>-97) * (lats>26) * (lats<28)
+            iwind = ideep * (lons<-94) * (lats>26)
+            # iwind = ideep * (lons<-95) * (lons>-97) * (lats>26) * (lats<28)
         elif region == 2: # Mississippi region
-            iwind = ishallow * (lons<-88) * (lons>-89.3) * (lats>28.7) * (lats<30)
+            iwind = ishallow * (lons>-89.3)
+            # iwind = ishallow * (lons<-88) * (lons>-89.3) * (lats>28.7) * (lats<30)
         elif region == 3: # winter wind transport region
             iwind = ishallow * (lons<-90) * (lats>27.5)
         Hwind = np.nansum(H[:,iwind.T], axis=1)
@@ -90,7 +92,7 @@ elif whichtime == 'interannual':
         #     d.close()
 
         Hwind_rel = (Hwind - Hwind.mean())/(Hwind.max() - Hwind.min())
-        np.savez('calcs/shelfconn/' + whichtime + '-' + whichseason + str(region) + 'transportsum.npz', transport=Hwind_rel)
+        np.savez('calcs/shelfconn/' + whichtime + '-' + whichseason + str(region) + 'depth' + str(shelf_depth) + 'transportsum.npz', transport=Hwind_rel)
         # fig = plt.figure(figsize=(8.1375,6.9))
         # ax = fig.add_subplot(111)
         # ax.plot(Hwind_rel, dirs, 'o', color='0.2', ms=10)
@@ -101,7 +103,7 @@ elif whichtime == 'interannual':
     elif whichseason == 'summer':
 
         # Load in histogram
-        d = np.load('figures/cross/interannual-summer100H.npz')
+        d = np.load('figures/cross/interannual-summer' + str(shelf_depth) + 'H.npz')
         H = d['H']
         X, Y = np.meshgrid(op.resize(d['xe'],0), op.resize(d['ye'],0))
         fh = grid['trir'].nn_interpolator(grid['h'].flatten())
@@ -118,14 +120,16 @@ elif whichtime == 'interannual':
         # Calculate the transport for each year for the winter wind transport area.
         # Want places where the depth is less than 100 meters and west of 90 deg.
         if region == 1: # shelf bend
-            iwind = ideep * (lons<-95) * (lons>-97) * (lats>26) * (lats<28)
+            iwind = ideep * (lons<-94) * (lats>26)
+            # iwind = ideep * (lons<-95) * (lons>-97) * (lats>26) * (lats<28)
         elif region == 2: # Mississippi region
-            iwind = ishallow * (lons<-88) * (lons>-89.3) * (lats>28.7) * (lats<30)
+            iwind = ishallow * (lons>-89.3)
+            # iwind = ishallow * (lons<-88) * (lons>-89.3) * (lats>28.7) * (lats<30)
         elif region == 4: # summer river transport region
             iwind = ishallow * (lons<-90) * (lats>27.5)
         Hwind = np.nansum(H[:,iwind.T], axis=1)
         Hwind_rel = (Hwind - Hwind.mean())/(Hwind.max() - Hwind.min())
-        np.savez('calcs/shelfconn/' + whichtime + '-' + whichseason + str(region) + 'transportsum.npz', transport=Hwind_rel)
+        np.savez('calcs/shelfconn/' + whichtime + '-' + whichseason + str(region) + 'depth' + str(shelf_depth) + 'transportsum.npz', transport=Hwind_rel)
 
         # # plot vs. wind direction and discharge from Forest et al paper
         # # river discharge, m^3/s
