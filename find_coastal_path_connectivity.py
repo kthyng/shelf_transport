@@ -44,8 +44,8 @@ def load_tracks(File):
 def run():
 
     # Find files to run through
-    Files = glob.glob('tracks/2009-0[1,2]-*gc.nc')
-    Files.extend(glob.glob('tracks/2009-0[7,8]-*gc.nc'))
+    Files = glob.glob('tracks/2014-0[1,2]-*gc.nc')
+    Files.extend(glob.glob('tracks/2014-0[7,8]-*gc.nc'))
 
     # grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
     # vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
@@ -60,7 +60,7 @@ def run():
     # Loop through files for analysis
     for File in Files:
 
-        savefile = 'calcs/alongcoastconn/' + File.split('/')[-1][:-3] + '.npz'
+        savefile = 'calcs/alongcoastconn/' + File.split('/')[-1][:-5] + '.npz'
         if os.path.exists(savefile): # don't repeat calc if last file was created
             continue
 
@@ -71,7 +71,6 @@ def run():
         xg[nanind] = np.nan; yg[nanind] = np.nan
 
         # Remove points that never enter the outer box paths
-        # tic_start = time.time()
         inouter = pathouter.contains_points(np.vstack((xg.flat, yg.flat)).T).reshape(xg.shape)
         iinside = find(inouter.sum(axis=1).astype(bool)) # indices of drifters that go inside
         # print '0 time for outer path comparison: ', time.time() - tic_start
@@ -85,40 +84,22 @@ def run():
 
         for i,path in enumerate(paths):
 
-            # tic = time.time()
-            
             # which points are inside the regions
             inside = path.contains_points(np.vstack((xgin.flat, ygin.flat)).T).reshape(xgin.shape)
-            # toc = time.time(); print '1 ', toc-tic
-            # iinside = inside.sum(axis=1).astype(bool) # true if goes inside
             whencross = np.diff(inside.astype(int), axis=1) # will pick out when the drifters change from outside to inside region or vice versa
-            # tic = time.time(); print '2 ', tic-toc
             whencross_sorted = np.sort(whencross, axis=1) # will pick out when the drifters change from outside to inside region or vice versa
-            # toc = time.time(); print '3 ', toc-tic
             isort = np.argsort(whencross, axis=1)
-            # tic = time.time(); print '4 ', tic-toc
-            inbox[i,:,:] = days[isort[:,:ncrosses]] # allow for up to ncrosses re-entrances
-            # nan out the entries that aren't actually entering
-            # toc = time.time(); print '5 ', toc-tic
-            iin = whencross_sorted[:,:ncrosses]!=-1
-            # tic = time.time(); print '6 ', tic-toc
-            inbox[i,iin] = np.nan
-            # toc = time.time(); print '7 ', toc-tic
-            inbox[i,:,:] = np.sort(inbox[i,:,:], axis=1)
-            # tic = time.time(); print '8 ', tic-toc
-
-            outbox[i,:,:] = days[isort[:,-ncrosses:]] # allow for up to ncrosses re-exits
-            # nan out the exits that aren't actually exiting
-            iout = whencross_sorted[:,-ncrosses:]!=1
+            outbox[i,:,:] = days[isort[:,:ncrosses]] # allow for up to ncrosses re-exits
+            # nan out the entries that aren't actually exiting
+            iout = whencross_sorted[:,:ncrosses]!=-1
             outbox[i,iout] = np.nan
-            # pdb.set_trace()
             outbox[i,:,:] = np.sort(outbox[i,:,:], axis=1)
 
-            # print 'loop time: ', time.time() - tic
-
-            # pdb.set_trace()
-            
-        # inbox = np.sort(inbox, axis=2)
+            inbox[i,:,:] = days[isort[:,-ncrosses:]] # allow for up to ncrosses re-enters
+            # nan out the exits that aren't actually exiting
+            iin = whencross_sorted[:,-ncrosses:]!=1
+            inbox[i,iin] = np.nan
+            inbox[i,:,:] = np.sort(inbox[i,:,:], axis=1)
 
         # save array
         np.savez(savefile, inbox=inbox, outbox=outbox, iinside=iinside)

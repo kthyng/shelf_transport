@@ -35,54 +35,92 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-maketable = False
+maketable = False    
 runcorr = True # run correlation coefficients
 doplot = True
 explore = True # True to do exploratory plots, False to do polished plot
 whichseason = 'winter' # 'winter' or 'summer'
 
 
-headers = ('V_winter-3', 'V_winter-5', 'V_winter-10', 'V_winter-15', 'V_winter-20', 'V_winter-30',
-            'V_PA_winter-30', 'V_G_winter-30',
-            'V_summer-3', 'V_summer-5', 'V_summer-10', 'V_summer-15', 'V_summer-20', 'V_summer-30', 
-            'V_PA_summer-30', 'V_G_summer-30',
+headers = ('H_PA_winter-30', 'H_G_winter-30',
+            'H_PA_summer-30', 'H_G_summer-30',
             'Instantaneous-discharge-Qi-Jan', 'Qi-Feb', 'Qi-Mar', 'Qi-Apr', 'Qi-May', 'Qi-Jun', 'Qi-Jul',
             'Qi-Aug', 'Qi-Sep', 'Qi-Oct', 'Qi-Nov', 'Qi-Dec', 
             'Cumulative-discharge-Qcum-Jan', 'Qcum-Feb', 'Qcum-Mar', 'Qcum-Apr', 'Qcum-May', 'Qcum-Jun', 'Qcum-Jul',
-            'Qcum-Aug', 'Qcum-Sep', 'Qcum-Oct', 'Qcum-Nov', 'Qcum-Dec',
+            'Qcum-Aug', 'Qcum-Sep', 'Qcum-Oct-prior', 'Qcum-Nov-prior', 'Qcum-Dec-prior',
             'Running-sum-discharge-Q1-Jan', 'Q1-Feb', 'Q1-Mar', 'Q1-Apr', 'Q1-May', 'Q1-Jun', 'Q1-Jul',
-            'Q1-Aug', 'Q1-Sep', 'Q1-Oct', 'Q1-Nov', 'Q1-Dec',
+            'Q1-Aug', 'Q1-Sep', 'Q1-Oct-prior', 'Q1-Nov-prior', 'Q1-Dec-prior',
             'Running-sum-discharge-Q2-Jan', 'Q2-Feb', 'Q2-Mar', 'Q2-Apr', 'Q2-May', 'Q2-Jun', 'Q2-Jul',
-            'Q2-Aug', 'Q2-Sep', 'Q2-Oct', 'Q2-Nov', 'Q2-Dec',
+            'Q2-Aug', 'Q2-Sep', 'Q2-Oct', 'Q2-Nov-prior', 'Q2-Dec-prior',
             'Running-sum-discharge-Q3-Jan', 'Q3-Feb', 'Q3-Mar', 'Q3-Apr', 'Q3-May', 'Q3-Jun', 'Q3-Jul',
-            'Q3-Aug', 'Q3-Sep', 'Q3-Oct', 'Q3-Nov', 'Q3-Dec',
+            'Q3-Aug', 'Q3-Sep', 'Q3-Oct', 'Q3-Nov-prior', 'Q3-Dec-prior',
             'Wind-magnitude-mean-Wsm1-Jan', 'Wsm1-Feb', 'Wsm1-Mar', 'Wsm1-Apr', 'Wsm1-May',
-            'Wsm1-Jun', 'Wsm1-Jul', 'Wsm1-Aug', 'Wsm1-Sep', 'Wsm1-Oct', 'Wsm1-Nov', 'Wsm1-Dec',
+            'Wsm1-Jun', 'Wsm1-Jul', 'Wsm1-Aug', 'Wsm1-Sep', 'Wsm1-Oct-prior', 'Wsm1-Nov-prior', 'Wsm1-Dec-prior',
             'Wind-magnitude-mean-Wsm2-Jan', 'Wsm2-Feb', 'Wsm2-Mar', 'Wsm2-Apr', 'Wsm2-May',
-            'Wsm2-Jun', 'Wsm2-Jul', 'Wsm2-Aug', 'Wsm2-Sep', 'Wsm2-Oct', 'Wsm2-Nov', 'Wsm2-Dec',
+            'Wsm2-Jun', 'Wsm2-Jul', 'Wsm2-Aug', 'Wsm2-Sep', 'Wsm2-Oct', 'Wsm2-Nov-prior', 'Wsm2-Dec-prior',
             'Wind-magnitude-mean-Wsm3-Jan', 'Wsm3-Feb', 'Wsm3-Mar', 'Wsm3-Apr', 'Wsm3-May',
-            'Wsm3-Jun', 'Wsm3-Jul', 'Wsm3-Aug', 'Wsm3-Sep', 'Wsm3-Oct', 'Wsm3-Nov', 'Wsm3-Dec',
+            'Wsm3-Jun', 'Wsm3-Jul', 'Wsm3-Aug', 'Wsm3-Sep', 'Wsm3-Oct', 'Wsm3-Nov-prior', 'Wsm3-Dec-prior',
             'Wind-magnitude-variance-Wsv1-Jan', 'Wsv1-Feb', 'Wsv1-Mar', 'Wsv1-Apr', 'Wsv1-May',
-            'Wsv1-Jun', 'Wsv1-Jul', 'Wsv1-Aug', 'Wsv1-Sep', 'Wsv1-Oct', 'Wsv1-Nov', 'Wsv1-Dec',
+            'Wsv1-Jun', 'Wsv1-Jul', 'Wsv1-Aug', 'Wsv1-Sep', 'Wsv1-Oct-prior', 'Wsv1-Nov-prior', 'Wsv1-Dec-prior',
             'Wind-magnitude-variance-Wsv2-Jan', 'Wsv2-Feb', 'Wsv2-Mar', 'Wsv2-Apr', 'Wsv2-May',
-            'Wsv2-Jun', 'Wsv2-Jul', 'Wsv2-Aug', 'Wsv2-Sep', 'Wsv2-Oct', 'Wsv2-Nov', 'Wsv2-Dec',
+            'Wsv2-Jun', 'Wsv2-Jul', 'Wsv2-Aug', 'Wsv2-Sep', 'Wsv2-Oct', 'Wsv2-Nov-prior', 'Wsv2-Dec-prior',
             'Wind-magnitude-variance-Wsv3-Jan', 'Wsv3-Feb', 'Wsv3-Mar', 'Wsv3-Apr', 'Wsv3-May',
-            'Wsv3-Jun', 'Wsv3-Jul', 'Wsv3-Aug', 'Wsv3-Sep', 'Wsv3-Oct', 'Wsv3-Nov', 'Wsv3-Dec',
+            'Wsv3-Jun', 'Wsv3-Jul', 'Wsv3-Aug', 'Wsv3-Sep', 'Wsv3-Oct', 'Wsv3-Nov-prior', 'Wsv3-Dec-prior',
             'Wind-direction-mean-Wdm1-Jan', 'Wdm1-Feb', 'Wdm1-Mar', 'Wdm1-Apr', 'Wdm1-May',
-            'Wdm1-Jun', 'Wdm1-Jul', 'Wdm1-Aug', 'Wdm1-Sep', 'Wdm1-Oct', 'Wdm1-Nov', 'Wdm1-Dec',
+            'Wdm1-Jun', 'Wdm1-Jul', 'Wdm1-Aug', 'Wdm1-Sep', 'Wdm1-Oct-prior', 'Wdm1-Nov-prior', 'Wdm1-Dec-prior',
             'Wind-direction-mean-Wdm2-Jan', 'Wdm2-Feb', 'Wdm2-Mar', 'Wdm2-Apr', 'Wdm2-May',
-            'Wdm2-Jun', 'Wdm2-Jul', 'Wdm2-Aug', 'Wdm2-Sep', 'Wdm2-Oct', 'Wdm2-Nov', 'Wdm2-Dec',
+            'Wdm2-Jun', 'Wdm2-Jul', 'Wdm2-Aug', 'Wdm2-Sep', 'Wdm2-Oct', 'Wdm2-Nov-prior', 'Wdm2-Dec-prior',
             'Wind-direction-mean-Wdm3-Jan', 'Wdm3-Feb', 'Wdm3-Mar', 'Wdm3-Apr', 'Wdm3-May',
-            'Wdm3-Jun', 'Wdm3-Jul', 'Wdm3-Aug', 'Wdm3-Sep', 'Wdm3-Oct', 'Wdm3-Nov', 'Wdm3-Dec',
+            'Wdm3-Jun', 'Wdm3-Jul', 'Wdm3-Aug', 'Wdm3-Sep', 'Wdm3-Oct', 'Wdm3-Nov-prior', 'Wdm3-Dec-prior',
             'Wind-direction-variance-Wdv1-Jan', 'Wdv1-Feb', 'Wdv1-Mar', 'Wdv1-Apr', 'Wdv1-May',
-            'Wdv1-Jun', 'Wdv1-Jul', 'Wdv1-Aug', 'Wdv1-Sep', 'Wdv1-Oct', 'Wdv1-Nov', 'Wdv1-Dec',
+            'Wdv1-Jun', 'Wdv1-Jul', 'Wdv1-Aug', 'Wdv1-Sep', 'Wdv1-Oct-prior', 'Wdv1-Nov-prior', 'Wdv1-Dec-prior',
             'Wind-direction-variance-Wdv2-Jan', 'Wdv2-Feb', 'Wdv2-Mar', 'Wdv2-Apr', 'Wdv2-May',
-            'Wdv2-Jun', 'Wdv2-Jul', 'Wdv2-Aug', 'Wdv2-Sep', 'Wdv2-Oct', 'Wdv2-Nov', 'Wdv2-Dec',
+            'Wdv2-Jun', 'Wdv2-Jul', 'Wdv2-Aug', 'Wdv2-Sep', 'Wdv2-Oct', 'Wdv2-Nov-prior', 'Wdv2-Dec-prior',
             'Wind-direction-variance-Wdv3-Jan', 'Wdv3-Feb', 'Wdv3-Mar', 'Wdv3-Apr', 'Wdv3-May',
-            'Wdv3-Jun', 'Wdv3-Jul', 'Wdv3-Aug', 'Wdv3-Sep', 'Wdv3-Oct', 'Wdv3-Nov', 'Wdv3-Dec')
+            'Wdv3-Jun', 'Wdv3-Jul', 'Wdv3-Aug', 'Wdv3-Sep', 'Wdv3-Oct', 'Wdv3-Nov-prior', 'Wdv3-Dec-prior')
+
+# headers = ('V_winter-3', 'V_winter-5', 'V_winter-10', 'V_winter-15', 'V_winter-20', 'V_winter-30',
+#             'V_PA_winter-30', 'V_G_winter-30',
+#             'V_summer-3', 'V_summer-5', 'V_summer-10', 'V_summer-15', 'V_summer-20', 'V_summer-30', 
+#             'V_PA_summer-30', 'V_G_summer-30',
+#             'Instantaneous-discharge-Qi-Jan', 'Qi-Feb', 'Qi-Mar', 'Qi-Apr', 'Qi-May', 'Qi-Jun', 'Qi-Jul',
+#             'Qi-Aug', 'Qi-Sep', 'Qi-Oct', 'Qi-Nov', 'Qi-Dec', 
+#             'Cumulative-discharge-Qcum-Jan', 'Qcum-Feb', 'Qcum-Mar', 'Qcum-Apr', 'Qcum-May', 'Qcum-Jun', 'Qcum-Jul',
+#             'Qcum-Aug', 'Qcum-Sep', 'Qcum-Oct', 'Qcum-Nov', 'Qcum-Dec',
+#             'Running-sum-discharge-Q1-Jan', 'Q1-Feb', 'Q1-Mar', 'Q1-Apr', 'Q1-May', 'Q1-Jun', 'Q1-Jul',
+#             'Q1-Aug', 'Q1-Sep', 'Q1-Oct', 'Q1-Nov', 'Q1-Dec',
+#             'Running-sum-discharge-Q2-Jan', 'Q2-Feb', 'Q2-Mar', 'Q2-Apr', 'Q2-May', 'Q2-Jun', 'Q2-Jul',
+#             'Q2-Aug', 'Q2-Sep', 'Q2-Oct', 'Q2-Nov', 'Q2-Dec',
+#             'Running-sum-discharge-Q3-Jan', 'Q3-Feb', 'Q3-Mar', 'Q3-Apr', 'Q3-May', 'Q3-Jun', 'Q3-Jul',
+#             'Q3-Aug', 'Q3-Sep', 'Q3-Oct', 'Q3-Nov', 'Q3-Dec',
+#             'Wind-magnitude-mean-Wsm1-Jan', 'Wsm1-Feb', 'Wsm1-Mar', 'Wsm1-Apr', 'Wsm1-May',
+#             'Wsm1-Jun', 'Wsm1-Jul', 'Wsm1-Aug', 'Wsm1-Sep', 'Wsm1-Oct', 'Wsm1-Nov', 'Wsm1-Dec',
+#             'Wind-magnitude-mean-Wsm2-Jan', 'Wsm2-Feb', 'Wsm2-Mar', 'Wsm2-Apr', 'Wsm2-May',
+#             'Wsm2-Jun', 'Wsm2-Jul', 'Wsm2-Aug', 'Wsm2-Sep', 'Wsm2-Oct', 'Wsm2-Nov', 'Wsm2-Dec',
+#             'Wind-magnitude-mean-Wsm3-Jan', 'Wsm3-Feb', 'Wsm3-Mar', 'Wsm3-Apr', 'Wsm3-May',
+#             'Wsm3-Jun', 'Wsm3-Jul', 'Wsm3-Aug', 'Wsm3-Sep', 'Wsm3-Oct', 'Wsm3-Nov', 'Wsm3-Dec',
+#             'Wind-magnitude-variance-Wsv1-Jan', 'Wsv1-Feb', 'Wsv1-Mar', 'Wsv1-Apr', 'Wsv1-May',
+#             'Wsv1-Jun', 'Wsv1-Jul', 'Wsv1-Aug', 'Wsv1-Sep', 'Wsv1-Oct', 'Wsv1-Nov', 'Wsv1-Dec',
+#             'Wind-magnitude-variance-Wsv2-Jan', 'Wsv2-Feb', 'Wsv2-Mar', 'Wsv2-Apr', 'Wsv2-May',
+#             'Wsv2-Jun', 'Wsv2-Jul', 'Wsv2-Aug', 'Wsv2-Sep', 'Wsv2-Oct', 'Wsv2-Nov', 'Wsv2-Dec',
+#             'Wind-magnitude-variance-Wsv3-Jan', 'Wsv3-Feb', 'Wsv3-Mar', 'Wsv3-Apr', 'Wsv3-May',
+#             'Wsv3-Jun', 'Wsv3-Jul', 'Wsv3-Aug', 'Wsv3-Sep', 'Wsv3-Oct', 'Wsv3-Nov', 'Wsv3-Dec',
+#             'Wind-direction-mean-Wdm1-Jan', 'Wdm1-Feb', 'Wdm1-Mar', 'Wdm1-Apr', 'Wdm1-May',
+#             'Wdm1-Jun', 'Wdm1-Jul', 'Wdm1-Aug', 'Wdm1-Sep', 'Wdm1-Oct', 'Wdm1-Nov', 'Wdm1-Dec',
+#             'Wind-direction-mean-Wdm2-Jan', 'Wdm2-Feb', 'Wdm2-Mar', 'Wdm2-Apr', 'Wdm2-May',
+#             'Wdm2-Jun', 'Wdm2-Jul', 'Wdm2-Aug', 'Wdm2-Sep', 'Wdm2-Oct', 'Wdm2-Nov', 'Wdm2-Dec',
+#             'Wind-direction-mean-Wdm3-Jan', 'Wdm3-Feb', 'Wdm3-Mar', 'Wdm3-Apr', 'Wdm3-May',
+#             'Wdm3-Jun', 'Wdm3-Jul', 'Wdm3-Aug', 'Wdm3-Sep', 'Wdm3-Oct', 'Wdm3-Nov', 'Wdm3-Dec',
+#             'Wind-direction-variance-Wdv1-Jan', 'Wdv1-Feb', 'Wdv1-Mar', 'Wdv1-Apr', 'Wdv1-May',
+#             'Wdv1-Jun', 'Wdv1-Jul', 'Wdv1-Aug', 'Wdv1-Sep', 'Wdv1-Oct', 'Wdv1-Nov', 'Wdv1-Dec',
+#             'Wind-direction-variance-Wdv2-Jan', 'Wdv2-Feb', 'Wdv2-Mar', 'Wdv2-Apr', 'Wdv2-May',
+#             'Wdv2-Jun', 'Wdv2-Jul', 'Wdv2-Aug', 'Wdv2-Sep', 'Wdv2-Oct', 'Wdv2-Nov', 'Wdv2-Dec',
+#             'Wind-direction-variance-Wdv3-Jan', 'Wdv3-Feb', 'Wdv3-Mar', 'Wdv3-Apr', 'Wdv3-May',
+#             'Wdv3-Jun', 'Wdv3-Jul', 'Wdv3-Aug', 'Wdv3-Sep', 'Wdv3-Oct', 'Wdv3-Nov', 'Wdv3-Dec')
 
 if runcorr:
-    d = np.loadtxt('table-coastconn-Vs.txt', skiprows=1)
+    d = np.loadtxt('table-coastconn-Hs.txt', skiprows=1) # integrated histograms
+    # d = np.loadtxt('table-coastconn-Vs.txt', skiprows=1) # vulnerabilities
 
     # check for loop direction problems
     for i in xrange(d.shape[1]):
@@ -190,15 +228,15 @@ if runcorr:
         d = d2.copy()
 
     if whichseason == 'winter':
-        T = d[:,6] # the transport is the first column
+        T = d[:,1] # the transport is the first column
     elif whichseason == 'summer':
-        T = d[:,15] # the transport is the first column
+        T = d[:,3] # the transport is the first column
     r = np.empty(d.shape[1]) # to store the correlation coefficients
     p = np.empty(d.shape[1]) # to store the correlation coefficients
     for i in xrange(d.shape[1]):
         comp = d[:,i]
         ind = ~np.isnan(comp)
-        r[i], p[i] = scipy.stats.pearsonr(T[ind], comp[ind])
+        r[i], p[i] = scipy.stats.pearsonr(T[ind][:-1], comp[ind][:-1])
 
     ind = np.argsort(p) # indices that would sort p in ascending order
     # print the best ones
@@ -223,7 +261,7 @@ if runcorr:
     inan = ~(np.isnan(r)) * ~(r==1)
     ind = np.argmax(abs(r[inan]))
     while ('Wbest' not in locals()):
-        if ('Wdm' in np.asarray(headers)[inan][ind]) and ('Wdv' not in np.asarray(headers)[inan][ind]) \
+        if ('W' in np.asarray(headers)[inan][ind]) and ('Wdv' not in np.asarray(headers)[inan][ind]) \
                 and np.isnan(d[:,inan][:,ind]).sum()==0:
             Wbestr = r[inan][ind]
             Wbestp = p[inan][ind]
@@ -367,6 +405,8 @@ if maketable:
 
         # if year == 2014:
         #     months = np.arange(1,10)
+        if year == 2004:
+            year = 2003
 
         # Instantaneous discharge at the start of each month, Qi
         Qi = np.zeros(months.size)
@@ -409,6 +449,7 @@ if maketable:
             iend = find(datesr<datetime(year,month,1,0,0,0))[-1] # ending index, current month
             Q3[i] = Q[istart:iend].sum()
 
+        pdb.set_trace()
 
 
         ## Wind forcing: averaged over the broad shelf region and taken over 1, 2, and 3 months ##
@@ -455,6 +496,14 @@ if maketable:
         Wsm3 = np.zeros(months.size); Wsv3 = np.zeros(months.size)
         Wdm3 = np.zeros(months.size); Wdv3 = np.zeros(months.size)
         for i, month in enumerate(months):
+
+            if month < 10: # before october, need to use year before
+                continue
+            else:
+                pdb.set_trace()
+
+            # if month >= 10: # october, november, december THIS ISN"T QUITE RIGHT< DID BY HAND
+            #     year = year-1 # use the year before for end of the year metrics
 
             # datetime 1 month ago
             dt = datetime(year,month,1,0,0,0) - dateutil.relativedelta.relativedelta(months=1)

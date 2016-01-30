@@ -27,7 +27,7 @@ vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
 # for year in years:
 #     currents_filename.extend(np.sort(glob.glob('/home/kthyng/shelf/' + str(year) + '/ocean_his_????.nc')))
 
-years = np.arange(2013,2015)
+years = np.arange(2004,2005)
 currents_filename = []
 for year in years:
     currents_filename.extend(np.sort(glob.glob('/home/kthyng/shelf/' + str(year) + '/ocean_his_*.nc')))
@@ -81,14 +81,16 @@ def init(name):
 
     # tp._readgrid()
 
-    if os.path.exists('calcs/seeds.npz'):
-        seeds = np.load('calcs/seeds.npz')
+    # initial separation distance of drifters, in meters, from sensitivity project
+    dx = 500
+    seedsfile = 'calcs/seeds' + str(dx) + '.npz'
+    if os.path.exists(seedsfile):
+        seeds = np.load(seedsfile)
         lon0 = seeds['lon0']; lat0 = seeds['lat0']
         seeds.close()
     else:
         # Initial lon/lat locations for drifters
         # Start uniform array of drifters across domain using x,y coords
-        dx = 1000 # initial separation distance of drifters, in meters, from sensitivity project
         llcrnrlon = tp.grid['lonr'].min(); urcrnrlon = tp.grid['lonr'].max(); 
         llcrnrlat = tp.grid['latr'].min(); urcrnrlat = tp.grid['latr'].max(); 
         xcrnrs, ycrnrs = tp.grid['basemap']([llcrnrlon, urcrnrlon], [llcrnrlat, urcrnrlat])
@@ -100,7 +102,7 @@ def init(name):
         lon0, lat0 = tracpy.tools.check_points(lon0, lat0, tp.grid)
 
         # save starting locations for future use
-        np.savez('calcs/seeds.npz', lon0=lon0, lat0=lat0)
+        np.savez(seedsfile, lon0=lon0, lat0=lat0)
 
     # # equal weightings for drifters for transport.
     # T0 = np.ones(lon0.size, order='F')
@@ -109,7 +111,7 @@ def init(name):
     # V = np.ma.zeros(tp.grid['xv'].shape, order='F')
 
     # pdb.set_trace()
-       
+
     return tp, lon0, lat0
 
 
@@ -120,9 +122,10 @@ def run():
         os.makedirs('tracks')
     if not os.path.exists('figures'):
         os.makedirs('figures')
-        
-    overallstartdate = datetime(2014, 6, 1, 4, 1)
-    overallstopdate = datetime(2014, 7, 1, 4, 1)
+
+    overallstartdate = datetime(2004, 1, 1, 0, 1)
+    overallstopdate = datetime(2004, 1, 2, 0, 1)
+    # overallstopdate = datetime(2014, 7, 1, 4, 1)
 
     date = overallstartdate
 
@@ -142,7 +145,6 @@ def run():
             # Run tracpy
             # Save directly to grid coordinates
             lonp, latp, zp, t, T0, U, V = tracpy.run.run(tp, date, lon0, lat0)
-
 
         # Increment by 24 hours for next loop, to move through more quickly
         date = date + timedelta(hours=24)

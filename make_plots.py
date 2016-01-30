@@ -49,7 +49,7 @@ def init(whichtime, whichtype, whichdir):
                     are loaded in.
     whichtype       Which type of plot: 'cross' (shelf) or 'coast' (-al connectivity)
     '''
- 
+
     if whichtype == 'cross':
         cmap = 'YlOrRd'
         base = 'calcs/shelfconn/'
@@ -535,10 +535,10 @@ def run():
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
     # 'interannual-01' through 'interannual-12', 'monthly-2004' through 'monthly-2014'
     # 'interannual-mean' 'monthly-mean'
-    whichtime = 'monthly-mean'
+    whichtime = 'interannual-winter'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
-    whichtype = 'D2'
+    whichtype = 'cross'
     # 'forward' or 'back' in time
     whichdir = 'forward'
 
@@ -554,7 +554,7 @@ def run():
     # Whether to overlay previously-calculated wind stress arrows
     # from projects/txla_plots/plot_mean_wind.py on Rainier
     addwind = 0 # for adding the wind on
-    years = np.arange(2012,2015) # this is just for the wind I think
+    years = np.arange(2004,2015) # this is just for the wind I think
 
     # Number of bins to use in histogram
     bins = (100,100) #(30,30)
@@ -563,12 +563,12 @@ def run():
     Files, cmap = init(whichtime, whichtype, whichdir)
 
     # Grid info
-    # loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
-    # # loc = '/Users/kthyng/Documents/research/postdoc/grid.nc'
-    # grid = tracpy.inout.readgrid(loc, usebasemap=True)
-    grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
-    vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
-    grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
+    loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+    # loc = '/Users/kthyng/Documents/research/postdoc/grid.nc'
+    grid = tracpy.inout.readgrid(loc, usebasemap=True)
+    # grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+    # vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
+    # grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
     # grid_filename = '../../grid.nc'
     # grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
 
@@ -839,7 +839,7 @@ def run():
             year = years[i]
             # year = File.split('/')[-1].split('-')[0]
             season = whichtime.split('-')[-1]
-            wind = np.load('../txla_plots/calcs/wind_stress/' + str(year) + season +  '.npz')
+            wind = np.load('../txla_plots/calcs/wind_stress/1st/jfm/' + str(year) + season +  '.npz')
             x = wind['x']; y = wind['y']; u = wind['u']; v = wind['v']
             q = axarr.flatten()[i].quiver(x, y, u, v, color = '0.3',
                         pivot='middle', zorder=1e35, width=0.003)

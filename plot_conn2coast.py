@@ -83,7 +83,7 @@ def plot_interannual():
     log = False
     season = 'summer' # 'winter' or 'summer'
     # zoomed = True
-    whichboxes = 'porta' # 'all', 'porta', 'galveston'
+    whichboxes = 'both' # 'all', 'porta', 'galveston', 'both'
     # which boxes along coast to use for vulnerability. 0:342 for all
     # Port A: 
     if whichboxes=='all':
@@ -115,6 +115,12 @@ def plot_interannual():
         plume = False
         # x1, x2, y1, y2 = 277100, 531900, 560000, 810000
         # zoom = 2.0
+    elif whichboxes=='both':
+        boxes = np.arange(103,180) 
+        whichH = 'H'
+        zoomed = True
+        x1, x2, y1, y2 = 86000, 531900, 465000, 810000
+        zoom = 1.5
 
     d = np.load('calcs/coastpaths.npz')
     pathsxy = d['pathsxy']
@@ -307,8 +313,9 @@ def plot_seasonal():
 
     cmap = 'YlGn'
     log = False
+    vulnerability = False  # Whether or not to plot the orange vulnerability along the coast
     # zoomed = True # True to add in a magnified region, for the 30 days advection timing
-    whichboxes = 'galveston' # 'all', 'porta', 'galveston'
+    whichboxes = 'both-zoom' # 'all', 'porta', 'galveston', 'both-zoom'
     # which boxes along coast to use for vulnerability. 0:342 for all
     # Port A: 
     if whichboxes=='all':
@@ -336,6 +343,12 @@ def plot_seasonal():
         zoomed = True
         x1, x2, y1, y2 = 277100, 531900, 660000, 810000
         zoom = 2.75
+    elif whichboxes=='both-zoom':
+        boxes = np.arange(103,123)  # analysis is for Port A but zoom box shows both areas
+        whichH = 'H'
+        zoomed = True
+        x1, x2, y1, y2 = 86000, 531900, 465000, 810000
+        zoom = 1.25
 
     d = np.load('calcs/coastpaths.npz')
     pathsxy = d['pathsxy']
@@ -412,42 +425,46 @@ def plot_seasonal():
             else:
                 mappable = ax.contourf(XE, YE, var, cmap=cmap, levels=levels)
 
-                # Add on vulnerability of coastline
-                # Need to plot the coast boxes as patches and color them according to vulnerability level
-                # http://matplotlib.org/1.2.1/examples/pylab_examples/hist_colormapped.html
-                # we need to normalize the data to 0..1 for the full
-                # range of the colormap
-                fracs = ndbox[i,j,:].astype(float)/ndbox[:,j,:].max() # max across seasons
-                norm = colors.normalize(fracs.min(), fracs.max())
-    
-                # Save patches together
-                patches = []
-                for path in pathsxy:
-                    patches.append(Patches.PathPatch(path, facecolor='orange', lw=0, zorder=10, edgecolor=None))
-
-                # assign shades of colormap to the patches according to values, and plot
-                for thisfrac, thispatch in zip(fracs, patches):
-                    color = cm.Oranges(norm(thisfrac))
-                    thispatch.set_facecolor(color)
-                    ax.add_patch(thispatch)
-
-                if zoomed: # and j==H.shape[1]-1: # magnification for longest advection time available
-
+                if vulnerability:
+                    # Add on vulnerability of coastline
+                    # Need to plot the coast boxes as patches and color them according to vulnerability level
+                    # http://matplotlib.org/1.2.1/examples/pylab_examples/hist_colormapped.html
+                    # we need to normalize the data to 0..1 for the full
+                    # range of the colormap
+                    fracs = ndbox[i,j,:].astype(float)/ndbox[:,j,:].max() # max across seasons
+                    norm = colors.normalize(fracs.min(), fracs.max())
+        
                     # Save patches together
                     patches = []
                     for path in pathsxy:
                         patches.append(Patches.PathPatch(path, facecolor='orange', lw=0, zorder=10, edgecolor=None))
-                        # ax.add_patch(patch)
+
+                    # assign shades of colormap to the patches according to values, and plot
+                    for thisfrac, thispatch in zip(fracs, patches):
+                        color = cm.Oranges(norm(thisfrac))
+                        thispatch.set_facecolor(color)
+                        ax.add_patch(thispatch)
+
+                if zoomed: # and j==H.shape[1]-1: # magnification for longest advection time available
+
+                    if vulnerability:
+                        # Save patches together
+                        patches = []
+                        for path in pathsxy:
+                            patches.append(Patches.PathPatch(path, facecolor='orange', lw=0, zorder=10, edgecolor=None))
+                            # ax.add_patch(patch)
 
                     # Inset image
                     axins = zoomed_inset_axes(ax, zoom, loc=4) # zoom=6
                     tracpy.plotting.background(grid=grid, ax=axins, outline=False, merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
                     axins.contourf(XE, YE, var, cmap=cmap, levels=levels)
-                    # assign shades of colormap to the patches according to values, and plot
-                    for thisfrac, thispatch in zip(fracs, patches):
-                        color = cm.Oranges(norm(thisfrac))
-                        thispatch.set_facecolor(color)
-                        axins.add_patch(thispatch)
+
+                    if vulnerability:
+                        # assign shades of colormap to the patches according to values, and plot
+                        for thisfrac, thispatch in zip(fracs, patches):
+                            color = cm.Oranges(norm(thisfrac))
+                            thispatch.set_facecolor(color)
+                            axins.add_patch(thispatch)
 
                     # subregion of the original image
                     # x1, x2, y1, y2 = 86000, 340800, 465000, 715000
