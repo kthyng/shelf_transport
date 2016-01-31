@@ -50,8 +50,9 @@ def run():
     # Files = glob.glob('/Volumes/Emmons/projects/gisr/tracks/all_f/*gc.npz')[0:2]
     # Files = glob.glob('tracks/back/2004-0[1-2,7-8]-*gc.nc')
     # Files = glob.glob('tracks/back/2010-0[4-9]-*gc.nc')
+    Files = glob.glob('tracks/2004-01-01*gc.nc')
     # Files = glob.glob('tracks/2014-0[1-4]-*gc.nc')
-    Files = glob.glob('tracks/2014-0[5-8]-*gc.nc')
+    # Files = glob.glob('tracks/2014-0[5-8]-*gc.nc')
     # Files.extend(glob.glob('tracks/2013-1[0-2]-*gc.nc'))
 
     shelf_depths = [20, 50, 100, 200, 300, 400, 500]

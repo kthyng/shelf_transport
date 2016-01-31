@@ -51,17 +51,18 @@ ax3 = plt.subplot2grid((4, 2), (1, 1), rowspan=3)  # drifter pair #2
 fig.subplots_adjust(left=0.04, bottom=0.06, right=0.98, top=0.94, wspace=0.05, hspace=0.29)
 
 # plot mean squared separation distance
-for i in np.arange(0, days.size, 10):
+for i in np.arange(255,260,5):#0, days.size, 5):
     ax1.set_xlim(0, 30)
-    ax1.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
-    ax1.plot(days[i], D2p1[i], 'bo', ms=10)
-    ax1.plot(days[i], D2p2[i], 'go', ms=10)
-    ax1.plot(days[i], D2both[i], 'o', color='0.3', ms=10)
-    ax1.plot(days[:i+1], D2p1[:i+1], 'b', days[:i+1], D2p2[:i+1], 'g', days[:i+1], D2both[:i+1], '0.3', lw=5)
-    if i < 385:  # use smaller y axis
-        ax1.set_ylim(0, 25000)
-    else:  # use full y axis
-        ax1.set_ylim(0, 90000)
+    # ax1.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
+    ax1.semilogy(days[i], D2p1[i], 'bo', ms=10)
+    ax1.semilogy(days[i], D2p2[i], 'go', ms=10)
+    ax1.semilogy(days[i], D2both[i], 'o', color='0.3', ms=10)
+    ax1.semilogy(days[:i+1], D2p1[:i+1], 'b', days[:i+1], D2p2[:i+1], 'g', days[:i+1], D2both[:i+1], '0.3', lw=5)
+    # if i < 385:  # use smaller y axis
+    #     ax1.set_ylim(0, 25000)
+    # else:  # use full y axis
+    #     ax1.set_ylim(0, 90000)
+    ax1.set_ylim(0, 1e6)
     ax1.set_title('Mean squared separation distance [km$^2\!$]')
     ax1.set_xlabel('Time [days]')
 

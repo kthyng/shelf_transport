@@ -13,8 +13,12 @@ import matplotlib as mpl
 import os
 import tracpy.calcs
 import glob
+import bisect
+from datetime import datetime, timedelta
+import op
+import matplotlib.patches as patches
 
-mpl.rcParams.update({'font.size': 20})
+mpl.rcParams.update({'font.size': 14})
 mpl.rcParams['font.sans-serif'] = 'Arev Sans, Bitstream Vera Sans, Lucida Grande, Verdana, Geneva, Lucid, Helvetica, Avant Garde, sans-serif'
 mpl.rcParams['mathtext.fontset'] = 'custom'
 mpl.rcParams['mathtext.cal'] = 'cursive'
@@ -26,36 +30,138 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 # read in grid
-grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+loc = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
+# loc = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
 # loc = '/home/kthyng/shelf/grid.nc'
-grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
+grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+grid = tracpy.inout.readgrid(grid_filename, usebasemap=True, llcrnrlat=22.85, llcrnrlon=-97.9, urcrnrlat=30.5)
 
 # whether to do tails on drifters or not (don't with low decimation)
-dotails = False # True or False
+dotails = False  # True or False
+dostreaklines = False  # for when not doing old tails
 
 # Read in drifter tracks
 dd = 1 # 500 # drifter decimation
-startdate = '2011-07-15T04'
+startdate = '2005-02-14T00'  # 11-14 end in 4
+
+
+## Wind forcing ##
+year = int(startdate.split('-')[0])
+month = int(startdate.split('-')[1])
+day = int(startdate.split('-')[2].split('T')[0])
+hour = int(startdate.split('-')[2].split('T')[1])
+# There are multiple file locations
+if year <= 2012:
+    w = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year) + '.nc')
+elif year == 2013:
+    w = netCDF.Dataset('/rho/raid/home/kthyng/txla/txla_wind_narr_2013.nc')
+elif year == 2014:
+    w = netCDF.Dataset('/rho/raid/home/kthyng/txla/txla_wind_narr_2014.nc')
+
+# w = netCDF.Dataset('/atch/raid1/zhangxq/Projects/narr_txla/txla_blk_narr_' + str(year) + '.nc')
+# Wind time period to use
+unitsWind = (w.variables['time'].units).replace('/','-')
+datesWind = netCDF.num2date(w.variables['time'][:], unitsWind)
+# datesWind = datesModel
+wdx = 30; wdy = 50 # in indices
+##
+
+# to rotate wind vectors
+m = netCDF.Dataset(loc)
+anglev = m.variables['angle'][:]
+
+def rot2d(x, y, ang):
+    '''rotate vectors by geometric angle'''
+    xr = x*np.cos(ang) - y*np.sin(ang)
+    yr = x*np.sin(ang) + y*np.cos(ang)
+    return xr, yr
+
+xr = np.asanyarray(grid['xr'].T, order='C')
+yr = np.asanyarray(grid['yr'].T, order='C')
+xpsi = np.asanyarray(grid['xpsi'].T, order='C')
+ypsi = np.asanyarray(grid['ypsi'].T, order='C')
+
+
+# Model time period to use
+units = m.variables['ocean_time'].units
+starttime = netCDF.date2num(datetime(year, 1, 1, 4, 0, 0), units)
+if year==2014:
+    endtime = netCDF.date2num(datetime(year, 9, 30, 20, 0, 0), units)
+else:
+    endtime = netCDF.date2num(datetime(year+1, 1, 1, 4, 0, 0), units)
+dt = m.variables['ocean_time'][1] - m.variables['ocean_time'][0] # 4 hours in seconds
+ts = np.arange(starttime, endtime, dt)
+itshift = find(starttime==m.variables['ocean_time'][:]) # shift to get to the right place in model output
+datesModel = netCDF.num2date(m.variables['ocean_time'][:], units)
+# current arrows
+cdx = 7; cdy = 11  # in indices
+
+plotdates = netCDF.num2date(ts, units)
+if year == 2014:
+    monthdates = [datetime(year, month, 1, 0, 0, 0) for month in np.arange(1,10)]
+else:
+    monthdates = [datetime(year, month, 1, 0, 0, 0) for month in np.arange(1,13)]
+
+## River forcing ##
+r1 = netCDF.Dataset('/rho/raid/home/kthyng/txla/TXLA_river_4dyes_2012.nc') # use for through 2011
+r2 = netCDF.Dataset('/rho/raid/home/kthyng/txla/TXLA_river_4dyes_2012_2014.nc') # use for 2012-2014
+# River timing
+tr1 = r1.variables['river_time']
+tunitsr1 = tr1.units
+# interpolate times for this data file since at the 12 hours mark instead of beginning of the day
+tr1 = op.resize(tr1, 0)
+datesr1 = netCDF.num2date(tr1[:], tunitsr1)
+tr2 = r2.variables['river_time']
+datesr2 = netCDF.num2date(tr2[:], tr2.units)
+# all of river input
+Q1 = np.abs(r1.variables['river_transport'][:]).sum(axis=1)*2.0/3.0
+# interpolate this like for time
+Q1 = op.resize(Q1, 0)
+Q2 = np.abs(r2.variables['river_transport'][:]).sum(axis=1)*2.0/3.0
+# Combine river info into one dataset
+iend1 = find(datesr1<datetime(2012,1,1,0,0,0))[-1] # ending index for file 1
+tRiver = np.concatenate((tr1[:iend1], tr2[:]), axis=0)
+datesRiver = np.concatenate((datesr1[:iend1], datesr2))
+R = np.concatenate((Q1[:iend1], Q2))
+r1.close(); r2.close()
+# start and end indices in time for river discharge
+itstartRiver = bisect.bisect_left(datesRiver, datetime(year, 1, 1, 0, 0, 0))
+if year == 2014:
+    itendRiver = bisect.bisect_left(datesRiver, datetime(year, 9, 30, 20, 0, 0))
+else:
+    itendRiver = bisect.bisect_left(datesRiver, datetime(year+1, 1, 1, 0, 0, 0))
+# ticks for months on river discharge
+mticks = [bisect.bisect_left(datesRiver, monthdate) for monthdate in np.asarray(monthdates)]
+mticknames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+##
+
+
 d = netCDF.Dataset('tracks/' + startdate + 'gc.nc')
 xg = d.variables['xg'][::dd,:]
 yg = d.variables['yg'][::dd,:]
 ind = (xg == -1)
 xp, yp, _ = tracpy.tools.interpolate2d(xg, yg, grid, 'm_ij2xy')
 xp[ind] = np.nan; yp[ind] = np.nan
-# index of a drifter that lasts the whole time
-itp = np.argmax(np.max(d.variables['tp'][:], axis=1))
-tp = d.variables['tp'][itp,:]
+if d.variables['tp'].ndim == 1:
+    tp = d.variables['tp'][:]
+elif d.variables['tp'].ndim > 1:
+    # index of a drifter that lasts the whole time
+    itp = np.argmax(np.max(d.variables['tp'][:], axis=1))
+    tp = d.variables['tp'][itp,:]
+
 units = d.variables['tp'].units
 # d.close()
 
 # txla output
 ## Model output ##
-year = int(startdate.split('-')[0])
-if year <= 2013:
-    currents_filenames = np.sort(glob.glob('/home/kthyng/shelf/' + str(year) + '/ocean_his_????.nc'))
-elif year == 2014:
-    currents_filenames = np.sort(glob.glob('/home/kthyng/shelf/' + str(year) + '/ocean_his_??.nc'))
-nc = netCDF.MFDataset(currents_filenames)
+# year = int(startdate.split('-')[0])
+# if year <= 2013:
+#     currents_filenames = np.sort(glob.glob('/home/kthyng/shelf/' + str(year) + '/ocean_his_????.nc'))
+# elif year == 2014:
+#     currents_filenames = np.sort(glob.glob('/home/kthyng/shelf/' + str(year) + '/ocean_his_??.nc'))
+# nc = netCDF.MFDataset(currents_filenames)
+currents_filenames = loc
+nc = netCDF.Dataset(currents_filenames)
 datestxla = netCDF.num2date(nc.variables['ocean_time'][:], nc.variables['ocean_time'].units)
 
 if not dotails:
@@ -84,7 +190,6 @@ if not dotails:
 # Plot drifters, starting 5 days into simulation
 # 2 days for one tail, 3 days for other tail
 # t = tp-tp[0]
-# pdb.set_trace()
 days = (tp-tp[0])/(3600.*24)
 dates = netCDF.num2date(tp, units)
 # Find indices relative to present time
@@ -115,10 +220,33 @@ for i in np.arange(i5days,nt+1,5):
         i2daysago += 5
         continue
 
+    # print fname
+
+    # pdb.set_trace()
+    itwind = bisect.bisect_left(datesWind, dates[i]) # index for wind at this time
+    itmodel = bisect.bisect_left(datesModel, dates[i]) # index for model output at this time
+    itriver = bisect.bisect_left(datesRiver, dates[i]) # index for river at this time
+
     # Plot background
-    fig = plt.figure(figsize=(18,14))
-    ax = fig.add_subplot(111)
-    tracpy.plotting.background(grid=grid, ax=ax)
+    fig = plt.figure(figsize=(10.1, 8.4), dpi=150)
+    ax = fig.add_axes([0.06, 0.00, 0.93, 0.97])
+    ax.set_frame_on(False) # kind of like it without the box
+    tracpy.plotting.background(grid=grid, ax=ax, outline=[1,1,0,1], mers=np.arange(-97, -87), merslabels=[0, 0, 1, 0], pars=np.arange(23, 32), hlevs=[100])
+
+    # # Label isobaths
+    # ax.text(0.85, 0.865, '10 m', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
+    # ax.text(0.88, 0.862, '20', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
+    # ax.text(0.87, 0.835, '50', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
+    # ax.text(0.89, 0.825, '100', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
+    # ax.text(0.9, 0.803, '450', transform=ax.transAxes, fontsize=9, color='0.4', rotation=45)
+
+    # Date
+    date = datesModel[itmodel].strftime('%Y %b %02d %H:%M')
+    ax.text(0.35, 0.425, date, fontsize=18, color='0.2', transform=ax.transAxes, 
+                bbox=dict(facecolor='white', edgecolor='white', boxstyle='round'))
+
+    # PONG
+    ax.text(0.6, 0.97, 'pong.tamu.edu', fontsize=12, transform=ax.transAxes, color='0.3')
 
     if dotails:
         # Plot 5 days ago to 2 days ago
@@ -132,19 +260,91 @@ for i in np.arange(i5days,nt+1,5):
 
     else:
 
-        # Plot drifter locations
-        # ax.plot(xp[:,i].T, yp[:,i].T, 'o', color='g', ms=2, mec='None')
-        ax.plot(xp[ind20,i].T, yp[ind20,i].T, 'o', color=rgb[0,:], ms=ms, mec='None')
-        ax.plot(xp[ind50,i].T, yp[ind50,i].T, 'o', color=rgb[1,:], ms=ms, mec='None')
-        ax.plot(xp[ind100,i].T, yp[ind100,i].T, 'o', color=rgb[2,:], ms=ms, mec='None')
-        ax.plot(xp[ind500,i].T, yp[ind500,i].T, 'o', color=rgb[3,:], ms=ms, mec='None')
-        ax.plot(xp[ind3500,i].T, yp[ind3500,i].T, 'o', color=rgb[4,:], ms=ms, mec='None')
+        if dostreaklines:
+
+            istart = i-(24./3*4*0.25) # when to start plotting lines back in time
+            if istart<0: istart=0
+
+            if i==0:
+
+                # Plot drifter locations
+                ax.plot(xp[ind20,i].T, yp[ind20,i].T, 'o', color=rgb[0,:], ms=0.6, mec='None')
+                ax.plot(xp[ind50,i].T, yp[ind50,i].T, 'o', color=rgb[1,:], ms=0.6, mec='None')
+                ax.plot(xp[ind100,i].T, yp[ind100,i].T, 'o', color=rgb[2,:], ms=0.6, mec='None')
+                ax.plot(xp[ind500,i].T, yp[ind500,i].T, 'o', color=rgb[3,:], ms=0.6, mec='None')
+                ax.plot(xp[ind3500,i].T, yp[ind3500,i].T, 'o', color=rgb[4,:], ms=0.6, mec='None')
+
+            else:
+
+                # Plot drifter locations
+                ax.plot(xp[ind20,istart:i+1].T, yp[ind20,istart:i+1].T, '-', color=rgb[0,:], lw=0.5, zorder=0)
+                ax.plot(xp[ind50,istart:i+1].T, yp[ind50,istart:i+1].T, '-', color=rgb[1,:], lw=0.5, zorder=0)
+                ax.plot(xp[ind100,istart:i+1].T, yp[ind100,istart:i+1].T, '-', color=rgb[2,:], lw=0.5, zorder=0)
+                ax.plot(xp[ind500,istart:i+1].T, yp[ind500,istart:i+1].T, '-', color=rgb[3,:], lw=0.5, zorder=0)
+                ax.plot(xp[ind3500,istart:i+1].T, yp[ind3500,istart:i+1].T, '-', color=rgb[4,:], lw=0.5, zorder=0)
+
+
+        else:
+
+            # Plot drifter locations
+            ax.plot(xp[ind20,i].T, yp[ind20,i].T, 'o', color=rgb[0,:], ms=ms, mec='None', zorder=0)
+            ax.plot(xp[ind50,i].T, yp[ind50,i].T, 'o', color=rgb[1,:], ms=ms, mec='None', zorder=0)
+            ax.plot(xp[ind100,i].T, yp[ind100,i].T, 'o', color=rgb[2,:], ms=ms, mec='None', zorder=0)
+            ax.plot(xp[ind500,i].T, yp[ind500,i].T, 'o', color=rgb[3,:], ms=ms, mec='None', zorder=0)
+            ax.plot(xp[ind3500,i].T, yp[ind3500,i].T, 'o', color=rgb[4,:], ms=ms, mec='None', zorder=0)
 
         # Overlay surface salinity
-        ax.contour(grid['xr'].T, grid['yr'].T, salt, [33], colors='0.1', zorder=12, linewidths=2)
+        ax.contour(grid['xr'].T, grid['yr'].T, salt, [33], colors='0.1', zorder=12, linewidths=2, alpha=0.7)
 
-    # Time
-    ax.text(0.075, 0.95, dates[i].isoformat()[:-6], transform=ax.transAxes, fontsize=20)
+    # # Time
+    # ax.text(0.075, 0.95, dates[i].isoformat()[:-6], transform=ax.transAxes, fontsize=20)
+
+    # Mississippi river discharge rate
+    axr = fig.add_axes([0.35, 0.2, 0.6, .2])
+    # axr.set_frame_on(False) # kind of like it without the box
+    for axis in ['top','left','right']:
+        axr.spines[axis].set_linewidth(0.05)
+    axr.spines['bottom'].set_linewidth(0.0)
+    # make background rectangle so lines don't overlap
+    axr.fill_between(tRiver[itstartRiver:itriver+1], R[itstartRiver:itriver+1], alpha=0.5, facecolor='0.4', edgecolor='0.4', zorder=2)
+    axr.plot(tRiver[itstartRiver:itriver], R[itstartRiver:itriver], '-', color='0.4')
+    axr.plot(tRiver[itriver:itendRiver+1], R[itriver:itendRiver+1], '-', color='0.4', alpha=0.3)
+    axr.plot([tRiver[itstartRiver], tRiver[itendRiver]], [5, 5], '-', color='0.6', lw=0.5, alpha=0.5)
+    axr.plot([tRiver[itstartRiver], tRiver[itendRiver]], [10000, 10000], '-', color='0.6', lw=0.5, alpha=0.5)
+    axr.plot([tRiver[itstartRiver], tRiver[itendRiver]], [20000, 20000], '-', color='0.6', lw=0.5, alpha=0.5)
+    axr.plot([tRiver[itstartRiver], tRiver[itendRiver]], [30000, 30000], '-', color='0.6', lw=0.5, alpha=0.5)
+    # this makes sure alignment stays consistent in different years
+    axr.autoscale(axis='x', tight=True) 
+    axr.set_ylim(-1000,45000) 
+    # labels
+    axr.text(tRiver[mticks[-3]]+16.5, 5, '0', fontsize=9, color='0.4', alpha=0.7)
+    axr.text(tRiver[mticks[-3]]+16.5, 10000, '10', fontsize=9, color='0.4', alpha=0.7)
+    axr.text(tRiver[mticks[-3]]+16.5, 20000, '20', fontsize=9, color='0.4', alpha=0.7)
+    axr.text(tRiver[mticks[-3]]+15, 30000, r'$30\times10^3$ m$^3$s$^{-1}$', fontsize=9, color='0.4', alpha=0.7)
+    axr.text(tRiver[mticks[-7]]+15, 30000, 'Mississippi discharge', fontsize=10, color='0.2')
+    # ticks
+    axr.get_yaxis().set_visible(False)
+    axr.get_xaxis().set_visible(False)
+    # label month ticks
+    for i in xrange(len(mticks)):
+        axr.text(tRiver[mticks[i]], 2500, mticknames[i], fontsize=9, color='0.2')
+    axr.add_patch( patches.Rectangle( (0.3, 0.162), 0.7, 0.2, transform=ax.transAxes, color='white', zorder=1))    
+
+    # Surface currents over domain, use psi grid for common locations
+    u = op.resize(np.squeeze(m.variables['u'][itmodel,-1,:,:]), 0)
+    v = op.resize(np.squeeze(m.variables['v'][itmodel,-1,:,:]), 1)
+    u, v = rot2d(u, v, op.resize(op.resize(anglev, 0), 1))
+    Q = ax.quiver(xpsi[cdy::cdy,cdx::cdx], ypsi[cdy::cdy,cdx::cdx], u[cdy::cdy,cdx::cdx], v[cdy::cdy,cdx::cdx], 
+            color='k', alpha=0.8, pivot='middle', scale=40, width=0.001, zorder=1)
+    qk = ax.quiverkey(Q, 0.1, 0.795, 0.5, r'0.5 m$\cdot$s$^{-1}$ current', labelcolor='0.2', fontproperties={'size': '10'})
+
+    # Wind over the domain
+    Uwind = w.variables['Uwind'][itwind,:,:]
+    Vwind = w.variables['Vwind'][itwind,:,:]
+    Uwind, Vwind = rot2d(Uwind, Vwind, anglev)
+    Q = ax.quiver(xr[wdy/2::wdy,wdx::wdx], yr[wdy/2::wdy,wdx::wdx], Uwind[wdy/2::wdy,wdx::wdx], Vwind[wdy/2::wdy,wdx::wdx], 
+            color='k', alpha=0.5, scale=300, pivot='middle', headlength=3, headaxislength=2.8, zorder=1)
+    qk = ax.quiverkey(Q, 0.1, 0.845, 10, r'10 m$\cdot$s$^{-1}$ wind', labelcolor='0.2', fontproperties={'size': '10'})
 
     # Drifter legend
     if dotails:
@@ -155,16 +355,19 @@ for i in np.arange(i5days,nt+1,5):
         ax.text(0.125, 0.866, '2 days prior', color='0.3', transform=ax.transAxes, fontsize=16)
         ax.text(0.125, 0.842, '5 days prior', color='0.5', transform=ax.transAxes, fontsize=16)
     else:
-        cax = fig.add_axes([0.2, 0.8, 0.15, 0.02])
+        cax = fig.add_axes([0.09, 0.91, 0.35, 0.025]) #colorbar axes
+        # cax = fig.add_axes([0.2, 0.81, 0.15, 0.02])
         cax.imshow(gradient, aspect='auto', interpolation='none', cmap=plt.get_cmap('winter_r'))
         cax.tick_params(axis='y', labelleft=False, left=False, right=False)
-        cax.tick_params(axis='x', top=False, bottom=False, labelsize=15)
+        cax.tick_params(axis='x', top=False, bottom=False, labelsize=14, color='0.2', labelcolor='0.2')
         cax.set_xticks(np.arange(-0.5, 5, 1.0))
         cax.set_xticklabels(('0', '20', '50', '100', '500', '3500'))
-        cax.set_title('Initial drifter depth [m]', fontsize=16)
+        cax.set_xlabel('Initial drifter depth [m]', fontsize=14, color='0.2')
         # legend for contour
-        ax.plot([0.075, 0.1], [0.81, 0.81], '0.1', lw=2, transform=ax.transAxes)
-        ax.text(0.123, 0.802, '33 salinity contour', color='0.1', transform=ax.transAxes, fontsize=16)
+        ax.plot([0.05, 0.075], [0.775, 0.775], '0.1', lw=2, transform=ax.transAxes, alpha=0.7)
+        ax.text(0.085, 0.767, r'33 g$\cdot$kg$^{-1}\!$ isohaline', color='0.2', transform=ax.transAxes, fontsize=10)
+        # ax.plot([0.075, 0.1], [0.81, 0.81], '0.1', lw=2, transform=ax.transAxes)
+        # ax.text(0.11, 0.802, '33 salinity contour', color='0.1', transform=ax.transAxes, fontsize=16)
 
 
     # Update indices

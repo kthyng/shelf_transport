@@ -112,6 +112,9 @@ ax.plot(xpW[indsW,:][::dd,0].T, ypW[indsW,:][::dd,0].T, 'o', color='r', ms=8)
 plt.plot(verts_outerxy.vertices[:,0], verts_outerxy.vertices[:,1], 'r-', lw=5, alpha=0.5, zorder=15)
 # Plot boxes of coastal region and label
 for i, path in enumerate(pathsxy):
+    if np.mod(i,10) == 0:
+        ax.text(path.vertices[:,0].min(), path.vertices[:,1].min(), '%.0f' % dist[i])
+
     if (i==0):
         ax.text(path.vertices[:,0].min()-30000, path.vertices[:,1].min(), '%.0f' % dist[i], fontsize=12, 
                 color='0.2', bbox=dict(facecolor='w', edgecolor='none', boxstyle='round'))

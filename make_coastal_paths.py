@@ -45,7 +45,7 @@ while dd.max()>100:
     d = np.zeros(x.size)
     d[1:] = np.cumsum(dd)
 
-ds = 5 # spacing at 3 km along the coast
+ds = 5 # spacing at ds km along the coast
 d3 = np.arange(d.min(), d.max(), 1000*ds)
 x3 = np.interp(d3, d, x)
 y3 = np.interp(d3, d, y)
