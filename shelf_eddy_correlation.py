@@ -35,25 +35,27 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-maketable = True
-runcorr = False  # run correlation coefficients
+maketable = False
+runcorr = True  # run correlation coefficients
 doplot = False
 explore = False  # True to do exploratory plots, False to do polished plot
-whichseason = 'winter'  # 'winter' or 'summer'
+whichseason = 'summer'  # 'winter' or 'summer'
 makesmalltable = False  # create a subset table for analysis in R
 if whichseason == 'winter':
     col = 0
 elif whichseason == 'summer':
     col = 1
+table = 'table-sustr-20m-region1'
+
 
 # If doing small table creation, need a list of things to include
 if makesmalltable:
     if whichseason == 'winter':
-        Vars = ['Transport_winter_R3', 'Wdm2-Mar', 'Wdm2-Nov_previous', 'Q1-Dec_previous']
-        name = 'table-redo-shelf-winter'
+        Vars = ['Transport_winter_R3', 'Wdm3-Apr', 'Wdm3-Nov_previous', 'Q1-Dec_previous', 'Wsm3-Nov_previous']
+        name = table + '-winter'
     elif whichseason == 'summer':
-        Vars = ['Transport_summer_R4', 'Q1-Apr', 'Wsm1-Oct', 'Qi-Aug_previous', 'Wdm3-Feb_previous']
-        name = 'table-redo-shelf-summer'
+        Vars = ['Transport_summer_R4', 'Q1-Apr', 'Qi-Aug_previous', 'Wsm1-Jul', 'Wsm1-Oct', 'Wsm3-Aug_previous']
+        name = table + '-summer'
 
 
 headers = ('Transport_winter_R3', 'Transport_summer_R4',
@@ -99,13 +101,14 @@ def rot2d(x, y, ang):
     yr = x*np.sin(ang) + y*np.cos(ang)
     return xr, yr
 
-grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+# grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+grid_filename = '../../grid.nc'
 dtemp = netCDF.Dataset(grid_filename)
 anglev = dtemp.variables['angle'][:]
 dtemp.close()
 
 if makesmalltable:
-    d = np.loadtxt('table-redo-shelf.txt', skiprows=1)
+    d = np.loadtxt(table + '.txt', skiprows=1)
 
     # double the headers for the correlations
     headers2 = list(headers)
@@ -123,7 +126,7 @@ if makesmalltable:
             table[:,j] = d[1:, ind]
 
     # write table to file
-    with open('table-redo-shelf-' + whichseason + '.txt', 'w') as csvfile:
+    with open(name + '.txt', 'w') as csvfile:
         writer = csv.writer(csvfile, delimiter="\t")
         writer.writerow(Vars)
         [writer.writerow(r) for r in table]
@@ -131,7 +134,7 @@ if makesmalltable:
 
 
 elif runcorr:
-    d = np.loadtxt('table-redo-shelf.txt', skiprows=1)
+    d = np.loadtxt(table + '.txt', skiprows=1)
 
     without2008 = False
 
@@ -174,7 +177,7 @@ elif runcorr:
 
     # hard wiring this for now. Sorry future Kristen!
     if whichseason == 'winter':
-        ind = list(headers).index('Wdm2-Mar')
+        ind = list(headers).index('Wdm3-Apr')
         Wbest = d[1:, ind]
         Wbestr = r[ind]
         Wbestp = p[ind]
@@ -579,13 +582,13 @@ if maketable:
             Wsv1, Wsv2, Wsv3, Wdm1, Wdm2, Wdm3, Wdv1, Wdv2, Wdv3))
 
         # write table to file - to have something in case it breaks
-        with open('table' + str(year) + '.txt', 'w') as csvfile:
+        with open(table + str(year) + '.txt', 'w') as csvfile:
             writer = csv.writer(csvfile, delimiter="\t")
             writer.writerow(headers)
             [writer.writerow(r) for r in table]
 
     # write table to file
-    with open('table.txt', 'w') as csvfile:
+    with open(table + '.txt', 'w') as csvfile:
         writer = csv.writer(csvfile, delimiter="\t")
         writer.writerow(headers)
         [writer.writerow(r) for r in table]
