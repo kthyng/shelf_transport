@@ -21,6 +21,8 @@ import dateutil.relativedelta
 import op
 import scipy.stats
 from calendar import monthrange
+import seaborn as sns
+sns.set(style='whitegrid', color_codes=True)
 
 # mpl.rcParams['text.usetex'] = True
 mpl.rcParams.update({'font.size': 14})
@@ -37,7 +39,7 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 maketable = False
 runcorr = True  # run correlation coefficients
-doplot = False
+doplot = True
 explore = False  # True to do exploratory plots, False to do polished plot
 whichseason = 'summer'  # 'winter' or 'summer'
 makesmalltable = False  # create a subset table for analysis in R
@@ -45,8 +47,8 @@ if whichseason == 'winter':
     col = 0
 elif whichseason == 'summer':
     col = 1
-table = 'table-sustr-20m-region1'
-
+table = 'table-sustr-100m-region34'
+without2008 = False
 
 # If doing small table creation, need a list of things to include
 if makesmalltable:
@@ -181,6 +183,11 @@ elif runcorr:
         Wbest = d[1:, ind]
         Wbestr = r[ind]
         Wbestp = p[ind]
+    elif whichseason == 'summer':
+        ind = list(headers).index('Q1-Apr')
+        Qbest = d[1:, ind]/1e4
+        Qbestr = r[ind]
+        Qbestp = p[ind]
 
     # # save best entries to plot
     # # Top river one
@@ -250,41 +257,45 @@ if doplot:
             if whichseason == 'winter':
                 fig = plt.figure(figsize=(6,6))
                 ax = fig.add_subplot(111)
-                ax.plot(T, Wbest, 'o', ms=10, color='0.2', mec='k')
+                # ax.plot(T, Wbest, 'o', ms=10, color='0.2', mec='k')
+                sns.regplot(x=T, y=Wbest, ax=ax);
                 ax.set_xlim(T.min()-0.1, T.max()+0.1)
                 ax.set_ylim(Wbest.min()-5, Wbest.max()+5)
-                ax.set_xlabel('Transport relative to mean [%]')
-                ax.set_ylabel('January-February mean wind direction [deg]')
-                ax.text(0.1, 0.15, 'r=%1.2f' % Wbestr, color='r', transform=ax.transAxes, alpha=0.7)
-                ax.text(0.1, 0.1, 'p=%1.4f' % Wbestp, color='r', transform=ax.transAxes, alpha=0.7)
-                ax.set_frame_on(False)
+                ax.set_xlabel('Transport relative to mean [%]', fontsize=14)
+                ax.set_ylabel('January-February mean wind direction [deg]', fontsize=14)
+                plt.tick_params('both', labelsize=14)
+                ax.text(0.1, 0.15, 'r=%1.2f' % Wbestr, color='#15317E', transform=ax.transAxes, alpha=0.7)
+                ax.text(0.1, 0.1, 'p=%1.4f' % Wbestp, color='#15317E', transform=ax.transAxes, alpha=0.7)
+                # ax.set_frame_on(False)
                 fig.savefig('figures/winter-transport-correlations.pdf', bbox_inches='tight')
             elif whichseason == 'summer':
-                # with two variables
-                fig = plt.figure(figsize=(6,6))
-                ax = fig.add_subplot(111)
-                mappable = ax.scatter(d[:,29]/1e5, d[:,117], c=T, cmap='Reds', s=300)
-                # ax.set_xlim(T.min()-0.1, T.max()+0.1)
-                ax.set_xlabel('March river discharge/10^5 [m$^3\!$/s]')
-                ax.set_ylabel('June wind speed variance [m/s]')
-                ax.text(0.75, 0.15, '$r^2_{both}$=0.81', color='r', transform=ax.transAxes, alpha=0.7)
-                ax.text(0.75, 0.08, '$r^2_{river}$=0.78', color='r', transform=ax.transAxes, alpha=0.7)
-                cb = fig.colorbar(mappable)
-                cb.set_label('Transport relative to mean [%]')
-                ax.set_frame_on(False)
-                fig.savefig('figures/summer-transport-correlations2.pdf', bbox_inches='tight')
+                # # with two variables
+                # fig = plt.figure(figsize=(6,6))
+                # ax = fig.add_subplot(111)
+                # mappable = ax.scatter(d[:,29]/1e5, d[:,117], c=T, cmap='Reds', s=300)
+                # # ax.set_xlim(T.min()-0.1, T.max()+0.1)
+                # ax.set_xlabel('March river discharge/10^5 [m$^3\!$/s]')
+                # ax.set_ylabel('June wind speed variance [m/s]')
+                # ax.text(0.75, 0.15, '$r^2_{both}$=0.81', color='r', transform=ax.transAxes, alpha=0.7)
+                # ax.text(0.75, 0.08, '$r^2_{river}$=0.78', color='r', transform=ax.transAxes, alpha=0.7)
+                # cb = fig.colorbar(mappable)
+                # cb.set_label('Transport relative to mean [%]')
+                # ax.set_frame_on(False)
+                # fig.savefig('figures/summer-transport-correlations2.pdf', bbox_inches='tight')
 
                 # with one variable
                 fig = plt.figure(figsize=(6,6))
                 ax = fig.add_subplot(111)
-                mappable = ax.plot(T, d[:,29]/1e4, 'o', ms=10, color='0.2', mec='k')
+                # mappable = ax.plot(T, d[:,29]/1e4, 'o', ms=10, color='0.2', mec='k')
+                sns.regplot(x=T, y=Qbest, ax=ax);
                 ax.set_xlim(T.min()-0.1, T.max()+0.1)
                 ax.set_ylim(1.0, 2.8)
-                ax.set_xlabel('Transport relative to mean [%]')
-                ax.set_ylabel('Mean March river discharge [$10^4$m$^3\!$/s]')
-                ax.text(0.75, 0.15, 'r=%1.2f' % Qbestr, color='r', transform=ax.transAxes, alpha=0.7)
-                ax.text(0.75, 0.1, 'p=%1.4f' % Qbestp, color='r', transform=ax.transAxes, alpha=0.7)
-                ax.set_frame_on(False)
+                ax.set_xlabel('Transport relative to mean [%]', fontsize=14)
+                ax.set_ylabel('Mean March river discharge [$10^4$m$^3\!$/s]', fontsize=14)
+                plt.tick_params('both', labelsize=14)
+                ax.text(0.75, 0.15, 'r=%1.2f' % Qbestr, color='#15317E', transform=ax.transAxes, alpha=0.7)
+                ax.text(0.75, 0.1, 'p=%1.4f' % Qbestp, color='#15317E', transform=ax.transAxes, alpha=0.7)
+                # ax.set_frame_on(False)
                 fig.savefig('figures/summer-transport-correlations1.pdf', bbox_inches='tight')
 
 
