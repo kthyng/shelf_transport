@@ -36,7 +36,7 @@ for i, ax in enumerate(axarr):
 
    # Titles for subplots
     if i==0:
-        tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
+        tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2), col='0.03', halpha=0.5)
         ax.set_title('Winter')
         d = np.load('figures/cross/interannual-winter100H.npz')
         XE, YE = np.meshgrid(op.resize(d['xe'], 0), op.resize(d['ye'], 0))
@@ -44,7 +44,7 @@ for i, ax in enumerate(axarr):
         ax.contour(grid['xr'], grid['yr'], grid['h'], [100], colors='0.1', linewidth=3)
 
     elif i==1:
-        tracpy.plotting.background(grid=grid, ax=ax, parslabels=[0,0,0,0], mers=np.arange(-100, -80, 2))
+        tracpy.plotting.background(grid=grid, ax=ax, parslabels=[0,0,0,0], mers=np.arange(-100, -80, 2), col='0.03', halpha=0.5)
         ax.set_title('Summer')
         d = np.load('figures/cross/interannual-summer100H.npz')
         mappable = ax.contourf(XE, YE, np.std(d['H'], axis=0).T, cmap=cmap, vmin=0, vmax=32)#, levels=levels, extend=extend)
@@ -58,5 +58,5 @@ for i, ax in enumerate(axarr):
 
     cb.set_label('Probability of drifters crossing shelf (%)')
 
-fig.savefig('figures/cross/seasonal-std.png', bbox_inches='tight')
-fig.savefig('figures/cross/seasonal-std-highres.png', bbox_inches='tight', dpi=300)
+# fig.savefig('figures/cross/seasonal-std.png', bbox_inches='tight')
+fig.savefig('figures/cross/seasonal-std.png', bbox_inches='tight', dpi=300)
