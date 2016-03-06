@@ -264,11 +264,11 @@ def plot_setup(whichtime, grid):
         for i, ax in enumerate(axarr):
            # Titles for subplots
             if i==0:
-                 tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
+                 tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2), col='0.3', halpha=0.5)
                  ax.set_title('Winter')
                  # ax.text(0.45, 0.95, 'Winter', transform=ax.transAxes)#, bbox=dict(facecolor='white', edgecolor=None), fontsize=14)#, alpha=0.5))
             elif i==1:
-                 tracpy.plotting.background(grid=grid, ax=ax, parslabels=[0,0,0,0], mers=np.arange(-100, -80, 2))
+                 tracpy.plotting.background(grid=grid, ax=ax, parslabels=[0,0,0,0], mers=np.arange(-100, -80, 2), col='0.3', halpha=0.5)
                  ax.set_title('Summer')
             # suptitle
             #fig.suptitle('Probability of material crossing the shelf in 30 days, 2004-2010', y=.94)
@@ -277,8 +277,8 @@ def plot_setup(whichtime, grid):
     elif 'interannual' in whichtime: # summer or winter
 
         fig, axarr = plt.subplots(4,3)
-        fig.set_size_inches(8.7, 11.5)
-        fig.subplots_adjust(left=0.008, bottom=0.1, right=1.0, top=0.98, wspace=0.005, hspace=0.1)
+        fig.set_size_inches(8.9, 11.5)
+        fig.subplots_adjust(left=0.04, bottom=0.1, right=1.0, top=0.99, wspace=0.0001, hspace=0.05)
 
         # fig, axarr = plt.subplots(2,4)
         # fig.set_size_inches(13.4, 6.6125)
@@ -286,18 +286,31 @@ def plot_setup(whichtime, grid):
 
         for i, ax in enumerate(axarr.flatten()):
            # Titles for subplots
-            if i==10:#4:
+            if i==0 or i==3 or i==6:
                 tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
-                    pars=np.arange(20, 36, 2), outline=False, parslabels=[0, 1, 0, 0])
-                # ax.set_title(str(2004+i))
-            elif i==11:#7:
-                # ax.set_frame_on(False)
+                    pars=np.arange(20, 36, 2), outline=[0,0,0,0], parslabels=[1, 0, 0, 0],
+                    merslabels=[0, 0, 0, 0], col='0.3', halpha=0.5)
+                if i==0:  # plot analysis box
+                    lonbox = [-90, -91, -92, -93, -94, -95, -96, -97, -97.5, 
+                              -97.5, -97, -96, -95, -94, -93, -92, -91, -90, -90]
+                    latbox = [27.5, 27.5, 27.5, 27.5, 27.5, 27.5, 27.5, 27.5, 27.5, 
+                              29.9, 29.9, 29.9, 29.9, 29.9, 29.9, 29.9, 29.9, 29.9, 27.5]
+                    xbox, ybox = grid['basemap'](lonbox, latbox)
+                    ax.plot(xbox, ybox, '0.2', lw=1)
+            elif i==9:
+                tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
+                    pars=np.arange(20, 36, 2), outline=[0,0,0,0], merslabels=[0, 0, 0, 1],
+                    parslabels=[1, 0, 0, 0], col='0.3', halpha=0.5)
+            elif i==10:
+                tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
+                    pars=np.arange(20, 36, 2), outline=[0,0,0,0], merslabels=[0, 0, 0, 1],
+                    parslabels=[0, 0, 0, 0], col='0.3', halpha=0.5)
+            elif i==11:
                 ax.set_axis_off()
             else:
                 tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
-                    pars=np.arange(20, 36, 2), outline=False,
-                    merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
-                # ax.set_title(str(2004+i))
+                    pars=np.arange(20, 36, 2), outline=[0,0,0,0],
+                    merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0], col='0.3', halpha=0.5)
 
             if i!=11:
                 ax.text(0.07, 0.88, str(2004+i), transform=ax.transAxes)
@@ -313,12 +326,12 @@ def plot_setup(whichtime, grid):
         for i, ax in enumerate(axarr.flatten()):
             if i==10:
                 tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
-                    pars=np.arange(20, 36, 2), outline=False, parslabels=[0, 1, 0, 0])
+                    pars=np.arange(20, 36, 2), outline=[0,0,0,0], parslabels=[0, 1, 0, 0])
             # elif i==11:
             #     ax.set_axis_off()
             else:
                 tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
-                    pars=np.arange(20, 36, 2), outline=False,
+                    pars=np.arange(20, 36, 2), outline=[0,0,0,0],
                     merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
 
             ax.text(0.07, 0.88, calendar.month_name[i+1], transform=ax.transAxes)
@@ -384,7 +397,7 @@ def plot_finish(fig, whichtype, whichtime, shelf_depth, itind, r):
     elif whichtype == 'D2':
         fname = 'figures/' + whichtype + '/r' + str(int(r[1])) + '/' + whichtime + str(itind) + '.png'
 
-    fig.savefig(fname, dpi=300)
+    fig.savefig(fname, dpi=300, bbox_inches='tight')
     plt.close(fig)
 
 
@@ -401,7 +414,7 @@ def plot_diff():
     # Which type of plot: 'cross'; 'mean' (difference from interannual mean)
     whichtype = 'cross'
 
-    shelf_depth = 20
+    shelf_depth = 100
 
     # Grid info
     # loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
@@ -463,7 +476,7 @@ def plot_diff():
         fig = plt.figure(figsize=(6.8375, 6.6125))
         fig.subplots_adjust(left=0.04, bottom=0.15, right=1.0, top=0.96, wspace=0.07, hspace=0.04)
         ax = fig.add_subplot(111)
-        tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
+        tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2), col='0.3', halpha=0.5)
         ax.set_title('Winter-Summer Transport')
         mappable = plot_stuff(xe, ye, H.T, cmap, grid, shelf_depth, ax, levels=levels, extend='neither')
         # XE, YE = np.meshgrid(op.resize(xe, 0), op.resize(ye, 0))
@@ -535,7 +548,7 @@ def run():
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
     # 'interannual-01' through 'interannual-12', 'monthly-2004' through 'monthly-2014'
     # 'interannual-mean' 'monthly-mean'
-    whichtime = 'interannual-winter'
+    whichtime = 'interannual-summer'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'cross'
@@ -553,7 +566,7 @@ def run():
 
     # Whether to overlay previously-calculated wind stress arrows
     # from projects/txla_plots/plot_mean_wind.py on Rainier
-    addwind = 0 # for adding the wind on
+    addwind = 0  # for adding the wind on
     years = np.arange(2004,2015) # this is just for the wind I think
 
     # Number of bins to use in histogram
