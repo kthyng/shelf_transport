@@ -285,7 +285,6 @@ def plot_setup(whichtime, grid):
         # fig.subplots_adjust(left=0.03, bottom=0.15, right=1.0, top=0.96, wspace=0.03, hspace=0.11)
 
         for i, ax in enumerate(axarr.flatten()):
-           # Titles for subplots
             if i==0 or i==3 or i==6:
                 tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
                     pars=np.arange(20, 36, 2), outline=[0,0,0,0], parslabels=[1, 0, 0, 0],
@@ -324,15 +323,22 @@ def plot_setup(whichtime, grid):
         fig.subplots_adjust(left=0.008, bottom=0.1, right=1.0, top=0.98, wspace=0.005, hspace=0.1)
 
         for i, ax in enumerate(axarr.flatten()):
-            if i==10:
+            if i==0 or i==3 or i==6:
                 tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
-                    pars=np.arange(20, 36, 2), outline=[0,0,0,0], parslabels=[0, 1, 0, 0])
-            # elif i==11:
-            #     ax.set_axis_off()
+                    pars=np.arange(20, 36, 2), outline=[0,0,0,0], parslabels=[1, 0, 0, 0],
+                    merslabels=[0, 0, 0, 0], col='0.3', halpha=0.5)
+            elif i==9:
+                tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
+                    pars=np.arange(20, 36, 2), outline=[0,0,0,0], merslabels=[0, 0, 0, 1],
+                    parslabels=[1, 0, 0, 0], col='0.3', halpha=0.5)
+            elif i==10 or i==11:
+                tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
+                    pars=np.arange(20, 36, 2), outline=[0,0,0,0], merslabels=[0, 0, 0, 1],
+                    parslabels=[0, 0, 0, 0], col='0.3', halpha=0.5)
             else:
                 tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
                     pars=np.arange(20, 36, 2), outline=[0,0,0,0],
-                    merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
+                    merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0], col='0.3', halpha=0.5)
 
             ax.text(0.07, 0.88, calendar.month_name[i+1], transform=ax.transAxes)
 
@@ -548,7 +554,7 @@ def run():
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
     # 'interannual-01' through 'interannual-12', 'monthly-2004' through 'monthly-2014'
     # 'interannual-mean' 'monthly-mean'
-    whichtime = 'interannual-summer'
+    whichtime = 'monthly-mean'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'cross'
