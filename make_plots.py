@@ -391,13 +391,13 @@ def plot_colorbar(fig, mappable, whichtype, ticks=None, whichdir='forward', whic
         cb.set_ticks(ticks)
 
 
-def plot_finish(fig, whichtype, whichtime, shelf_depth, itind, r):
+def plot_finish(fig, whichtype, whichtime, shelf_depth, itind, r, numdays):
     '''
     Save and close figure
     '''
 
     if whichtype == 'cross':
-        fname = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + '.png'
+        fname = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'advectiondays' + str(numdays) + '.png'
     elif 'coast' in whichtype: 
         fname = 'figures/' + whichtype + '/' + whichtime + '.png'
     elif whichtype == 'D2':
@@ -554,7 +554,7 @@ def run():
     # Which timing of plot: 'weatherband[1-3]', 'seasonal', 'interannual-winter', 'interannual-summer'
     # 'interannual-01' through 'interannual-12', 'monthly-2004' through 'monthly-2014'
     # 'interannual-mean' 'monthly-mean'
-    whichtime = 'monthly-mean'
+    whichtime = 'seasonal'
     # Which type of plot: 'cross', 'coastCH', 'coastMX', 'coastLA', 
     #  'coastNTX', 'coastSTX', 'fsle', 'D2'
     whichtype = 'cross'
@@ -569,6 +569,7 @@ def run():
 
     shelf_depth = 100 # do 100 50 and 20 
     ishelf_depth = 2 # 2 1 0 index in cross array
+    numdays = 15  # 30. Number of analysis days to consider
 
     # Whether to overlay previously-calculated wind stress arrows
     # from projects/txla_plots/plot_mean_wind.py on Rainier
@@ -596,7 +597,7 @@ def run():
     elif 'coast' in whichtype:
         Hfilename = 'figures/' + whichtype + '/' + whichtime + 'H.npz'
     elif whichtype == 'cross':
-        Hfilename = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'H.npz'
+        Hfilename = 'figures/' + whichtype + '/' + whichtime + str(shelf_depth) + 'advection' + str(numdays) + 'days-' + 'H.npz'
         # Hfilename = 'calcs/shelfconn/' + whichtime + str(shelf_depth) + 'H.npz'
 
     if not os.path.exists(Hfilename): 
@@ -688,7 +689,8 @@ def run():
                     d = np.load(File)
                     xg0 = d['xg0']; yg0 = d['yg0']
                     cross = d['cross']
-                    ind = ~np.isnan(cross[ishelf_depth,:])
+                    ind = (~np.isnan(cross[ishelf_depth,:])) * (cross[ishelf_depth, :] < numdays)
+                    # ind = ~np.isnan(cross[ishelf_depth,:])  # this is for 30 days (the whole run time)
                     d.close()
                     xp, yp, _ = tracpy.tools.interpolate2d(xg0[ind], yg0[ind], grid, 'm_ij2xy')
                 elif ('coast' in whichtype) and (whichdir=='forward'):  # results are in xp, yp
@@ -874,7 +876,7 @@ def run():
     # pdb.set_trace()
 
     # save and close
-    plot_finish(fig, whichtype, whichtime, shelf_depth, itind, r)
+    plot_finish(fig, whichtype, whichtime, shelf_depth, itind, r, numdays)
 
 
 if __name__ == "__main__":
