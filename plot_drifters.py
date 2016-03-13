@@ -187,10 +187,11 @@ if not dotails:
     ind3500 = depthp>500
 
     # colors for drifters
-    rgb = cm.cm.temp_r(np.linspace(0,1,6))
+    rgb = cm.cm.temp_r(np.linspace(0, 1, 6))[:-1, :]
     # rgb = plt.cm.get_cmap('winter_r')(np.linspace(0,1,6))[:-1,:3] # skip last entry where it levels off in lightness
 
     # to plot colorbar
+    cmapnew = cm.tools.cmap(rgb)  # cuts off dark end piece since interferes with isobath and isohaline
     gradient = np.linspace(0, 1, 6)[:-1]
     gradient = np.vstack((gradient, gradient))
 
@@ -240,7 +241,7 @@ for i in np.arange(i5days,nt+1,5):
         itriver = bisect.bisect_left(datesRiver, dates[i]) # index for river at this time
 
     # Plot background
-    fig = plt.figure(figsize=(10.1, 8.4), dpi=150)
+    fig = plt.figure(figsize=(10.1, 8.4), dpi=300)  # dpi=150)
     ax = fig.add_axes([0.06, 0.00, 0.93, 0.97])
     ax.set_frame_on(False) # kind of like it without the box
     tracpy.plotting.background(grid=grid, ax=ax, outline=[1,1,0,1], mers=np.arange(-97, -87), merslabels=[0, 0, 1, 0], pars=np.arange(23, 32), hlevs=[100], col='0.2')
@@ -364,7 +365,7 @@ for i in np.arange(i5days,nt+1,5):
 
     if docontour:
         # Overlay 100 meter isobath
-        ax.contour(xr, yr, grid['h'].T, [100], colors='k', alpha=0.5, linewidths=1.5)
+        ax.contour(xr, yr, grid['h'].T, [100], colors='k', alpha=0.5, linewidths=1)
 
     # Drifter legend
     if dotails:
@@ -377,7 +378,7 @@ for i in np.arange(i5days,nt+1,5):
     else:
         cax = fig.add_axes([0.09, 0.91, 0.35, 0.025]) #colorbar axes
         # cax = fig.add_axes([0.2, 0.81, 0.15, 0.02])
-        cax.imshow(gradient, aspect='auto', interpolation='none', cmap=cm.cm.temp_r)
+        cax.imshow(gradient, aspect='auto', interpolation='none', cmap=cmapnew)
         cax.tick_params(axis='y', labelleft=False, left=False, right=False)
         cax.tick_params(axis='x', top=False, bottom=False, labelsize=14, color='0.2', labelcolor='0.2')
         cax.set_xticks(np.arange(-0.5, 5, 1.0))
@@ -394,6 +395,6 @@ for i in np.arange(i5days,nt+1,5):
     i5daysago += 5
     i2daysago += 5
 
-    fig.savefig(fname, bbox_inches='tight')
+    fig.savefig(fname, bbox_inches='tight', dpi=300)
 
     plt.close()
