@@ -23,6 +23,8 @@ import scipy.stats
 from calendar import monthrange
 import seaborn as sns
 sns.set(style='whitegrid', color_codes=True)
+import pandas as pd
+import cmocean
 
 # mpl.rcParams['text.usetex'] = True
 mpl.rcParams.update({'font.size': 14})
@@ -39,7 +41,7 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 maketable = False
 runcorr = True  # run correlation coefficients
-doplot = True
+doplot = False
 explore = False  # True to do exploratory plots, False to do polished plot
 whichseason = 'summer'  # 'winter' or 'summer'
 makesmalltable = False  # create a subset table for analysis in R
@@ -49,6 +51,7 @@ elif whichseason == 'summer':
     col = 1
 table = 'table-sustr-100m-region34'
 without2008 = False
+makeplot = True  # for shelf_transport paper
 
 # If doing small table creation, need a list of things to include
 if makesmalltable:
@@ -262,7 +265,7 @@ if doplot:
                 ax.set_xlim(T.min()-0.1, T.max()+0.1)
                 ax.set_ylim(Wbest.min()-5, Wbest.max()+5)
                 ax.set_xlabel('Transport relative to mean [%]', fontsize=14)
-                ax.set_ylabel('January-February mean wind direction [deg]', fontsize=14)
+                ax.set_ylabel('January-February-March mean wind direction [deg]', fontsize=14)
                 plt.tick_params('both', labelsize=14)
                 ax.text(0.1, 0.15, 'r=%1.2f' % Wbestr, color='#15317E', transform=ax.transAxes, alpha=0.7)
                 ax.text(0.1, 0.1, 'p=%1.4f' % Wbestp, color='#15317E', transform=ax.transAxes, alpha=0.7)
@@ -613,3 +616,75 @@ if maketable:
 #    .....:     pp.append(p)
 #    .....:     
 # hist(rr, bins=100)100)
+
+
+if makeplot:
+
+    # list of conditionals of headers that are wind-based
+    Wboolsp = [('W' in header) and ('previous' in header) and (not 'Wsv' in header) and (not 'Wdv' in header) for header in headers]
+    Windsp = find(Wboolsp)  # indices
+    # Wheadersp = headers[Windsp]  # Wind-based headers
+    Wbools = [('W' in header) and (not 'previous' in header) and (not 'Wsv' in header) and (not 'Wdv' in header) for header in headers]
+    Winds = find(Wbools)  # indices
+    Wheaders = headers[Winds]  # Wind-based headers
+    # list of conditionals of headers that are river-based
+    Qboolsp = [('Q' in header) and ('previous' in header) for header in headers]
+    # Qboolsp = [('Q' in header) and ('previous' in header) and (not 'Cumulative-discharge' in header) for header in headers]
+    Qindsp = find(Qboolsp)  # indices
+    # Qheadersp = headers[Qindsp]  # River-based headers
+    Qbools = [('Q' in header) and (not 'previous' in header) for header in headers]
+    # Qbools = [('Q' in header) and (not 'previous' in header) and (not 'Cumulative-discharge' in header) for header in headers]
+    Qinds = find(Qbools)  # indices
+    Qheaders = headers[Qinds]  # River-based headers
+
+
+    # figure()
+    # scatter(abs(r[Winds]), p[Winds], s=500, facecolors='none', edgecolors='b', linewidths=2, alpha=0.5)
+    # plot(abs(r[Rinds]), p[Rinds], 'o', color='r', ms=15, alpha=0.5)
+
+    # previous year
+    rwinterp = np.hstack((abs(r[Windsp]), abs(r[Qindsp])))[:, np.newaxis]  # all valid r values for winter, previous year
+    pwinterp = np.hstack((abs(p[Windsp]), abs(p[Qindsp])))[:, np.newaxis]
+    # pwinterp = -(1-pwinterp)  # to make them look different in colormap
+    # concurrent year
+    rwinter = np.hstack((abs(r[Winds]), abs(r[Qinds])))[:, np.newaxis]  # all valid r values for winter
+    pwinter = np.hstack((abs(p[Winds]), abs(p[Qinds])))[:, np.newaxis]
+    # pwinter = -(1-pwinter)  # to make them look different in colormap
+
+    activeheaders = list(Wheaders) + list(Qheaders)
+
+    # previous year
+    df = pd.DataFrame(activeheaders, columns=['Metrics'], index=activeheaders)  # start dataframe
+    df['r'] = rwinterp
+    df['p'] = pwinterp
+    df.drop('Metrics', axis=1, inplace=True)  # get rid of extraneous Metrics column
+    # df2 = df.pivot("Metrics", "Previous year", "Previous year")
+
+    # concurrent year
+    df2 = pd.DataFrame(activeheaders, columns=['Metrics'], index=activeheaders)  # start dataframe
+    df2['r'] = rwinter
+    df2['p'] = pwinter
+    df2.drop('Metrics', axis=1, inplace=True)  # get rid of extraneous Metrics column
+
+    if whichseason == 'winter':
+        cmap = cmocean.cm.waveperiod
+    elif whichseason == 'summer':
+        cmap = cmocean.cm.waveheight
+
+    # plot previous year calculations
+    fig = plt.figure(figsize=(2, 30))
+    ax = fig.add_subplot(111)
+    sns.heatmap(df, cmap=cmap, ax=ax, vmin=0, vmax=1, cbar=False, xticklabels=['r', 'p'], annot=True)
+    # sns.heatmap(np.hstack((rwinterp, -(1-pwinterp))), cmap=cmocean.cm.velocity, ax=ax, vmin=-1, vmax=1, yticklabels=activeheaders, cbar=False)  #, annot=True)
+    plt.yticks(rotation=0)
+    # being saved on Rainier currently
+    fig.savefig('figures/cross/correlations/' + whichseason + 'previous.png', bbox_inches='tight', dpi=300)
+    plt.close(fig)
+
+    fig = plt.figure(figsize=(2, 30))
+    ax = fig.add_subplot(111)
+    sns.heatmap(df2, cmap=cmap, ax=ax, vmin=0, vmax=1, cbar=False, xticklabels=['r', 'p'], annot=True)
+    plt.yticks(rotation=0)
+    # being saved on Rainier currently
+    fig.savefig('figures/cross/correlations/' + whichseason + 'concurrent.png', bbox_inches='tight', dpi=300)
+    plt.close(fig)
