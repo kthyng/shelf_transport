@@ -8,6 +8,7 @@ import tracpy
 import op
 import matplotlib as mpl
 import pdb
+import matplotlib.tri as mtri
 
 mpl.rcParams.update({'font.size': 18})
 mpl.rcParams['font.sans-serif'] = 'Arev Sans, Bitstream Vera Sans, Lucida Grande, Verdana, Geneva, Lucid, Helvetica, Avant Garde, sans-serif'
@@ -20,11 +21,12 @@ mpl.rcParams['mathtext.bf'] = 'sans:bold'
 mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
-shelf_depth = 20
+shelf_depth = 100
 
 whichtime = 'interannual'  # 'seasonal' or 'interannual'
-whichseason = 'winter'  # 'summer' or 'winter'
-region = 3  # 1, 2, 3, 4
+whichseason = 'summer'  # 'summer' or 'winter'
+region = 4  # 1, 2, 3, 4
+whichvar = 'dispersion'  # 'transport' or 'dispersion'
 
 # Find depths at the center of each histogram bin
 # loc = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
@@ -32,7 +34,9 @@ region = 3  # 1, 2, 3, 4
 # grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
 # vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
 # grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
-grid = tracpy.inout.readgrid('grid.nc', usebasemap=True)
+proj = tracpy.tools.make_proj('nwgom', usebasemap=True)
+grid = tracpy.inout.readgrid('../../grid.nc', proj)
+# grid = tracpy.inout.readgrid('grid.nc', proj)
 
 
 if whichtime == 'seasonal':
@@ -103,14 +107,19 @@ elif whichtime == 'interannual':
     elif whichseason == 'summer':
 
         # Load in histogram
-        d = np.load('figures/cross/interannual-summer' + str(shelf_depth) + 'H.npz')
-        H = d['H']
+        if whichvar == 'shelftransport':
+            d = np.load('figures/cross/interannual-summer' + str(shelf_depth) + 'H.npz')
+            H = d['H']
+        elif whichvar == 'dispersion':
+            loc = 'shelf_transport_hafen_stuff/figures/D2/r1/interannual-summerHD2.npz'
+            d = np.load(loc)
+            H = d['D2aveS']
         X, Y = np.meshgrid(op.resize(d['xe'],0), op.resize(d['ye'],0))
-        fh = grid['trir'].nn_interpolator(grid['h'].flatten())
+        fh = mtri.LinearTriInterpolator(grid.trir, grid.h.flatten())
         depths = fh(X,Y)
-        flonr = grid['trir'].nn_interpolator(grid['lonr'].flatten())
+        flonr = mtri.LinearTriInterpolator(grid.trir, grid.lon_rho.flatten())
         lons = flonr(X,Y)
-        flatr = grid['trir'].nn_interpolator(grid['latr'].flatten())
+        flatr = mtri.LinearTriInterpolator(grid.trir, grid.lat_rho.flatten())
         lats = flatr(X,Y)
         d.close()
 
@@ -127,9 +136,16 @@ elif whichtime == 'interannual':
             # iwind = ishallow * (lons<-88) * (lons>-89.3) * (lats>28.7) * (lats<30)
         elif region == 4: # summer river transport region
             iwind = ishallow * (lons<-90) * (lats>27.5)
-        Hwind = np.nansum(H[:,iwind.T], axis=1)
+        if whichvar == 'transport':
+            Hwind = np.nansum(H[:,iwind.T], axis=1)
+        elif whichvar == 'dispersion':
+            itind = 100 # 100, ~3 days
+            Hwind = np.nansum(H[:,iwind.T, itind], axis=1)
         Hwind_rel = (Hwind - Hwind.mean())/(Hwind.max() - Hwind.min())
-        np.savez('calcs/shelfconn/' + whichtime + '-' + whichseason + str(region) + 'depth' + str(shelf_depth) + 'transportsum.npz', transport=Hwind_rel)
+        if whichvar == 'transport':
+            np.savez('calcs/shelfconn/' + whichtime + '-' + whichseason + str(region) + 'depth' + str(shelf_depth) + whichvar + 'sum.npz', transport=Hwind_rel)
+        elif whichvar == 'dispersion':
+            np.savez('calcs/dispersion/' + whichtime + '-' + whichseason + str(region) + 'depth' + str(shelf_depth) + whichvar + 'sum.npz', transport=Hwind_rel)
 
         # # plot vs. wind direction and discharge from Forest et al paper
         # # river discharge, m^3/s
