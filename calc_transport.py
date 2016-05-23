@@ -35,8 +35,8 @@ whichvar = 'dispersion'  # 'transport' or 'dispersion'
 # vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
 # grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
 proj = tracpy.tools.make_proj('nwgom', usebasemap=True)
-grid = tracpy.inout.readgrid('../../grid.nc', proj)
-# grid = tracpy.inout.readgrid('grid.nc', proj)
+# grid = tracpy.inout.readgrid('../../grid.nc', proj)
+grid = tracpy.inout.readgrid('grid.nc', proj)
 
 
 if whichtime == 'seasonal':
@@ -109,11 +109,11 @@ elif whichtime == 'interannual':
         # Load in histogram
         if whichvar == 'shelftransport':
             d = np.load('figures/cross/interannual-summer' + str(shelf_depth) + 'H.npz')
-            H = d['H']
         elif whichvar == 'dispersion':
-            loc = 'shelf_transport_hafen_stuff/figures/D2/r1/interannual-summerHD2.npz'
+            # loc = 'shelf_transport_hafen_stuff/figures/D2/r1/interannual-summerHD2.npz'
+            loc = 'figures/D2/r1/interannual-summerHD2.npz'
             d = np.load(loc)
-            H = d['D2aveS']
+        H = d['H']
         X, Y = np.meshgrid(op.resize(d['xe'],0), op.resize(d['ye'],0))
         fh = mtri.LinearTriInterpolator(grid.trir, grid.h.flatten())
         depths = fh(X,Y)
