@@ -16,7 +16,6 @@ import tracpy.plotting
 import tracpy.calcs
 from datetime import datetime, timedelta
 import glob
-import op
 from matplotlib.mlab import find
 from matplotlib import ticker, colors, cbook
 import calendar
@@ -39,7 +38,8 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 # grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
 # vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
 # grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
-grid = tracpy.inout.readgrid('grid.nc', usebasemap=True)
+proj = tracpy.tools.make_proj('nwgom')
+grid = tracpy.inout.readgrid('grid.nc', proj)
 
 # load in initial drifter starting locations in grid space
 d = np.load('calcs/xyp0.npz')
@@ -48,8 +48,8 @@ d.close()
 
 bins = (100,100)
 # Calculate xrange and yrange for histograms
-Xrange = [grid['xpsi'].min(), grid['xpsi'].max()]
-Yrange = [grid['ypsi'].min(), grid['ypsi'].max()]
+Xrange = [grid.x_psi.min(), grid.x_psi.max()]
+Yrange = [grid.y_psi.min(), grid.y_psi.max()]
 
 # Save a histogram of the number of drifters that started in each bin
 Hstartfile = 'calcs/coastconn/likelihood/Hstart.npz'
@@ -71,6 +71,20 @@ pts = np.load('calcs/alongcoastconn/inds-in-coast-paths.npz')['pts']
 # [pt.extend(pts[j]) for j in xrange(len(pts))]
 # xp0coast = xp0[pt]; yp0coast = yp0[pt]
 
+
+# Get and read in shipping lanes data
+# get data
+# info: https://www.data.boem.gov/homepg/pubinfo/repcat/arcinfo/zipped/gomr_fairways.htm
+url = 'http://www.data.boem.gov/homepg/pubinfo/repcat/arcinfo/zipped/fairway.zip'
+dirname = 'fairway'
+if not os.path.exists(dirname):
+    os.mkdir('fairway')
+if not os.path.exists('fairway.zip'):
+    os.system('wget ' + url)
+os.system('unzip -d fairway fairway.zip')
+
+# read in shipping lanes data
+proj.readshapefile('fairway/fairway', 'fairway')
 
 def plot_interannual():
     '''
@@ -168,7 +182,7 @@ def plot_interannual():
     pathsxy = pathsxy[boxes]
     ndbox = ndbox[:,:,boxes]
 
-    XE, YE = np.meshgrid(op.resize(xe, 0), op.resize(ye, 0))
+    XE, YE = np.meshgrid(tracpy.op.resize(xe, 0), tracpy.op.resize(ye, 0))
 
     # Loop through advection days
     # for j in xrange(H.shape[1]):
@@ -183,12 +197,12 @@ def plot_interannual():
        # Titles for subplots
         if i==10:#4:
             tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
-                pars=np.arange(20, 36, 2), outline=False, parslabels=[0, 1, 0, 0])
+                pars=np.arange(20, 36, 2), outline=[0,0,0,0], parslabels=[0, 1, 0, 0])
         elif i==11:#7:
             ax.set_axis_off()
         else:
             tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
-                pars=np.arange(20, 36, 2), outline=False,
+                pars=np.arange(20, 36, 2), outline=[0,0,0,0],
                 merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
         if i!=11:
             if whichH=='Hall':
@@ -213,7 +227,7 @@ def plot_interannual():
                     # for k in xrange(salt.shape[0]):
                     #     # pdb.set_trace()
                     #     ax.contour(grid['xr'], grid['yr'], salt[k,:,:].T, [32], colors='b', linewidths=0.05, alpha=0.3)
-                    ax.contour(grid['xr'], grid['yr'], salt.mean(axis=0).T, [32], colors='b', linewidths=1, alpha=0.8)
+                    ax.contour(grid.xr, grid.yr, salt.mean(axis=0).T, [32], colors='b', linewidths=1, alpha=0.8)
 
                 # Add on vulnerability of coastline
                 # Need to plot the coast boxes as patches and color them according to vulnerability level
@@ -221,7 +235,7 @@ def plot_interannual():
                 # we need to normalize the data to 0..1 for the full
                 # range of the colormap
                 fracs = ndbox[i,j,:].astype(float)/ndbox[:,j,:].max() # max across years
-                norm = colors.normalize(fracs.min(), fracs.max())
+                norm = colors.Normalize(fracs.min(), fracs.max())
     
                 # Save patches together
                 patches = []
@@ -244,7 +258,7 @@ def plot_interannual():
 
                     # Inset image
                     axins = zoomed_inset_axes(ax, zoom, loc=4) # zoom=6
-                    tracpy.plotting.background(grid=grid, ax=axins, outline=False, merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
+                    tracpy.plotting.background(grid=grid, ax=axins, outline=[0,0,0,0], merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
                     axins.contourf(XE, YE, var, cmap=cmap, levels=levels)
 
                     if plume: # add isohalines from surface salinity
@@ -252,7 +266,7 @@ def plot_interannual():
                         # for k in xrange(salt.shape[0]):
                         #     # pdb.set_trace()
                         #     axins.contour(grid['xr'], grid['yr'], salt[k,:,:].T, [32], colors='b', linewidths=0.05, alpha=0.3)
-                        axins.contour(grid['xr'], grid['yr'], salt.mean(axis=0).T, [32], colors='b', linewidths=1, alpha=0.8)
+                        axins.contour(grid.xr, grid.yr, salt.mean(axis=0).T, [32], colors='b', linewidths=1, alpha=0.8)
 
                     # assign shades of colormap to the patches according to values, and plot
                     for thisfrac, thispatch in zip(fracs, patches):
@@ -299,6 +313,7 @@ def plot_seasonal():
 
     cmap = 'YlGn'
     log = False
+    lanes = True  # to plot shipping lanes over plots
     # zoomed = True # True to add in a magnified region, for the 30 days advection timing
     whichboxes = 'all' # 'all', 'porta', 'galveston'
     # which boxes along coast to use for vulnerability. 0:342 for all
@@ -374,7 +389,7 @@ def plot_seasonal():
     # pathsxyG = pathsxy[boxesG]
     # ndboxG = ndbox[:,:,boxesG]
 
-    XE, YE = np.meshgrid(op.resize(xe, 0), op.resize(ye, 0))
+    XE, YE = np.meshgrid(tracpy.op.resize(xe, 0), tracpy.op.resize(ye, 0))
 
     # Loop through advection days
     for j in xrange(H.shape[1]):
@@ -411,7 +426,7 @@ def plot_seasonal():
                 # we need to normalize the data to 0..1 for the full
                 # range of the colormap
                 fracs = ndbox[i,j,:].astype(float)/ndbox[:,j,:].max() # max across seasons
-                norm = colors.normalize(fracs.min(), fracs.max())
+                norm = colors.Normalize(fracs.min(), fracs.max())
     
                 # Save patches together
                 patches = []
@@ -434,7 +449,7 @@ def plot_seasonal():
                     ## Port Aransas ##
                     # Inset image
                     axinsPA = zoomed_inset_axes(ax, zoomPA, loc=4) # zoom=6
-                    tracpy.plotting.background(grid=grid, ax=axinsPA, outline=False, merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
+                    tracpy.plotting.background(grid=grid, ax=axinsPA, outline=[0,0,0,0], merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
                     axinsPA.contourf(XE, YE, var, cmap=cmap, levels=levels)
                     # assign shades of colormap to the patches according to values, and plot
                     for thisfrac, thispatch in zip(fracs, patches):
@@ -461,7 +476,7 @@ def plot_seasonal():
                         patches.append(Patches.PathPatch(path, facecolor='orange', lw=0, zorder=10, edgecolor=None))
                     # Inset image
                     axinsG = zoomed_inset_axes(ax, zoomG, loc=2) # zoom=6
-                    tracpy.plotting.background(grid=grid, ax=axinsG, outline=False, merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
+                    tracpy.plotting.background(grid=grid, ax=axinsG, outline=[0,0,0,0], merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
                     axinsG.contourf(XE, YE, var, cmap=cmap, levels=levels)
                     # assign shades of colormap to the patches according to values, and plot
                     for thisfrac, thispatch in zip(fracs, patches):
@@ -485,6 +500,12 @@ def plot_seasonal():
                     plt.draw()
                     plt.show()
                     # pdb.set_trace()
+
+                if lanes:
+                    # plot shipping lanes
+                    for entry in proj.fairway:
+                        entry = np.asarray(entry)
+                        ax.plot(entry[:, 0], entry[:, 1], 'purple', lw=0.7, alpha=0.6)
                 
             ax.set_frame_on(False)
         cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
@@ -499,7 +520,10 @@ def plot_seasonal():
             elif whichH=='H':
                 cb.set_label('Connection to coastal boxes in ' + str(days[j]) + ' days')
             if zoomed:
-                fig.savefig('figures/coastconn/likelihood/seasonal-' + str(days[j]) + 'days' + whichboxes + 'zoomed-2boxes.png', bbox_inches='tight')
+                if lanes:
+                    fig.savefig('figures/coastconn/likelihood/seasonal-' + str(days[j]) + 'days' + whichboxes + 'zoomed-2boxes-lanes.png', bbox_inches='tight')
+                else:
+                    fig.savefig('figures/coastconn/likelihood/seasonal-' + str(days[j]) + 'days' + whichboxes + 'zoomed-2boxes-lanes.png', bbox_inches='tight')
             else:
                 fig.savefig('figures/coastconn/likelihood/seasonal-' + str(days[j]) + 'days' + whichboxes + '.png', bbox_inches='tight')
         plt.close()
