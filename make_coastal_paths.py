@@ -1,5 +1,5 @@
 '''
-Find paths defining 3km across- and along-shelf boxes for examining 
+Find paths defining 3km across- and along-shelf boxes for examining
 coastal connectivity.
 '''
 
@@ -10,8 +10,10 @@ from matplotlib.path import Path
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 
-grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
-grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
+loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+# grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+proj = tracpy.tools.make_proj('nwgom')
+grid = tracpy.inout.readgrid(loc, proj)
 
 # To click to get the points:
 # tracpy.plotting.background(grid)
@@ -21,12 +23,12 @@ grid = tracpy.inout.readgrid(grid_filename, usebasemap=True)
 # pts = ginput(timeout=0, n=0)
 # np.savez('calcs/coastpts.npz', lon=lon, lat=lat)
 
-# Read in previously-clicked rho points defining the inner edge of 
+# Read in previously-clicked rho points defining the inner edge of
 # the inner shelf (excludes the bays)
 d = np.load('calcs/coastpts.npz')
 lon = d['lon']; lat = d['lat']
 d.close()
-x, y = grid['basemap'](lon, lat)
+x, y = proj(lon, lat)
 
 ## Add in more points
 # Calculate distance along-shore for each line
