@@ -41,7 +41,7 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 # vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
 # grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
 proj = tracpy.tools.make_proj('nwgom')
-grid = tracpy.inout.readgrid('grid.nc', proj)
+grid = tracpy.inout.readgrid('../../grid.nc', proj)
 
 # load in initial drifter starting locations in grid space
 d = np.load('calcs/xyp0.npz')
@@ -95,7 +95,6 @@ proj.readshapefile('fairway/fairway', 'fairway')
 # Louisiana, under 2003>Shapefiles/ArcView 3.x project
 # http://response.restoration.noaa.gov/maps-and-spatial-data/download-esi-maps-and-gis-data.html#Louisiana
 d = gpd.read_file('ESI.shp')
-d.to_crs({'proj': 'latlong'}).plot()
 
 def plot_interannual():
     '''
@@ -325,6 +324,7 @@ def plot_seasonal():
     cmap = 'YlGn'
     log = False
     lanes = True  # to plot shipping lanes over plots
+    sensitivity = True  # overlay coastal sensitivity
     # zoomed = True # True to add in a magnified region, for the 30 days advection timing
     whichboxes = 'all' # 'all', 'porta', 'galveston'
     # which boxes along coast to use for vulnerability. 0:342 for all
@@ -517,7 +517,10 @@ def plot_seasonal():
                     for entry in proj.fairway:
                         entry = np.asarray(entry)
                         ax.plot(entry[:, 0], entry[:, 1], 'purple', lw=0.7, alpha=0.6)
-                
+
+                if sensitivity:
+                    d.to_crs({'proj': 'latlong'}).plot(ax=ax)
+
             ax.set_frame_on(False)
         cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
         if log:
@@ -532,7 +535,10 @@ def plot_seasonal():
                 cb.set_label('Connection to coastal boxes in ' + str(days[j]) + ' days')
             if zoomed:
                 if lanes:
-                    fig.savefig('figures/coastconn/likelihood/seasonal-' + str(days[j]) + 'days' + whichboxes + 'zoomed-2boxes-lanes.png', bbox_inches='tight')
+                    if sensitivity:
+                       fig.savefig('figures/coastconn/likelihood/seasonal-' + str(days[j]) + 'days' + whichboxes + 'zoomed-2boxes-lanes-sensitivity.png', bbox_inches='tight')
+                    else:
+                       fig.savefig('figures/coastconn/likelihood/seasonal-' + str(days[j]) + 'days' + whichboxes + 'zoomed-2boxes-lanes.png', bbox_inches='tight')
                 else:
                     fig.savefig('figures/coastconn/likelihood/seasonal-' + str(days[j]) + 'days' + whichboxes + 'zoomed-2boxes-lanes.png', bbox_inches='tight')
             else:
