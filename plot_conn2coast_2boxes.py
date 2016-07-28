@@ -22,6 +22,8 @@ import calendar
 import matplotlib.patches as Patches
 import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes, mark_inset
+import geopandas as gpd
+
 
 mpl.rcParams.update({'font.size': 14})
 mpl.rcParams['font.sans-serif'] = 'Arev Sans, Bitstream Vera Sans, Lucida Grande, Verdana, Geneva, Lucid, Helvetica, Avant Garde, sans-serif'
@@ -85,6 +87,15 @@ os.system('unzip -d fairway fairway.zip')
 
 # read in shipping lanes data
 proj.readshapefile('fairway/fairway', 'fairway')
+
+
+# Read in coast sensitivity data
+# Texas, under Environmental Sensitivity Index Shoreline
+# http://www.glo.texas.gov/land/land-management/gis/
+# Louisiana, under 2003>Shapefiles/ArcView 3.x project
+# http://response.restoration.noaa.gov/maps-and-spatial-data/download-esi-maps-and-gis-data.html#Louisiana
+d = gpd.read_file('ESI.shp')
+d.to_crs({'proj': 'latlong'}).plot()
 
 def plot_interannual():
     '''
