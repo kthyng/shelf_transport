@@ -14,7 +14,7 @@ shelf_depths = [20, 50, 100, 200, 300, 400, 500]
 idepth = 2
 
 nnansmean = 0
-for calcfilename in Files:
+for i, calcfilename in enumerate(Files):
     # print File
 
     # file where tracks are stored
@@ -23,12 +23,18 @@ for calcfilename in Files:
     # file where we will store the drifter exit info
     crossexitfilename = 'calcs/shelfconn/exitdomain/' + name
 
+    print crossexitfilename
     # don't repeat calc if last file was created
     if os.path.exists(crossexitfilename):
-        continue
+        # continue
+        print 'adding to mean'
+        d = np.load(crossexitfilename)
+        nnansmean += d['nnans']
+        if i==0:
+            t = d['t']
+        d.close()
 
     else:  # do analysis for the simulation
-
         # file where cross-shelf info is stored
         calcfile = np.load(calcfilename)
 
@@ -53,3 +59,6 @@ for calcfilename in Files:
         np.savez(crossexitfilename, nnans=nnans, t=t)
         trackfile.close()
         calcfile.close()
+
+nnansmean /= len(Files)
+np.savez('calcs/shelfconn/exitdomain/overallaverage.npz', nnansmean=nnansmean, t=t)

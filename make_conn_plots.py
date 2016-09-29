@@ -1,5 +1,5 @@
 '''
-Read in connectivity calculations from find_coastal_path_connectivity.py 
+Read in connectivity calculations from find_coastal_path_connectivity.py
 and make plots.
 '''
 
@@ -15,10 +15,11 @@ import tracpy.plotting
 import tracpy.calcs
 from datetime import datetime, timedelta
 import glob
-import op
+# import op
 from matplotlib.mlab import find
 from matplotlib import ticker, colors, cbook
 import calendar
+import cmocean.cm as cmo
 
 mpl.rcParams.update({'font.size': 14})
 mpl.rcParams['font.sans-serif'] = 'Arev Sans, Bitstream Vera Sans, Lucida Grande, Verdana, Geneva, Lucid, Helvetica, Avant Garde, sans-serif'
@@ -32,14 +33,27 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-loc = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
-grid = tracpy.inout.readgrid(loc, usebasemap=True)
+loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+proj = tracpy.tools.make_proj('nwgom')
+grid = tracpy.inout.readgrid(loc, proj)
 
 # load in paths for coastline boxes
 d = np.load('calcs/coastpaths.npz') # use paths in grid space
 pathsxy = d['pathsxy']
 outerpathxy = d['outerpathxy'].item()
 d.close()
+
+# distance along the coast boxes
+# code from plot_sampledrifters.py
+dist = np.zeros(len(pathsxy))
+verts0 = pathsxy[0].vertices
+for i, path in enumerate(pathsxy):
+    verts1 = path.vertices
+    dist[i:] += np.sqrt((verts1[0,0]-verts0[0,0])**2+(verts1[0,1]-verts0[0,1])**2)
+    verts0 = verts1.copy()
+dist /= 1000 # convert to km
+
+X, _ = np.meshgrid(dist, dist)
 
 def plot_domain():
     '''
@@ -75,8 +89,10 @@ def plot_seasonal():
     Use calculated files from run() to plot connectivity matrix.
     '''
 
-    cmap = 'YlGn'
+    cmap = cmo.speed  # 'YlGn'
     log = False
+
+    xticklocs = np.arange(0, 2000, 500)
 
     ## Read in files ##
     filename = 'calcs/alongcoastconn/conn-seasonal.npz'
@@ -87,7 +103,7 @@ def plot_seasonal():
         mat = np.zeros((2,342,342))
         for i,files in enumerate(Files): # winter and summer
             for File in files: # months/years within winter or summer
-                print File
+                print(File)
                 d = np.load(File)
                 mat[i,:,:] += d['mat']
                 if np.isnan(mat[i,:,:]).sum()>1:
@@ -109,17 +125,29 @@ def plot_seasonal():
             ax.set_title('Winter')
             ax.set_ylabel('Source box number')
             ax.set_xlabel('Destination box number')
+            ax.xaxis.set_ticks_position('bottom')  # turns off top tick marks
+            ax.yaxis.set_ticks_position('left')
+            # ax.axis('equal')
+            # plt.xticks(xticklocs);
+            # plt.yticks(xticklocs);
             # ax.pcolormesh(mat[i,:,:], cmap=cmap)
         elif i==1:
             # tracpy.plotting.background(grid=grid, ax=ax, parslabels=[0,0,0,0], mers=np.arange(-100, -80, 2))
             ax.set_title('Summer')
-            ax.xaxis.set_ticklabels([])
+            ax.set_xlabel('Destination box number')
+            ax.xaxis.set_ticks_position('bottom')  # turns off top tick marks
+            ax.yaxis.set_ticks_position('left')
+            # ax.axis('equal')
+            # ax.xaxis.set_ticklabels([])
             ax.yaxis.set_ticklabels([])
+            # plt.xticks(xticklocs);
+            # plt.yticks(xticklocs);
             # ax.get_xaxis().set_visible(False)
         if log:
             mappable = ax.pcolormesh(mat[i,:,:]*100., cmap=cmap, vmin=1., vmax=100., norm=colors.LogNorm())
         else:
-            mappable = ax.pcolormesh(mat[i,:,:]*100., cmap=cmap, vmax=100.)
+            mappable = ax.pcolormesh(X, X, mat[i,:,:]*100., cmap=cmap, vmax=100.)
+        import pdb; pdb.set_trace()
         ax.set_frame_on(False)
     cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
     if log:
@@ -127,11 +155,11 @@ def plot_seasonal():
         cb.set_label('Connectivity [%]')
         fig.savefig('figures/alongcoastconn/seasonal-log.png', bbox_inches='tight')
     else:
-        cb = plt.colorbar(mappable, cax=cax, orientation='horizontal')
+        cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')#, pad=0.18)
         cb.set_label('Connectivity [%]')
         fig.savefig('figures/alongcoastconn/seasonal.png', bbox_inches='tight')
     ####
-    
+
 
 
 
@@ -174,7 +202,7 @@ def run():
                             + '-' + str(month).zfill(2) + '-*T0*.npz')
 
                 for File in Files:
-                    print File
+                    print(File)
                     d = np.load(File)
                     # [# of box paths x # drifters that enter a box x 5 (max # of crosses checked for)]
                     inbox = d['inbox'] # time in decimal days when a drifter enters a box path
@@ -183,10 +211,9 @@ def run():
                     inds = d['iinside'] # indices from the original drifters corresponding to in/outbox
                     d.close()
                     # # code to switch between sets of indices
-                    # # this has Trues for the drifters for this simulation that enter 
+                    # # this has Trues for the drifters for this simulation that enter
                     # # the outer path
                     # code = np.zeros(nd); code[inds] = 1; code = code.astype(bool)
-
                     mattemp = np.eye(inbox.shape[0])
                     # For each box, how many drifters go out from it in to another box?
                     for i, path in enumerate(paths):
@@ -225,6 +252,6 @@ def run():
                 mat /= len(Files)
                 np.savez(matfile, mat=mat)
 
-
-if __name__ == "__main__":
-    run()     
+#
+# if __name__ == "__main__":
+#     run()
