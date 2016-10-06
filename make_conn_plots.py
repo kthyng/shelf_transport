@@ -4,7 +4,7 @@ and make plots.
 '''
 
 import matplotlib as mpl
-mpl.use("Agg") # set matplotlib to use the backend that does not require a windowing system
+# mpl.use("Agg") # set matplotlib to use the backend that does not require a windowing system
 import numpy as np
 import os
 import netCDF4 as netCDF
@@ -20,6 +20,7 @@ from matplotlib.mlab import find
 from matplotlib import ticker, colors, cbook
 import calendar
 import cmocean.cm as cmo
+import matplotlib.patches as patches
 
 mpl.rcParams.update({'font.size': 14})
 mpl.rcParams['font.sans-serif'] = 'Arev Sans, Bitstream Vera Sans, Lucida Grande, Verdana, Geneva, Lucid, Helvetica, Avant Garde, sans-serif'
@@ -52,8 +53,9 @@ for i, path in enumerate(pathsxy):
     dist[i:] += np.sqrt((verts1[0,0]-verts0[0,0])**2+(verts1[0,1]-verts0[0,1])**2)
     verts0 = verts1.copy()
 dist /= 1000 # convert to km
+dmax = dist.max()
 
-X, _ = np.meshgrid(dist, dist)
+X, Y = np.meshgrid(dist, dist)
 
 def plot_domain():
     '''
@@ -68,18 +70,20 @@ def plot_domain():
     ax.plot(outerpathxy.vertices[:,0], outerpathxy.vertices[:,1], 'b')
 
     # Plot labels for boxes
-    for i, path in enumerate(pathsxy):
-        # only plot every 50th
-        if np.mod(i,50)==0:
-            if i<110:
-                dx = 11000; dy = 0; # shift
-            elif i==150:
-                dx = 5000; dy = -30000
-            elif i>150 and i<300:
-                dx = 0; dy = -50000
-            elif i==300:
-                dy = -40000
-            ax.text(path.vertices[0,0] + dx, path.vertices[0,1] + dy, str(i), fontsize=15, color='r')
+    for (i, path), dis in zip(enumerate(pathsxy), dist):
+        if np.mod(i, 10) == 0:
+            ax.text(path.vertices[0,0], path.vertices[0,1], str(dis), fontsize=15, color='r')
+        # # only plot every 50th
+        # if np.mod(i,50)==0:
+        #     if i<110:
+        #         dx = 11000; dy = 0; # shift
+        #     elif i==150:
+        #         dx = 5000; dy = -30000
+        #     elif i>150 and i<300:
+        #         dx = 0; dy = -50000
+        #     elif i==300:
+        #         dy = -40000
+        #     ax.text(path.vertices[0,0] + dx, path.vertices[0,1] + dy, str(i), fontsize=15, color='r')
 
     fig.savefig('figures/alongcoastconn/domain.png', bbox_inches='tight')
 
@@ -89,8 +93,10 @@ def plot_seasonal():
     Use calculated files from run() to plot connectivity matrix.
     '''
 
-    cmap = cmo.speed  # 'YlGn'
+    cmap = cmo.curl_r  # 'YlGn'
     log = False
+    down = 'green'
+    up = 'blue'
 
     xticklocs = np.arange(0, 2000, 500)
 
@@ -114,42 +120,105 @@ def plot_seasonal():
         mat = np.load(filename)['mat']
     ####
 
+    # make one side of triangle positive and other negative
+    ix, iy = np.tril_indices(mat.shape[1], k=1)
+    # mat[0,:,:] = -np.triu(mat[0,:,:].T, k=1)
+    # mat[1,:,:] = -np.triu(mat[1,:,:].T, k=1)
+    mat[:, ix, iy] = -mat[:, ix, iy]
+
     ## Plot setup ##
     fig, axarr = plt.subplots(1,2)#, sharex=True)
-    fig.set_size_inches(13, 6.6125)
-    fig.subplots_adjust(left=0.045, bottom=0.15, right=1.0, top=0.96, wspace=0.005, hspace=0.04)
+    fig.set_size_inches(11.0, 6.6125)
+    fig.subplots_adjust(left=0.045, bottom=0.175, right=1.0, top=0.96, wspace=0.005, hspace=0.04)
     for i, ax in enumerate(axarr):
        # Titles for subplots
         if i==0:
             # tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
             ax.set_title('Winter')
-            ax.set_ylabel('Source box number')
-            ax.set_xlabel('Destination box number')
+            ax.set_ylabel('Along coast start location [km]')
+            ax.set_xlabel('Along coast end location [km]')
             ax.xaxis.set_ticks_position('bottom')  # turns off top tick marks
             ax.yaxis.set_ticks_position('left')
-            # ax.axis('equal')
-            # plt.xticks(xticklocs);
-            # plt.yticks(xticklocs);
+            ax.axis('equal')
+            ax.set_xticks(xticklocs);
+            ax.set_yticks(xticklocs);
             # ax.pcolormesh(mat[i,:,:], cmap=cmap)
         elif i==1:
             # tracpy.plotting.background(grid=grid, ax=ax, parslabels=[0,0,0,0], mers=np.arange(-100, -80, 2))
             ax.set_title('Summer')
-            ax.set_xlabel('Destination box number')
+            ax.set_xlabel('Along coast end location [km]')
             ax.xaxis.set_ticks_position('bottom')  # turns off top tick marks
             ax.yaxis.set_ticks_position('left')
-            # ax.axis('equal')
+            ax.axis('equal')
             # ax.xaxis.set_ticklabels([])
             ax.yaxis.set_ticklabels([])
-            # plt.xticks(xticklocs);
-            # plt.yticks(xticklocs);
+            ax.set_xticks(xticklocs);
+            ax.set_yticks(xticklocs);
             # ax.get_xaxis().set_visible(False)
         if log:
             mappable = ax.pcolormesh(mat[i,:,:]*100., cmap=cmap, vmin=1., vmax=100., norm=colors.LogNorm())
         else:
-            mappable = ax.pcolormesh(X, X, mat[i,:,:]*100., cmap=cmap, vmax=100.)
-        import pdb; pdb.set_trace()
+            mappable = ax.pcolormesh(X, Y, mat[i,:,:]*100., cmap=cmap, vmax=100., vmin=-100)
+        # import pdb; pdb.set_trace()
         ax.set_frame_on(False)
+        # Plot a few ticks for notable locations: horizontal
+        left = -25; right = 25
+        # # Laguna Madre between 150 and 200
+        # ax.plot([0, 100], [175, 175], '-', color='0.2', lw=0.5, alpha=0.7)
+        # Port Mansfield
+        ax.plot([left, right], [400, 400], '-', color='0.3', lw=0.5, alpha=0.7)
+        # # Baffin Bay
+        # ax.plot([0, 100], [485, 485], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Port Aransas
+        ax.plot([left, right], [555, 555], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Port O'Connor
+        ax.plot([left, right], [645, 645], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Galveston
+        ax.plot([left, right], [840, 840], '-', color='0.3', lw=0.5, alpha=0.7)
+        # # Port Arthur/Sabine Lake
+        # ax.plot([left, right], [940, 940], '-', color='0.3', lw=0.5, alpha=0.7)
+        # # Calcasieu Lake
+        # ax.plot([left, right], [990, 990], '-', color='0.3', lw=0.5, alpha=0.7)
+        # # Vermilion Bay
+        # ax.plot([left, right], [1125, 1125], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Atchafalaya Bay
+        ax.plot([left, right], [1190, 1190], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Terrebonne Bay
+        ax.plot([left, right], [1290, 1290], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Barataria Bay
+        ax.plot([left, right], [1350, 1350], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Plot a few ticks for notable locations: vertical
+        # Port Mansfield
+        ax.plot([400, 400], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Port Aransas
+        ax.plot([555, 555], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Port O'Connor
+        ax.plot([645, 645], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Galveston
+        ax.plot([840, 840], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
+        # # Port Arthur/Sabine Lake
+        # ax.plot([940, 940], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
+        # # Calcasieu Lake
+        # ax.plot([990, 990], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
+        # # Vermilion Bay
+        # ax.plot([1125, 1125], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Atchafalaya Bay
+        ax.plot([1190, 1190], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Terrebonne Bay
+        ax.plot([1290, 1290], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Barataria Bay
+        ax.plot([1350, 1350], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
+        # Overlay lines boxes for region of coastline
+        # horizontal: Mexico-Texas border
+        ax.plot([0, dmax], [340, 340], '-', color='k', lw=2, alpha=0.1)
+        # horizontal: Texas-Louisiana border
+        ax.plot([0, dmax], [940, 940], '-', color='k', lw=2, alpha=0.1)
+        # vertical: Mexico-Texas border
+        ax.plot([340, 340], [0, dmax], '-', color='k', lw=2, alpha=0.1)
+        # vertical: Texas-Louisiana border
+        ax.plot([940, 940], [0, dmax], '-', color='k', lw=2, alpha=0.1)
     cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
+    ticklabels = ['100', '80', '60', '40', '20', '0', '20', '40', '60', '80', '100']
     if log:
         cb = plt.colorbar(mappable, cax=cax, orientation='horizontal', extend='min')
         cb.set_label('Connectivity [%]')
@@ -157,7 +226,9 @@ def plot_seasonal():
     else:
         cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')#, pad=0.18)
         cb.set_label('Connectivity [%]')
-        fig.savefig('figures/alongcoastconn/seasonal.png', bbox_inches='tight')
+        cb.set_ticks(np.arange(-100, 120, 20))
+        cb.set_ticklabels(ticklabels)
+        fig.savefig('figures/alongcoastconn/seasonal.png', bbox_inches='tight', dpi=300)
     ####
 
 
