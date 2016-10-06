@@ -264,8 +264,8 @@ def run():
     # Loop through along-coast boxes to find which other boxes they are connected to
     # and allow for the 5 crossings kept track of
     mat = np.zeros((len(paths),len(paths)))  # original along-coast conn, for 30 days
-    inmat = np.zeros((len(paths),len(paths), 5))  # drifters going into boxes
-    outmat = np.zeros((len(paths),len(paths), 5))  # drifters going out of boxes
+    # inmat = np.zeros((len(paths),len(paths), 5))  # drifters going into boxes
+    # outmat = np.zeros((len(paths),len(paths), 5))  # drifters going out of boxes
     years = np.arange(2014,2015)
     months = [1,2,7,8]
     for year in years:
@@ -304,6 +304,7 @@ def run():
                         # connected = ~np.isnan(np.nansum(inbox[:,code,0], axis=1))
 
                         # the number of drifters that enter each box
+                        # import pdb; pdb.set_trace()
                         connected = np.sum(~np.isnan(inbox[:,code,0]), axis=1)
                         # manually do the box the drifters started in
                         connected[i] = len(pt)
@@ -326,6 +327,6 @@ def run():
                 mat /= len(Files)
                 np.savez(matfile, mat=mat)
 
-#
-# if __name__ == "__main__":
-#     run()
+
+if __name__ == "__main__":
+    run()
