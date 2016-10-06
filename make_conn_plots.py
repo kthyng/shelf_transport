@@ -262,7 +262,10 @@ def run():
         np.savez(filename, pts=pts)
 
     # Loop through along-coast boxes to find which other boxes they are connected to
-    mat = np.zeros((len(paths),len(paths)))
+    # and allow for the 5 crossings kept track of
+    mat = np.zeros((len(paths),len(paths)))  # original along-coast conn, for 30 days
+    inmat = np.zeros((len(paths),len(paths), 5))  # drifters going into boxes
+    outmat = np.zeros((len(paths),len(paths), 5))  # drifters going out of boxes
     years = np.arange(2014,2015)
     months = [1,2,7,8]
     for year in years:
