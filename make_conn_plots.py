@@ -20,7 +20,8 @@ from matplotlib.mlab import find
 from matplotlib import ticker, colors, cbook
 import calendar
 import cmocean.cm as cmo
-import matplotlib.patches as patches
+import matplotlib.patches as Patches
+
 
 mpl.rcParams.update({'font.size': 14})
 mpl.rcParams['font.sans-serif'] = 'Arev Sans, Bitstream Vera Sans, Lucida Grande, Verdana, Geneva, Lucid, Helvetica, Avant Garde, sans-serif'
@@ -34,7 +35,8 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+# loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+loc = '../grid.nc'
 proj = tracpy.tools.make_proj('nwgom')
 grid = tracpy.inout.readgrid(loc, proj)
 
@@ -57,6 +59,20 @@ dmax = dist.max()
 
 X, Y = np.meshgrid(dist, dist)
 
+# dic = {}
+# Port Mansfield, Port Aransas, Port O'Connor, Galveston, Atchafalaya,
+# Terrebonne, Barataria
+names = ['bpm', 'bpa', 'bpoc', 'bgalv', 'batch', 'bterr', 'bbara']
+distances = [400, 555, 645, 840, 1175, 1280, 1350]  # atch 1190, bterr1290
+boxes = [np.arange(76,88), np.arange(107,119), np.arange(126,138), np.arange(165,177),
+         np.arange(234,246), np.arange(257,269), np.arange(271, 283)]
+# # for name, dist, box in zip(names, dists, boxes):
+# for name, distance in zip(names, distances):
+#     dic[name] = {}
+#     dic[name]['dist'] = distance
+#     # dic[name]['boxes'] = box
+
+
 def plot_domain():
     '''
     Plot explanatory map for along-shore box key.
@@ -70,9 +86,32 @@ def plot_domain():
     ax.plot(outerpathxy.vertices[:,0], outerpathxy.vertices[:,1], 'b')
 
     # Plot labels for boxes
+    # if plottype == 'dist':
     for (i, path), dis in zip(enumerate(pathsxy), dist):
-        if np.mod(i, 10) == 0:
-            ax.text(path.vertices[0,0], path.vertices[0,1], str(dis), fontsize=15, color='r')
+        # if np.mod(i, 10) == 0:
+        #     ax.text(path.vertices[0,0], path.vertices[0,1], str(dis), fontsize=12, color='k')
+            # ax.text(path.vertices[0,0], path.vertices[0,1], str(i), fontsize=15, color='g')
+        if (abs(dis-np.asarray(distances)) < 2.5).any():
+            ind = np.where(abs(dis-np.asarray(distances)) < 2.5)[0]
+            ax.text(path.vertices[0,0], path.vertices[0,1], str(distances[ind]), fontsize=20, color='r')
+            # ax.text(path.vertices[0,0], path.vertices[0,1], str(i), fontsize=15, color='g')
+
+            patches = []
+            for j in boxes[ind]:
+                ax.add_patch(Patches.PathPatch(pathsxy[j], facecolor='yellow'))
+                # if (j == boxes[ind][0]) or (j == boxes[ind][-1]):
+                #     ax.text(path.vertices[0,0], path.vertices[0,1], str(j), fontsize=15, color='g')
+            #     patches.append(Patches.PathPatch(pathxsy[j]))#, facecolor='orange', lw=0, zorder=10, edgecolor=None))
+            # # assign shades of colormap to the patches according to values, and plot
+            # for thisfrac, thispatch in zip(fracs, patches):
+            #     color = cmo.matter(norm(thisfrac))
+            #     thispatch.set_facecolor(color)
+            #     ax.add_patch(thispatch)
+
+    # elif plottype == 'boxnum':
+    # for i, path in enumerate(pathsxy):
+    #     if np.mod(i, 10) == 0:
+    #         ax.text(path.vertices[0,0], path.vertices[0,1], str(i), fontsize=15, color='r')
         # # only plot every 50th
         # if np.mod(i,50)==0:
         #     if i<110:
@@ -85,7 +124,7 @@ def plot_domain():
         #         dy = -40000
         #     ax.text(path.vertices[0,0] + dx, path.vertices[0,1] + dy, str(i), fontsize=15, color='r')
 
-    fig.savefig('figures/alongcoastconn/domain.png', bbox_inches='tight')
+    # fig.savefig('figures/alongcoastconn/domain.png', bbox_inches='tight')
 
 
 def plot_seasonal():
@@ -95,8 +134,10 @@ def plot_seasonal():
 
     cmap = cmo.curl_r  # 'YlGn'
     log = False
-    down = 'green'
-    up = 'blue'
+    regions = True  # do plot with region lines (MX, TX, LA)
+    baylabels = True  # mark locations with ticks
+    bayvalues = True  # annotate bay values
+    largefonts = True  # use large fonts for presentation plot
 
     xticklocs = np.arange(0, 2000, 500)
 
@@ -161,74 +202,80 @@ def plot_seasonal():
             mappable = ax.pcolormesh(X, Y, mat[i,:,:]*100., cmap=cmap, vmax=100., vmin=-100)
         # import pdb; pdb.set_trace()
         ax.set_frame_on(False)
-        # Plot a few ticks for notable locations: horizontal
-        left = -25; right = 25
-        # # Laguna Madre between 150 and 200
-        # ax.plot([0, 100], [175, 175], '-', color='0.2', lw=0.5, alpha=0.7)
-        # Port Mansfield
-        ax.plot([left, right], [400, 400], '-', color='0.3', lw=0.5, alpha=0.7)
-        # # Baffin Bay
-        # ax.plot([0, 100], [485, 485], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Port Aransas
-        ax.plot([left, right], [555, 555], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Port O'Connor
-        ax.plot([left, right], [645, 645], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Galveston
-        ax.plot([left, right], [840, 840], '-', color='0.3', lw=0.5, alpha=0.7)
-        # # Port Arthur/Sabine Lake
-        # ax.plot([left, right], [940, 940], '-', color='0.3', lw=0.5, alpha=0.7)
-        # # Calcasieu Lake
-        # ax.plot([left, right], [990, 990], '-', color='0.3', lw=0.5, alpha=0.7)
-        # # Vermilion Bay
-        # ax.plot([left, right], [1125, 1125], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Atchafalaya Bay
-        ax.plot([left, right], [1190, 1190], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Terrebonne Bay
-        ax.plot([left, right], [1290, 1290], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Barataria Bay
-        ax.plot([left, right], [1350, 1350], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Plot a few ticks for notable locations: vertical
-        # Port Mansfield
-        ax.plot([400, 400], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Port Aransas
-        ax.plot([555, 555], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Port O'Connor
-        ax.plot([645, 645], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Galveston
-        ax.plot([840, 840], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
-        # # Port Arthur/Sabine Lake
-        # ax.plot([940, 940], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
-        # # Calcasieu Lake
-        # ax.plot([990, 990], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
-        # # Vermilion Bay
-        # ax.plot([1125, 1125], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Atchafalaya Bay
-        ax.plot([1190, 1190], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Terrebonne Bay
-        ax.plot([1290, 1290], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Barataria Bay
-        ax.plot([1350, 1350], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
-        # Overlay lines boxes for region of coastline
-        # horizontal: Mexico-Texas border
-        ax.plot([0, dmax], [340, 340], '-', color='k', lw=2, alpha=0.1)
-        # horizontal: Texas-Louisiana border
-        ax.plot([0, dmax], [940, 940], '-', color='k', lw=2, alpha=0.1)
-        # vertical: Mexico-Texas border
-        ax.plot([340, 340], [0, dmax], '-', color='k', lw=2, alpha=0.1)
-        # vertical: Texas-Louisiana border
-        ax.plot([940, 940], [0, dmax], '-', color='k', lw=2, alpha=0.1)
+        # Plot a few ticks for notable locations
+        left = -25; right = 35
+        for distance, box in zip(distances, boxes):
+            # max value for normalization is the boxes to themselves
+            bmax = abs(mat[i,box,box].sum())
+            if baylabels:
+                ax.autoscale(enable=False)
+                # horizontal
+                ax.plot([left, right], [distance, distance], '-', color='0.3', lw=0.5, alpha=0.7)
+                # vertical
+                ax.plot([distance, distance], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
+            if bayvalues:
+                # plot Connectivity for all other bays
+                for distance2, box2 in zip(distances, boxes):
+                    if distance2 == distance:
+                        continue
+                    boxval = (mat[i,box,box2].sum()/bmax)*100
+                    if not boxval == 0:
+                        # pass
+                        # ax.scatter(distance2, distance, s=50, c=boxval, marker='s',
+                        #            cmap=cmo.curl_r, vmin=-100, vmax=100,
+                        #            linewidths=0.1)
+                        # print('not zero:', boxval)
+                        if largefonts:
+                            ax.text(distance2+1, distance-16, '%d' % abs(boxval), fontsize=17,
+                                    horizontalalignment='center', alpha=0.8, color='0.2')
+                        else:
+                            ax.text(distance2+1, distance-16, '%d' % abs(boxval), fontsize=9,
+                                    horizontalalignment='center', alpha=0.8, color='0.2')
+                    else:
+                        # Otherwise the axes get moved by scatter
+                        # http://stackoverflow.com/questions/19916295/pyplot-scatter-changes-the-data-limits-of-the-axis
+                        ax.autoscale(enable=False)
+                        if largefonts:
+                            ax.scatter(distance2, distance, s=70, c=boxval, marker='s',
+                                       cmap=cmo.curl_r, vmin=-100, vmax=100,
+                                       linewidths=0.2)
+                        else:
+                            ax.scatter(distance2, distance, s=50, c=boxval, marker='s',
+                                       cmap=cmo.curl_r, vmin=-100, vmax=100,
+                                       linewidths=0.2)
+                        # print('zero:', boxval)
+
+        if regions:
+            # Overlay lines boxes for region of coastline
+            # horizontal: Mexico-Texas border
+            ax.plot([0, dmax], [340, 340], '-', color='k', lw=2, alpha=0.1)
+            # horizontal: Texas-Louisiana border
+            ax.plot([0, dmax], [940, 940], '-', color='k', lw=2, alpha=0.1)
+            # vertical: Mexico-Texas border
+            ax.plot([340, 340], [0, dmax], '-', color='k', lw=2, alpha=0.1)
+            # vertical: Texas-Louisiana border
+            ax.plot([940, 940], [0, dmax], '-', color='k', lw=2, alpha=0.1)
     cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
     ticklabels = ['100', '80', '60', '40', '20', '0', '20', '40', '60', '80', '100']
-    if log:
-        cb = plt.colorbar(mappable, cax=cax, orientation='horizontal', extend='min')
-        cb.set_label('Connectivity [%]')
-        fig.savefig('figures/alongcoastconn/seasonal-log.png', bbox_inches='tight')
-    else:
-        cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')#, pad=0.18)
-        cb.set_label('Connectivity [%]')
-        cb.set_ticks(np.arange(-100, 120, 20))
-        cb.set_ticklabels(ticklabels)
-        fig.savefig('figures/alongcoastconn/seasonal.png', bbox_inches='tight', dpi=300)
+    # if log:
+    #     cb = plt.colorbar(mappable, cax=cax, orientation='horizontal', extend='min')
+    #     cb.set_label('Connectivity [%]')
+    #     fig.savefig('figures/alongcoastconn/seasonal-log.png', bbox_inches='tight')
+    # else:
+    #     cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')#, pad=0.18)
+    #     cb.set_label('Connectivity [%]')
+    #     cb.set_ticks(np.arange(-100, 120, 20))
+    #     cb.set_ticklabels(ticklabels)
+    #     fname = 'figures/alongcoastconn/seasonal'
+    #     if regions:
+    #         fname += '-regions'
+    #     if baylabels:
+    #         fname += '-baylabels'
+    #     if bayvalues:
+    #         fname += '-bayvalues'
+    #     if largefonts:
+    #         fname += '-largefonts'
+    #     fig.savefig(fname + '.png', bbox_inches='tight', dpi=300)
     ####
 
 
