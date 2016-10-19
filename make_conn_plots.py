@@ -35,8 +35,8 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 
-# loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
-loc = '../grid.nc'
+loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+# loc = '../grid.nc'
 proj = tracpy.tools.make_proj('nwgom')
 grid = tracpy.inout.readgrid(loc, proj)
 
@@ -125,6 +125,158 @@ def plot_domain():
         #     ax.text(path.vertices[0,0] + dx, path.vertices[0,1] + dy, str(i), fontsize=15, color='r')
 
     # fig.savefig('figures/alongcoastconn/domain.png', bbox_inches='tight')
+
+def plot_interannual():
+    '''
+    Use calculated files from run() to plot connectivity matrix.
+    '''
+
+    cmap = cmo.curl_r
+    season = 'winter'  # 'winter' or 'summer'
+    log = False
+    regions = True  # do plot with region lines (MX, TX, LA)
+    baylabels = False  # mark locations with ticks
+    bayvalues = False  # annotate bay values
+    largefonts = False  # use large fonts for presentation plot
+
+    xticklocs = np.arange(0, 2000, 500)
+    years = np.arange(2004, 2015)
+
+    if season == 'winter':
+        iseason = 0
+    elif season == 'summer':
+        iseason = 1
+
+    ## Read in files ##
+    filename = 'calcs/alongcoastconn/conn-interannual.npz'
+    if not os.path.exists(filename):
+        mat = np.zeros((years.size, 2,342,342))
+        for j, year in enumerate(years):
+            Files = []
+            Files.append(glob.glob('calcs/alongcoastconn/conn-' + str(year) + '-0[1,2].npz'))
+            Files.append(glob.glob('calcs/alongcoastconn/conn-' + str(year) + '-0[7,8].npz'))
+            for i,files in enumerate(Files): # winter and summer
+                for File in files: # months/years within winter or summer
+                    print(File)
+                    d = np.load(File)
+                    mat[j, i,:,:] += d['mat']
+                    if np.isnan(mat[j, i,:,:]).sum()>1:
+                        pdb.set_trace()
+                mat[j, i,:,:] /= len(files)
+        np.savez(filename, mat=mat)
+    else:
+        mat = np.load(filename)['mat']
+    ####
+
+    # make one side of triangle positive and other negative
+    ix, iy = np.tril_indices(mat.shape[2], k=1)
+    # mat[0,:,:] = -np.triu(mat[0,:,:].T, k=1)
+    # mat[1,:,:] = -np.triu(mat[1,:,:].T, k=1)
+    mat[:, :, ix, iy] = -mat[:, :, ix, iy]
+
+    fig, axarr = plt.subplots(4,3)
+    fig.set_size_inches(8.9, 13.5)
+    fig.subplots_adjust(left=0.04, bottom=0.1, right=1.0, top=0.99, wspace=0.08, hspace=0.1)
+
+    for i, ax in enumerate(axarr.flat):
+        ax.set_frame_on(False)
+        if i == 11:
+            ax.get_xaxis().set_visible(False)
+            ax.get_yaxis().set_visible(False)
+            continue
+        ax.set_title(str(years[i]))
+        if i == 9:
+            ax.set_ylabel('Along coast start location [km]')
+            ax.set_xlabel('Along coast end location [km]')
+        ax.xaxis.set_ticks_position('bottom')  # turns off top tick marks
+        ax.yaxis.set_ticks_position('left')
+        ax.axis('equal')
+        ax.set_xticks(xticklocs);
+        ax.set_yticks(xticklocs);
+        if i != 9:
+            ax.yaxis.set_ticklabels([])
+            ax.xaxis.set_ticklabels([])
+        if log:
+            mappable = ax.pcolormesh(mat[i,iseason,:,:]*100., cmap=cmap, vmin=1., vmax=100., norm=colors.LogNorm())
+        else:
+            mappable = ax.pcolormesh(X, Y, mat[i,iseason,:,:]*100., cmap=cmap, vmax=100., vmin=-100)
+        # import pdb; pdb.set_trace()
+        # Plot a few ticks for notable locations
+        left = -25; right = 35
+        for distance, box in zip(distances, boxes):
+            # max value for normalization is the boxes to themselves
+            bmax = abs(mat[i,iseason,box,box].sum())
+            if baylabels:
+                ax.autoscale(enable=False)
+                # horizontal
+                ax.plot([left, right], [distance, distance], '-', color='0.3', lw=0.5, alpha=0.7)
+                # vertical
+                ax.plot([distance, distance], [left, right], '-', color='0.3', lw=0.5, alpha=0.7)
+            if bayvalues:
+                # plot Connectivity for all other bays
+                for distance2, box2 in zip(distances, boxes):
+                    if distance2 == distance:
+                        continue
+                    boxval = (mat[i,iseason,box,box2].sum()/bmax)*100
+                    if not boxval == 0:
+                        # pass
+                        # ax.scatter(distance2, distance, s=50, c=boxval, marker='s',
+                        #            cmap=cmo.curl_r, vmin=-100, vmax=100,
+                        #            linewidths=0.1)
+                        # print('not zero:', boxval)
+                        if largefonts:
+                            ax.text(distance2+1, distance-16, '%d' % abs(boxval), fontsize=17,
+                                    horizontalalignment='center', alpha=0.8, color='0.2')
+                        else:
+                            ax.text(distance2+1, distance-16, '%d' % abs(boxval), fontsize=9,
+                                    horizontalalignment='center', alpha=0.8, color='0.2')
+                    else:
+                        # Otherwise the axes get moved by scatter
+                        # http://stackoverflow.com/questions/19916295/pyplot-scatter-changes-the-data-limits-of-the-axis
+                        ax.autoscale(enable=False)
+                        if largefonts:
+                            ax.scatter(distance2, distance, s=70, c=boxval, marker='s',
+                                       cmap=cmo.curl_r, vmin=-100, vmax=100,
+                                       linewidths=0.2)
+                        else:
+                            ax.scatter(distance2, distance, s=50, c=boxval, marker='s',
+                                       cmap=cmo.curl_r, vmin=-100, vmax=100,
+                                       linewidths=0.2)
+                        # print('zero:', boxval)
+
+        if regions:
+            # Overlay lines boxes for region of coastline
+            # horizontal: Mexico-Texas border
+            ax.plot([0, dmax], [340, 340], '-', color='k', lw=2, alpha=0.1)
+            # horizontal: Texas-Louisiana border
+            ax.plot([0, dmax], [940, 940], '-', color='k', lw=2, alpha=0.1)
+            # vertical: Mexico-Texas border
+            ax.plot([340, 340], [0, dmax], '-', color='k', lw=2, alpha=0.1)
+            # vertical: Texas-Louisiana border
+            ax.plot([940, 940], [0, dmax], '-', color='k', lw=2, alpha=0.1)
+    # cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
+    cax = fig.add_axes([0.25, 0.03, 0.5, 0.02]) #colorbar axes
+    ticklabels = ['100', '80', '60', '40', '20', '0', '20', '40', '60', '80', '100']
+    if log:
+        cb = plt.colorbar(mappable, cax=cax, orientation='horizontal', extend='min')
+        cb.set_label('Connectivity [%]')
+        fig.savefig('figures/alongcoastconn/interannual-log.png', bbox_inches='tight')
+    else:
+        cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')#, pad=0.18)
+        cb.set_label('Connectivity [%]')
+        cb.set_ticks(np.arange(-100, 120, 20))
+        cb.set_ticklabels(ticklabels)
+        fname = 'figures/alongcoastconn/interannual-' + season
+        if regions:
+            fname += '-regions'
+        if baylabels:
+            fname += '-baylabels'
+        if bayvalues:
+            fname += '-bayvalues'
+        if largefonts:
+            fname += '-largefonts'
+        fig.savefig(fname + '.png', bbox_inches='tight', dpi=300)
+    ####
 
 
 def plot_seasonal():
