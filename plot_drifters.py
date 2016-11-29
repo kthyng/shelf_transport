@@ -15,9 +15,8 @@ import tracpy.calcs
 import glob
 import bisect
 from datetime import datetime, timedelta
-import op
 import matplotlib.patches as patches
-import cmocean as cm
+import cmocean
 
 mpl.rcParams.update({'font.size': 14})
 mpl.rcParams['font.sans-serif'] = 'Arev Sans, Bitstream Vera Sans, Lucida Grande, Verdana, Geneva, Lucid, Helvetica, Avant Garde, sans-serif'
@@ -31,31 +30,34 @@ mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 # read in grid
-# loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+grid_filename = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
 # loc = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
 # loc = '/home/kthyng/shelf/grid.nc'
-loc = '/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_*.nc'
-grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+# loc = '/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_*.nc'
+# grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
 # grid = tracpy.inout.readgrid(grid_filename, usebasemap=True, llcrnrlat=22.85, llcrnrlon=-97.9, urcrnrlat=30.5)
-proj = tracpy.tools.make_proj('nwgom', usebasemap=True, llcrnrlat=27, llcrnrlon=-96, urcrnrlon=-90)
-grid = tracpy.inout.readgrid(grid_filename, proj)
+proj = tracpy.tools.make_proj('nwgom', usebasemap=True, llcrnrlat=22.85, llcrnrlon=-97.9, urcrnrlat=30.5)
+# proj = tracpy.tools.make_proj('nwgom', usebasemap=True, llcrnrlat=27, llcrnrlon=-96, urcrnrlon=-90)
+grid = tracpy.inout.readgrid(loc, proj)
+# grid = tracpy.inout.readgrid(grid_filename, proj)
 
 # whether to do tails on drifters or not (don't with low decimation)
 dotails = False  # True or False
 dostreaklines = False  # for when not doing old tails
-dowind = False  # whether to plot wind or not
-docurrents = False  # whether or not to plot the surface currents
-doriver = False  # whether or not to plot river
-dopong = False  # whether to label with pong.tamu.edu
-docontour = False  # whether or not to overlay an isobath
+dowind = True  # whether to plot wind or not
+docurrents = True  # whether or not to plot the surface currents
+doriver = True  # whether or not to plot river
+dopong = True  # whether to label with pong.tamu.edu
+docontour = True  # whether or not to overlay an isobath
 
 # Read in drifter tracks
 dd = 1 # 500 # drifter decimation
-startdate = '2008-07-14T00'  # 11-14 end in 4
+startdate = '2008-08-05T00'  # 11-14 end in 4
 # startdate = '2005-02-14T00'  # 11-14 end in 4
 
-# m = netCDF.Dataset(loc)
-m = netCDF.MFDataset(loc)
+m = netCDF.Dataset(loc)
+# m = netCDF.MFDataset(loc)
 year = int(startdate.split('-')[0])
 month = int(startdate.split('-')[1])
 day = int(startdate.split('-')[2].split('T')[0])
@@ -123,14 +125,14 @@ if doriver:
     tr1 = r1.variables['river_time']
     tunitsr1 = tr1.units
     # interpolate times for this data file since at the 12 hours mark instead of beginning of the day
-    tr1 = op.resize(tr1, 0)
+    tr1 = tracpy.op.resize(tr1, 0)
     datesr1 = netCDF.num2date(tr1[:], tunitsr1)
     tr2 = r2.variables['river_time']
     datesr2 = netCDF.num2date(tr2[:], tr2.units)
     # all of river input
     Q1 = np.abs(r1.variables['river_transport'][:]).sum(axis=1)*2.0/3.0
     # interpolate this like for time
-    Q1 = op.resize(Q1, 0)
+    Q1 = tracpy.op.resize(Q1, 0)
     Q2 = np.abs(r2.variables['river_transport'][:]).sum(axis=1)*2.0/3.0
     # Combine river info into one dataset
     iend1 = find(datesr1<datetime(2012,1,1,0,0,0))[-1] # ending index for file 1
@@ -180,7 +182,7 @@ if docontour:
     datestxla = netCDF.num2date(nc.variables['ocean_time'][:], nc.variables['ocean_time'].units)
 
 if not dotails:
-    
+
     # Find indices of drifters by starting depth
     depthp = tracpy.calcs.Var(xg[:,0], yg[:,0], tp, 'h', netCDF.Dataset(grid_filename)) # starting depths of drifters
     # near-shore
@@ -193,11 +195,11 @@ if not dotails:
     ind3500 = depthp>500
 
     # colors for drifters
-    rgb = cm.cm.temp_r(np.linspace(0, 1, 6))[:-1, :]
+    rgb = cmocean.cm.thermal_r(np.linspace(0, 1, 6))[:-1, :]
     # rgb = plt.cm.get_cmap('winter_r')(np.linspace(0,1,6))[:-1,:3] # skip last entry where it levels off in lightness
 
     # to plot colorbar
-    cmapnew = cm.tools.cmap(rgb)  # cuts off dark end piece since interferes with isobath and isohaline
+    cmapnew = cmocean.tools.cmap(rgb)  # cuts off dark end piece since interferes with isobath and isohaline
     gradient = np.linspace(0, 1, 6)[:-1]
     gradient = np.vstack((gradient, gradient))
 
@@ -219,7 +221,7 @@ else:
 nt = tp.size # total number of time indices
 # for i in np.arange(0,nt+1,5):
 
-dirname = 'figures/drifters/dd' + str(dd) + '/' + startdate + 'smalldomain'
+dirname = 'figures/drifters/dd' + str(dd) + '/' + startdate #+ 'smalldomain'
 if not os.path.exists(dirname):
     os.makedirs(dirname)
 
@@ -263,7 +265,7 @@ for i in np.arange(i5days,nt+1,5):
     # Date
     date = dates[i].strftime('%Y %b %02d %H:%M')
     # date = datesModel[itmodel].strftime('%Y %b %02d %H:%M')
-    ax.text(0.35, 0.425, date, fontsize=18, color='0.2', transform=ax.transAxes, 
+    ax.text(0.35, 0.425, date, fontsize=18, color='0.2', transform=ax.transAxes,
                 bbox=dict(facecolor='white', edgecolor='white', boxstyle='round'))
 
     if dopong:
@@ -317,7 +319,8 @@ for i in np.arange(i5days,nt+1,5):
 
         if docontour:
             # Overlay surface salinity
-            ax.contour(grid.x_rho.T, grid.y_rho.T, salt, [33], colors='0.1', zorder=12, linewidths=2, alpha=0.7)
+            ax.contour(grid.x_rho, grid.y_rho, salt, [33], colors='0.1', zorder=12, linewidths=2, alpha=0.7)
+            # ax.contour(grid.x_rho.T, grid.y_rho.T, salt, [33], colors='0.1', zorder=12, linewidths=2, alpha=0.7)
 
     # # Time
     # ax.text(0.075, 0.95, dates[i].isoformat()[:-6], transform=ax.transAxes, fontsize=20)
@@ -338,8 +341,8 @@ for i in np.arange(i5days,nt+1,5):
         axr.plot([tRiver[itstartRiver], tRiver[itendRiver]], [20000, 20000], '-', color='0.6', lw=0.5, alpha=0.5)
         axr.plot([tRiver[itstartRiver], tRiver[itendRiver]], [30000, 30000], '-', color='0.6', lw=0.5, alpha=0.5)
         # this makes sure alignment stays consistent in different years
-        axr.autoscale(axis='x', tight=True) 
-        axr.set_ylim(-1000,45000) 
+        axr.autoscale(axis='x', tight=True)
+        axr.set_ylim(-1000,45000)
         # labels
         axr.text(tRiver[mticks[-3]]+16.5, 5, '0', fontsize=9, color='0.4', alpha=0.7)
         axr.text(tRiver[mticks[-3]]+16.5, 10000, '10', fontsize=9, color='0.4', alpha=0.7)
@@ -352,14 +355,14 @@ for i in np.arange(i5days,nt+1,5):
         # label month ticks
         for i in xrange(len(mticks)):
             axr.text(tRiver[mticks[i]], 2500, mticknames[i], fontsize=9, color='0.2')
-        axr.add_patch( patches.Rectangle( (0.3, 0.162), 0.7, 0.2, transform=ax.transAxes, color='white', zorder=1))    
+        axr.add_patch( patches.Rectangle( (0.3, 0.162), 0.7, 0.2, transform=ax.transAxes, color='white', zorder=1))
 
     if docurrents:
         # Surface currents over domain, use psi grid for common locations
-        u = op.resize(np.squeeze(m.variables['u'][itmodel,-1,:,:]), 0)
-        v = op.resize(np.squeeze(m.variables['v'][itmodel,-1,:,:]), 1)
-        u, v = rot2d(u, v, op.resize(op.resize(anglev, 0), 1))
-        Q = ax.quiver(x_psi[cdy::cdy,cdx::cdx], y_psi[cdy::cdy,cdx::cdx], u[cdy::cdy,cdx::cdx], v[cdy::cdy,cdx::cdx], 
+        u = tracpy.op.resize(np.squeeze(m.variables['u'][itmodel,-1,:,:]), 0)
+        v = tracpy.op.resize(np.squeeze(m.variables['v'][itmodel,-1,:,:]), 1)
+        u, v = rot2d(u, v, tracpy.op.resize(tracpy.op.resize(anglev, 0), 1))
+        Q = ax.quiver(grid.x_psi[cdy::cdy,cdx::cdx], grid.y_psi[cdy::cdy,cdx::cdx], u[cdy::cdy,cdx::cdx], v[cdy::cdy,cdx::cdx],
                 color='k', alpha=0.8, pivot='middle', scale=40, width=0.001, zorder=1)
         qk = ax.quiverkey(Q, 0.1, 0.795, 0.5, r'0.5 m$\cdot$s$^{-1}$ current', labelcolor='0.2', fontproperties={'size': '10'})
 
@@ -368,13 +371,14 @@ for i in np.arange(i5days,nt+1,5):
         Uwind = w.variables['Uwind'][itwind,:,:]
         Vwind = w.variables['Vwind'][itwind,:,:]
         Uwind, Vwind = rot2d(Uwind, Vwind, anglev)
-        Q = ax.quiver(xr[wdy/2::wdy,wdx::wdx], yr[wdy/2::wdy,wdx::wdx], Uwind[wdy/2::wdy,wdx::wdx], Vwind[wdy/2::wdy,wdx::wdx], 
+        Q = ax.quiver(grid.x_rho[wdy/2::wdy,wdx::wdx], grid.y_rho[wdy/2::wdy,wdx::wdx], Uwind[wdy/2::wdy,wdx::wdx], Vwind[wdy/2::wdy,wdx::wdx],
                 color='k', alpha=0.5, scale=300, pivot='middle', headlength=3, headaxislength=2.8, zorder=1)
         qk = ax.quiverkey(Q, 0.1, 0.845, 10, r'10 m$\cdot$s$^{-1}$ wind', labelcolor='0.2', fontproperties={'size': '10'})
 
     if docontour:
         # Overlay 100 meter isobath
-        ax.contour(xr, yr, grid.h.T, [100], colors='k', alpha=0.5, linewidths=1)
+        ax.contour(grid.x_rho, grid.y_rho, grid.h, [100], colors='k', alpha=0.5, linewidths=1)
+        # ax.contour(xr, yr, grid.h.T, [100], colors='k', alpha=0.5, linewidths=1)
 
     # Drifter legend
     if dotails:
