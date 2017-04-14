@@ -33,10 +33,12 @@ mpl.rcParams['mathtext.it'] = 'sans:italic'
 mpl.rcParams['mathtext.bf'] = 'sans:bold'
 mpl.rcParams['mathtext.sf'] = 'sans'
 mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
+colu = '#218983'  # upcoast color
+cold = '#cb6863'  # downcoast color
 
 
-loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
-# loc = '../grid.nc'
+# loc = 'http://barataria.tamu.edu:8080/thredds/dodsC/NcML/txla_nesting6.nc'
+loc = '../grid.nc'
 proj = tracpy.tools.make_proj('nwgom')
 grid = tracpy.inout.readgrid(loc, proj)
 
@@ -125,6 +127,94 @@ def plot_domain():
         #     ax.text(path.vertices[0,0] + dx, path.vertices[0,1] + dy, str(i), fontsize=15, color='r')
 
     # fig.savefig('figures/alongcoastconn/domain.png', bbox_inches='tight')
+
+
+def plot_bays_seasonal():
+    '''Plot starting and ending for bays'''
+
+    cmap = cmo.curl_r
+
+    filename = 'calcs/alongcoastconn/conn-seasonal.npz'
+    mat = np.load(filename)['mat']  # 2x342x342
+    mat = mat.transpose([0,2,1])  # transpose needed since pcolormesh flips it?
+    bmax = abs(mat[0,boxes[10],boxes[10]].sum())
+    dbox = 14
+
+    fig = plt.figure(figsize=(8.5,11))
+    fig.subplots_adjust(wspace=0.05)
+    # winter
+    ax = fig.add_subplot(1,2,1)
+    ax.set_title('Winter')
+    i = 0
+    for box in np.arange(dbox, len(dist)-dbox, dbox):
+
+        # traveling to: downcoast
+        y = (mat[i,:box,box]/bmax)*40
+        y[y==0] = np.nan  # don't want to include 0 values
+        ax.fill_between(dist[:box], y+dist[box], dist[box], color=cold)
+        # traveling to: upcoast
+        y = (mat[i,box+1:,box]/bmax)*40
+        y[y==0] = np.nan  # don't want to include 0 values
+        ax.fill_between(dist[box+1:], y+dist[box], dist[box], color=colu)
+
+        # use one box earlier
+        box -= 1
+        # traveling from: upcoast
+        y = -(mat[i,box,:box]/bmax)*40
+        y[y==0] = np.nan  # don't want to include 0 values
+        ax.fill_between(dist[:box], y+dist[box], dist[box], color=colu)
+        # traveling from: downcoast
+        y = -(mat[i,box,box+1:]/bmax)*40
+        y[y==0] = np.nan  # don't want to include 0 values
+        ax.fill_between(dist[box+1:], y+dist[box], dist[box], color=cold)
+        # # zero
+        # ax.plot(dist, np.zeros(dist.size)+dist[box], lw=0.5, color='0.1', alpha=0.5)
+    ax.axis('tight')
+    ax.set_xticks(np.arange(0, dist.max(), 500))
+    ax.set_xticks(np.arange(0, dist.max(), 100), minor=True)
+    ax.set_yticks(np.arange(0, dist.max(), 100), minor=True)
+    ax.set_yticklabels([''])
+    ax.grid(lw=0.1, color='0.2', linestyle='-', alpha=0.6, which='both')
+    ax.set_frame_on(False)
+    ax.set_xlabel('along-coast distance [km]')
+    # summer
+    ax = fig.add_subplot(1,2,2)
+    ax.set_title('Summer')
+    i = 1
+    for box in np.arange(dbox, len(dist)-dbox, dbox):
+
+        # traveling to: downcoast
+        y = (mat[i,:box,box]/bmax)*40
+        y[y==0] = np.nan  # don't want to include 0 values
+        ax.fill_between(dist[:box], y+dist[box], dist[box], color=cold)
+        # traveling to: upcoast
+        y = (mat[i,box+1:,box]/bmax)*40
+        y[y==0] = np.nan  # don't want to include 0 values
+        ax.fill_between(dist[box+1:], y+dist[box], dist[box], color=colu)
+
+        # use one box earlier
+        box -= 1
+        # traveling from: upcoast
+        y = -(mat[i,box,:box]/bmax)*40
+        y[y==0] = np.nan  # don't want to include 0 values
+        ax.fill_between(dist[:box], y+dist[box], dist[box], color=colu)
+        # traveling from: downcoast
+        y = -(mat[i,box,box+1:]/bmax)*40
+        y[y==0] = np.nan  # don't want to include 0 values
+        ax.fill_between(dist[box+1:], y+dist[box], dist[box], color=cold)
+        # # zero
+        # ax.plot(dist, np.zeros(dist.size)+dist[box], lw=0.5, color='0.1', alpha=0.5)
+    ax.axis('tight')
+    ax.set_xticks(np.arange(0, dist.max(), 500))
+    ax.set_xticks(np.arange(0, dist.max(), 100), minor=True)
+    ax.set_yticks(np.arange(0, dist.max(), 100), minor=True)
+    ax.set_yticklabels([''])
+    ax.grid(lw=0.1, color='0.2', linestyle='-', alpha=0.6, which='both')
+    ax.set_frame_on(False)
+    ax.set_xlabel('along-coast distance [km]')
+    fig.savefig('figures/alongcoastconn/bays.png', bbox_inches='tight')
+
+
 
 def plot_interannual():
     '''
