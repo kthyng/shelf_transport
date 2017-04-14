@@ -22,7 +22,8 @@ import calendar
 import matplotlib.patches as Patches
 import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes, mark_inset
-import geopandas as gpd
+# import geopandas as gpd
+import cmocean.cm as cmo
 
 
 mpl.rcParams.update({'font.size': 14})
@@ -41,7 +42,7 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 # vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
 # grid = tracpy.inout.readgrid(grid_filename, vert_filename=vert_filename, usebasemap=True)
 proj = tracpy.tools.make_proj('nwgom')
-grid = tracpy.inout.readgrid('../../grid.nc', proj)
+grid = tracpy.inout.readgrid('../grid.nc', proj)
 
 # load in initial drifter starting locations in grid space
 d = np.load('calcs/xyp0.npz')
@@ -56,7 +57,7 @@ Yrange = [grid.y_psi.min(), grid.y_psi.max()]
 # Save a histogram of the number of drifters that started in each bin
 Hstartfile = 'calcs/coastconn/likelihood/Hstart.npz'
 if not os.path.exists(Hstartfile):
-    Hstart, xe, ye = np.histogram2d(xp0, yp0, bins=bins, 
+    Hstart, xe, ye = np.histogram2d(xp0, yp0, bins=bins,
                 range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
     np.savez(Hstartfile, Hstart=Hstart, xe=xe, ye=ye)
 else:
@@ -77,24 +78,30 @@ pts = np.load('calcs/alongcoastconn/inds-in-coast-paths.npz')['pts']
 # Get and read in shipping lanes data
 # get data
 # info: https://www.data.boem.gov/homepg/pubinfo/repcat/arcinfo/zipped/gomr_fairways.htm
-url = 'http://www.data.boem.gov/homepg/pubinfo/repcat/arcinfo/zipped/fairway.zip'
-dirname = 'fairway'
-if not os.path.exists(dirname):
-    os.mkdir('fairway')
-if not os.path.exists('fairway.zip'):
-    os.system('wget ' + url)
-os.system('unzip -d fairway fairway.zip')
+# url = 'http://www.data.boem.gov/homepg/pubinfo/repcat/arcinfo/zipped/fairway.zip'
+# dirname = 'fairway'
+# if not os.path.exists(dirname):
+#     os.mkdir('fairway')
+# if not os.path.exists('fairway.zip'):
+#     os.system('wget ' + url)
+# os.system('unzip -d fairway fairway.zip')
 
 # read in shipping lanes data
 proj.readshapefile('fairway/fairway', 'fairway')
 
 
-# Read in coast sensitivity data
-# Texas, under Environmental Sensitivity Index Shoreline
-# http://www.glo.texas.gov/land/land-management/gis/
-# Louisiana, under 2003>Shapefiles/ArcView 3.x project
-# http://response.restoration.noaa.gov/maps-and-spatial-data/download-esi-maps-and-gis-data.html#Louisiana
-d = gpd.read_file('ESI.shp')
+# # Read in coast sensitivity data
+# # Texas, under Environmental Sensitivity Index Shoreline
+# # http://www.glo.texas.gov/land/land-management/gis/
+# # Louisiana, under 2003>Shapefiles/ArcView 3.x project
+# # http://response.restoration.noaa.gov/maps-and-spatial-data/download-esi-maps-and-gis-data.html#Louisiana
+# sens = gpd.read_file('/Users/kthyng/Documents/research/papers/coastal-impacts-MPB/revisions/figures/ESI/ESI.shp')
+# # bool for if extra sensitive to oil spill
+# # http://response.restoration.noaa.gov/maps-and-spatial-data/example-shoreline-ranking.html
+# sens10 = ['10' in sens.ESI_1[i] for i in range(len(sens))]
+# # # louisiana
+# # la = gpd.read_file('/Users/kthyng/Documents/research/papers/coastal-impacts-MPB/revisions/figures/Louisiana_2003_Shapefiles/AVPROJ/SHAPE/esip.shp')
+# # la10 = ['10' in la.ESI[i] for i in range(len(la))]
 
 def plot_interannual():
     '''
@@ -107,17 +114,17 @@ def plot_interannual():
     # zoomed = True
     whichboxes = 'porta' # 'all', 'porta', 'galveston'
     # which boxes along coast to use for vulnerability. 0:342 for all
-    # Port A: 
+    # Port A:
     if whichboxes=='all':
-        boxes = np.arange(0,342) 
+        boxes = np.arange(0,342)
         whichH = 'Hall' # Hall for histogram for entire coastline at once; H for by coast box
         zoomed = False
     elif whichboxes=='all2':
-        boxes = np.arange(0,342) 
+        boxes = np.arange(0,342)
         whichH = 'H' # use coast box histograms instead of combined
         zoomed = False
     elif whichboxes=='porta':
-        boxes = np.arange(103,123) 
+        boxes = np.arange(103,123)
         whichH = 'H'
         zoomed = True
         # limits for zoomed box
@@ -129,7 +136,7 @@ def plot_interannual():
         zoom = 2.5
         plume = True
     elif whichboxes=='galveston':
-        boxes = np.arange(160,180) 
+        boxes = np.arange(160,180)
         whichH = 'H'
         zoomed = True
         x1, x2, y1, y2 = 277100, 531900, 660000, 810000
@@ -166,7 +173,7 @@ def plot_interannual():
         for i,files in enumerate(Files): # winter and summer
             numfiles = 0
             for File in files: # months/years within winter or summer
-                print File
+                print(File)
                 d = np.load(File)
                 Htemp = d[whichH] # 6x100x100, overall histogram
                 numfiles += d['numfiles']
@@ -206,12 +213,12 @@ def plot_interannual():
     for i, ax in enumerate(axarr.flatten()):
        # Titles for subplots
         if i==10:#4:
-            tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
+            tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3),
                 pars=np.arange(20, 36, 2), outline=[0,0,0,0], parslabels=[0, 1, 0, 0])
         elif i==11:#7:
             ax.set_axis_off()
         else:
-            tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3), 
+            tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3),
                 pars=np.arange(20, 36, 2), outline=[0,0,0,0],
                 merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
         if i!=11:
@@ -246,7 +253,7 @@ def plot_interannual():
                 # range of the colormap
                 fracs = ndbox[i,j,:].astype(float)/ndbox[:,j,:].max() # max across years
                 norm = colors.Normalize(fracs.min(), fracs.max())
-    
+
                 # Save patches together
                 patches = []
                 for path in pathsxy:
@@ -257,7 +264,7 @@ def plot_interannual():
                     color = cm.Oranges(norm(thisfrac))
                     thispatch.set_facecolor(color)
                     ax.add_patch(thispatch)
-                    
+
                 if zoomed:# and j==H.shape[1]-1: # magnification for longest advection time available
 
                     # Save patches together
@@ -321,41 +328,41 @@ def plot_seasonal():
     Plot seasonal comparison of likelihood, either overall or just certain parts.
     '''
 
-    cmap = 'YlGn'
+    cmap = cmo.speed  # 'YlGn'
     log = False
     lanes = True  # to plot shipping lanes over plots
-    sensitivity = True  # overlay coastal sensitivity
+    sensitivity = False  # overlay coastal sensitivity
     # zoomed = True # True to add in a magnified region, for the 30 days advection timing
     whichboxes = 'all' # 'all', 'porta', 'galveston'
     # which boxes along coast to use for vulnerability. 0:342 for all
-    # Port A: 
+    # Port A:
     # if whichboxes=='all':
-    #     boxes = np.arange(0,342) 
+    #     boxes = np.arange(0,342)
     whichH = 'Hall' # Hall for histogram for entire coastline at once; H for by coast box
     #     zoomed = False
     # elif whichboxes=='all2':
-    #     boxes = np.arange(0,342) 
+    #     boxes = np.arange(0,342)
     #     whichH = 'H' # use coast box histograms instead of combined
     #     zoomed = False
     # elif whichboxes=='porta':
-    boxesPA = np.arange(103,123) 
+    boxesPA = np.arange(103,123)
     # whichH = 'H'
     zoomed = True
         # limits for zoomed box
         # if season == 'winter':
-    x1PA, x2PA, y1PA, y2PA = 86000, 340800, 465000, 705000
+    x1PA, x2PA, y1PA, y2PA = 86000, 340800, 465000, 700000  #705000
     # x1PA, x2PA, y1PA, y2PA = 86000, 340800, 465000, 715000
         #     x1, x2, y1, y2 = 86000, 277100, 527500, 715000
         # elif season == 'summer':
         #     x1, x2, y1, y2 = 86000, 277100, 465000, 652500
     zoomPA = 2.0
     # elif whichboxes=='galveston':
-    boxesG = np.arange(160,180) 
+    boxesG = np.arange(160,180)
     # whichH = 'H'
     # zoomed = True
-    x1G, x2G, y1G, y2G = 320000, 460000, 700000, 810000
+    x1G, x2G, y1G, y2G = 320000, 460000, 705000, 810000
     # x1G, x2G, y1G, y2G = 277100, 531900, 660000, 810000
-    zoomG = 2.0
+    zoomG = 1.9
 
     d = np.load('calcs/coastpaths.npz')
     pathsxy = d['pathsxy']
@@ -372,7 +379,7 @@ def plot_seasonal():
         for i,files in enumerate(Files): # winter and summer
             numfiles = 0
             for File in files: # months/years within winter or summer
-                print File
+                print(File)
                 d = np.load(File)
                 Htemp = d[whichH] # 6x100x100, overall histogram
                 numfiles += d['numfiles']
@@ -438,7 +445,7 @@ def plot_seasonal():
                 # range of the colormap
                 fracs = ndbox[i,j,:].astype(float)/ndbox[:,j,:].max() # max across seasons
                 norm = colors.Normalize(fracs.min(), fracs.max())
-    
+
                 # Save patches together
                 patches = []
                 for path in pathsxy:
@@ -446,7 +453,7 @@ def plot_seasonal():
 
                 # assign shades of colormap to the patches according to values, and plot
                 for thisfrac, thispatch in zip(fracs, patches):
-                    color = cm.Oranges(norm(thisfrac))
+                    color = cmo.matter(norm(thisfrac))
                     thispatch.set_facecolor(color)
                     ax.add_patch(thispatch)
 
@@ -462,9 +469,13 @@ def plot_seasonal():
                     axinsPA = zoomed_inset_axes(ax, zoomPA, loc=4) # zoom=6
                     tracpy.plotting.background(grid=grid, ax=axinsPA, outline=[0,0,0,0], merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
                     axinsPA.contourf(XE, YE, var, cmap=cmap, levels=levels)
+
+                    if sensitivity:
+                        sens[sens10].to_crs(proj.srs).plot(ax=axinsPA, color='b', linewidth=3)
+
                     # assign shades of colormap to the patches according to values, and plot
                     for thisfrac, thispatch in zip(fracs, patches):
-                        color = cm.Oranges(norm(thisfrac))
+                        color = cmo.matter(norm(thisfrac))
                         thispatch.set_facecolor(color)
                         axinsPA.add_patch(thispatch)
 
@@ -479,6 +490,12 @@ def plot_seasonal():
                     # connecting lines between the bbox and the inset axes area
                     mark_inset(ax, axinsPA, loc1=1, loc2=3, fc="none", ec="0.5")
                     # pdb.set_trace()
+
+                    if lanes:
+                        # plot shipping lanes
+                        for entry in proj.fairway:
+                            entry = np.asarray(entry)
+                            axinsPA.plot(entry[:, 0], entry[:, 1], 'deepskyblue', lw=0.7, alpha=0.6)
                     ####
 
                     ## Galveston Bay ##
@@ -489,9 +506,13 @@ def plot_seasonal():
                     axinsG = zoomed_inset_axes(ax, zoomG, loc=2) # zoom=6
                     tracpy.plotting.background(grid=grid, ax=axinsG, outline=[0,0,0,0], merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
                     axinsG.contourf(XE, YE, var, cmap=cmap, levels=levels)
+
+                    if sensitivity:
+                        sens[sens10].to_crs(proj.srs).plot(ax=axinsG, color='b', linewidth=3)
+
                     # assign shades of colormap to the patches according to values, and plot
                     for thisfrac, thispatch in zip(fracs, patches):
-                        color = cm.Oranges(norm(thisfrac))
+                        color = cmo.matter(norm(thisfrac))
                         thispatch.set_facecolor(color)
                         axinsG.add_patch(thispatch)
 
@@ -505,6 +526,12 @@ def plot_seasonal():
                     # draw a bbox of the region of the inset axes in the parent axes and
                     # connecting lines between the bbox and the inset axes area
                     mark_inset(ax, axinsG, loc1=1, loc2=3, fc="none", ec="0.5")
+
+                    if lanes:
+                        # plot shipping lanes
+                        for entry in proj.fairway:
+                            entry = np.asarray(entry)
+                            axinsG.plot(entry[:, 0], entry[:, 1], 'deepskyblue', lw=0.7, alpha=0.6)
                     ####
 
 
@@ -516,10 +543,10 @@ def plot_seasonal():
                     # plot shipping lanes
                     for entry in proj.fairway:
                         entry = np.asarray(entry)
-                        ax.plot(entry[:, 0], entry[:, 1], 'purple', lw=0.7, alpha=0.6)
+                        ax.plot(entry[:, 0], entry[:, 1], 'deepskyblue', lw=0.7, alpha=0.6)
 
                 if sensitivity:
-                    d.to_crs({'proj': 'latlong'}).plot(ax=ax)
+                    sens[sens10].to_crs(proj.srs).plot(ax=ax, color='b', lw=2)
 
             ax.set_frame_on(False)
         cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
@@ -543,13 +570,14 @@ def plot_seasonal():
                     fig.savefig('figures/coastconn/likelihood/seasonal-' + str(days[j]) + 'days' + whichboxes + 'zoomed-2boxes-lanes.png', bbox_inches='tight')
             else:
                 fig.savefig('figures/coastconn/likelihood/seasonal-' + str(days[j]) + 'days' + whichboxes + '.png', bbox_inches='tight')
+
         plt.close()
         ###
-    
+
 
 def likelihood():
     '''
-    Aggregate likelihood of connection from locations with coast 
+    Aggregate likelihood of connection from locations with coast
     in different time periods.
     '''
 
@@ -572,9 +600,9 @@ def likelihood():
                 ndbox = np.zeros((days.size, len(pts)))
                 # Histograms of where drifters originate for advection times by coast box
                 H = np.zeros((days.size, len(pts), bins[0], bins[1]))
-                
+
                 for File in Files:
-                    print File
+                    print(File)
                     d = np.load(File)
                     # [# of box paths x # drifters that enter a box x 5 (max # of crosses checked for)]
                     inbox = d['inbox'] # time in decimal days when a drifter enters a box path
@@ -584,7 +612,7 @@ def likelihood():
                     d.close()
 
                     # code to switch between sets of indices
-                    # this has Trues for the drifters for this simulation that enter 
+                    # this has Trues for the drifters for this simulation that enter
                     # the outer path
                     code = np.zeros(nd); code[inds] = 1; code = find(code.astype(bool))
                     # xp0[code] gives the x positions in projected space of drifters that were
@@ -610,7 +638,7 @@ def likelihood():
                         # # Original xp, yp locations of drifters that enter a coast box within day days
                         # xpsaveall = xp0temp[ind]; ypsaveall = yp0temp[ind]
                         xpsaveall = xp0[code][tocoast]; ypsaveall = yp0[code][tocoast];
-                        Halltemp, _, _ = np.histogram2d(xpsaveall, ypsaveall, bins=bins, 
+                        Halltemp, _, _ = np.histogram2d(xpsaveall, ypsaveall, bins=bins,
                                             range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
                         Hall[i,:,:] += Halltemp
                         # pdb.set_trace()
@@ -619,7 +647,7 @@ def likelihood():
                         for j in xrange(len(pts)):
 
                             # indices of drifters that start in this box, referenced to shelf transport seeding
-                            pt = pts[j] 
+                            pt = pts[j]
 
                             # projected drifter origin locations that end up in this coast box in day days
                             xpsave = xp0[code][ind[j,:]]; ypsave = yp0[code][ind[j,:]]
@@ -633,11 +661,11 @@ def likelihood():
                             ypsave = np.concatenate((ypsave, list(ypcoast)))
 
                             # Find histogram of xpsave, ypsave points for this simulation/box origin points
-                            Htemp, _, _ = np.histogram2d(xpsave, ypsave, bins=bins, 
+                            Htemp, _, _ = np.histogram2d(xpsave, ypsave, bins=bins,
                                             range=[[Xrange[0], Xrange[1]], [Yrange[0], Yrange[1]]])
-                            # aggregate number of drifters starting in different histogram bins 
+                            # aggregate number of drifters starting in different histogram bins
                             # that reach coastline for each month/year combination
-                            H[i,j,:,:] += Htemp 
+                            H[i,j,:,:] += Htemp
 
 
 
@@ -646,13 +674,13 @@ def likelihood():
                 # aggregated together, compared with the appropriate number of starting drifters overall
                 np.savez(fname, H=H, xe=xe, ye=ye, days=days, numfiles=len(Files), ndbox=ndbox, Hall=Hall)
                 # pdb.set_trace()
-   
+
 
 def calc_metrics():
     '''
     Calculate metrics related to oil coastal connectivity to compare with TXLA statistics
     for correlations.
-    '''         
+    '''
 
     ## WINTER ##
 
@@ -706,7 +734,7 @@ def calc_metrics():
         v.append(ndbox[i,-1,:].argmax()) # location of max
 
     np.savez('calcs/coastconn/likelihood/hist-summermetrics.npz', like=like, V=V, v=v, Vporta=Vporta, Vgalveston=Vgalveston)
-        
+
 
 # if __name__ == "__main__":
-#     likelihood()      
+#     likelihood()
