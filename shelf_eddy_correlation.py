@@ -43,15 +43,17 @@ maketable = False
 runcorr = True  # run correlation coefficients
 doplot = False
 explore = False  # True to do exploratory plots, False to do polished plot
-whichseason = 'summer'  # 'winter' or 'summer'
+whichseason = 'dispersion'  # 'winter' or 'summer' or 'dispersion'
 makesmalltable = False  # create a subset table for analysis in R
-if whichseason == 'winter':
+if whichseason == 'dispersion':
     col = 0
-elif whichseason == 'summer':
+elif whichseason == 'winter':
     col = 1
+elif whichseason == 'summer':
+    col = 2
 table = 'table-sustr-100m-region34'
 without2008 = False
-makeplot = True  # for shelf_transport paper
+makeplot = False  # for shelf_transport paper
 
 # If doing small table creation, need a list of things to include
 if makesmalltable:
@@ -63,7 +65,7 @@ if makesmalltable:
         name = table + '-summer'
 
 
-headers = ('Transport_winter_R3', 'Transport_summer_R4',
+headers = ('Dispersion_summer_R4', 'Transport_winter_R3', 'Transport_summer_R4',
             'Instantaneous-discharge-Qi-Jan', 'Qi-Feb', 'Qi-Mar', 'Qi-Apr', 'Qi-May', 'Qi-Jun', 'Qi-Jul',
             'Qi-Aug', 'Qi-Sep', 'Qi-Oct', 'Qi-Nov', 'Qi-Dec', 
             'Cumulative-discharge-Qcum-Jan', 'Qcum-Feb', 'Qcum-Mar', 'Qcum-Apr', 'Qcum-May', 'Qcum-Jun', 'Qcum-Jul',
@@ -361,6 +363,11 @@ if maketable:
     Ts = np.load('calcs/shelfconn/interannual-summer4transportsum.npz')['transport']
     Tw = np.hstack((0, Tw))  # add a spot for 2003, which is run up time
     Ts = np.hstack((0, Ts))  # add a spot for 2003, which is run up time
+
+    # integrate dispersion in box
+    # ADD TO TABLE FILE
+    D2s = np.load('calcs/dispersion/interannual-summer4dispersionsum.npz')['transport']
+    D2s = np.hstack((0, D2s))  # add a spot for 2003, which is run up time
 
     table = np.empty((years.size,17*months.size+2)) # 17 metrics being calculated and also 2 transports
 
