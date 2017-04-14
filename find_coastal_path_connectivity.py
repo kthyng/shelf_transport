@@ -32,7 +32,7 @@ def load_tracks(File):
     # Calculate times since they are messed up if a drifter exits the domain
     tseas = d.variables['tseas'][:]
     N = d.variables['N'][:]
-    iday = int((3600.*24)/(tseas/N)) 
+    iday = int((3600.*24)/(tseas/N))
     days = np.linspace(0, 30, xg.shape[1]) #tseas/N/(3600.*24)) # forward or backward, but doesn't matter here I guess
     # pdb.set_trace()
     d.close()
@@ -44,8 +44,9 @@ def load_tracks(File):
 def run():
 
     # Find files to run through
-    Files = glob.glob('tracks/2014-0[1,2]-*gc.nc')
-    Files.extend(glob.glob('tracks/2014-0[7,8]-*gc.nc'))
+    # Files = glob.glob('tracks/2014-0[1,2]-*gc.nc')
+    # Files.extend(glob.glob('tracks/2014-0[7,8]-*gc.nc'))
+    Files = glob.glob('tracks/2013-09-*gc.nc')
 
     # grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
     # vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
@@ -64,6 +65,10 @@ def run():
         if os.path.exists(savefile): # don't repeat calc if last file was created
             continue
 
+        # import pdb; pdb.set_trace()
+        # print(File)
+        # import time
+        # stime = time.time()
         xg, yg, iday, days = load_tracks(File)
 
         # Change to projected drifter locations now
@@ -72,15 +77,17 @@ def run():
 
         # Remove points that never enter the outer box paths
         inouter = pathouter.contains_points(np.vstack((xg.flat, yg.flat)).T).reshape(xg.shape)
+        # print('made it past contains_points')
+        # print(time.time()-stime)
         iinside = find(inouter.sum(axis=1).astype(bool)) # indices of drifters that go inside
         # print '0 time for outer path comparison: ', time.time() - tic_start
         # save a pointer of these drifters within the large arrays of drifters
         xgin = xg[iinside,:]; ygin = yg[iinside,:]
 
         # Initial array of information
-        ncrosses = 5 
-        inbox = np.ones((len(paths), iinside.size, ncrosses))*np.nan # to store analysis. 
-        outbox = np.ones((len(paths), iinside.size, ncrosses))*np.nan # to store analysis. 
+        ncrosses = 5
+        inbox = np.ones((len(paths), iinside.size, ncrosses))*np.nan # to store analysis.
+        outbox = np.ones((len(paths), iinside.size, ncrosses))*np.nan # to store analysis.
 
         for i,path in enumerate(paths):
 
@@ -107,4 +114,4 @@ def run():
 
 
 if __name__ == "__main__":
-    run()    
+    run()
