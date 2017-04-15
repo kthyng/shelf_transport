@@ -769,6 +769,102 @@ def run():
                 mat /= len(Files)
                 np.savez(matfile, mat=mat)
 
+def run_with_times():
+    '''
+    Combine previously calculated files into month/year files.
+
+    This analysis looks at multiple advection times instead of lumping together.
+    '''
+
+    # load in paths for coastline boxes
+    d = np.load('calcs/coastpaths.npz', encoding='latin1') # use paths in grid space
+    paths = d['pathsg']
+    d.close()
+
+    # nd = np.load('calcs/xyg0.npz')['xg0'].size # # of drifters
+
+    # start indices of drifters that start in each box path
+    filename = 'calcs/alongcoastconn/inds-in-coast-paths.npz'
+    # indices in pts are referenced to the drifters that start
+    # in the shelf transport simulations
+    if os.path.exists(filename):
+        pts = np.load(filename, encoding='latin1')['pts']
+    else:
+        # do this once and save
+        pts = []
+        for i,path in enumerate(paths):
+            # which points are inside the regions
+            pts.append(find(path.contains_points(np.vstack((xg0.flat, yg0.flat)).T).reshape(xg0.shape)))
+        np.savez(filename, pts=pts)
+
+    # Loop through along-coast boxes to find which other boxes they are connected to
+    # and allow for the 5 crossings kept track of
+    # time x boxes x boxes. Using a time for every 4 hours of the 30 total days
+    ntimes = int(30*(24/4.))
+    mat = np.zeros((ntimes, len(paths),len(paths)))
+    # inmat = np.zeros((len(paths),len(paths), 5))  # drifters going into boxes
+    # outmat = np.zeros((len(paths),len(paths), 5))  # drifters going out of boxes
+    years = np.arange(2013,2015)
+    months = np.arange(1, 13)
+    for year in years:
+        for month in months:
+            matfile = 'calcs/alongcoastconn/conn_in_time-' + str(year) + '-' + str(month).zfill(2) + '.npz'
+            if not os.path.exists(matfile):
+                Files = glob.glob('calcs/alongcoastconn/' + str(year) \
+                            + '-' + str(month).zfill(2) + '-*T0*.npz')
+
+                for File in Files:
+                    print(File)
+                    d = np.load(File)
+                    # [# of box paths x # drifters that enter a box x 5 (max # of crosses checked for)]
+                    inbox = d['inbox'] # time in decimal days when a drifter enters a box path
+                    # outbox = d['outbox'] # time in decimal days when a drifter exists a box path
+                    # inds are referenced to the drifters in the shelf transport runs
+                    inds = d['iinside'] # indices from the original drifters corresponding to in/outbox
+                    d.close()
+                    # time x boxes x boxes
+                    # have to add across time to get results from connected
+                    mattemp = np.eye(inbox.shape[0])[np.newaxis,:].repeat(ntimes, axis=0)
+                    # For each box, how many drifters go out from it in to another box?
+                    for i, path in enumerate(paths):
+
+                        pt = pts[i] # indices of drifters that start in this box
+
+                        # find indices of where indices in pt can be found in inds/inbox/outbox
+                        # pt is the same as inds[code]
+                        code = []
+                        for p in pt:
+                            code.extend(find(p==inds))
+
+                        # grab all times for when a drifter is entering these boxes.
+                        # ii: indices of coast boxes drifters are interacting with
+                        # j: indices of drifters
+                        ii, j = np.where(~np.isnan(inbox[:,code,0]))
+                        times = inbox[ii, [code[jj] for jj in j], 0]
+                        # import pdb; pdb.set_trace()
+
+                        # loop through coastal boxes that are used here to save drifter arrivals in time
+                        # they are repeated in ii, so take set to get unique indices
+                        for ibox in list(set(ii)):
+                            iibox = ibox==ii  # inds in ii for box identified by ibox (not unique)
+
+                            # Get signal: count drifter entering in time for the coast box ibox
+                            ndrifters, bins = np.histogram(times[iibox], bins=ntimes, range=(0,30))
+                            bins = bins[1:]  # skip first entry since these are edges of bins
+
+                            # fill in rows of array, one for each box
+                            mattemp[:,i,ibox] = ndrifters
+
+                        # Normalize by the number of drifters that started in box path
+                        mattemp[:,i,:] /= len(pt)
+
+                    # add together arrays from different dates
+                    mat +=mattemp
+                    # pdb.set_trace()
+                # divide by the number of different dates combined
+                mat /= len(Files)
+                np.savez(matfile, mat=mat, t=bins)
+
 
 if __name__ == "__main__":
-    run()
+    run_with_times()

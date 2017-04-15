@@ -7,15 +7,26 @@ from glob import glob
 import numpy as np
 import pandas as pd
 
+# from make_conn_plots
+# names = ['bpm', 'bpa', 'bpoc', 'bgalv', 'batch', 'bterr', 'bbara', 'all']
+# # distances = [400, 555, 645, 840, 1175, 1280, 1350]  # atch 1190, bterr1290
+# boxes = [np.arange(76,88), np.arange(107,119), np.arange(126,138), np.arange(165,177),
+#          np.arange(234,246), np.arange(257,269), np.arange(271, 283), np.arange(0,342)]
+boxes = {'bpm': np.arange(76,88), 'bpa': np.arange(107,119),
+         'bpoc': np.arange(126,138), 'bgalv': np.arange(165,177),
+         'batch': np.arange(234,246), 'bterr': np.arange(257,269),
+         'bbara': np.arange(271, 283), 'all': np.arange(0,342) }
 
-def calc_df():
-    '''Calculate dataframes of transport to Port Aransas in time.'''
+def calc_df(from='all', to='bpa'):
+    '''Calculate dataframes of transport from 'from' to 'to', in time.
 
-    # taken from plot_conn2coast_2boxes.py for Port Aransas region
-    boxes = np.arange(103,123)
+    Make a column for each simulation.'''
+
+    # # taken from plot_conn2coast_2boxes.py for Port Aransas region
+    # boxes = np.arange(103,123)
 
 
-    Files = glob('calcs/alongcoastconn/2013-0[5-8]*.npz')
+    Files = np.sort(glob('calcs/alongcoastconn/20??-??.npz'))
     Files = np.sort(Files)
 
     # create dataframe to stick calculations into
@@ -32,11 +43,10 @@ def calc_df():
         iinside = d['iinside']
         d.close()
 
-        # just the Port A boxes
         # only using first entrance to box of each drifter right now. Worried that
         # if I use subsequent entrances as well that the normalization between
         # runs will lose meaning.
-        inbox = inbox[boxes, :, 0]
+        inbox = inbox[boxes{to}, :, 0]
 
         # grab all times for when a drifter is entering these boxes.
         # don't care which boxes, from where they come; only when they enter
