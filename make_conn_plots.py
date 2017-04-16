@@ -533,7 +533,6 @@ def plot_monthly():
     '''
 
     cmap = cmo.curl_r
-    season = 'winter'  # 'winter' or 'summer'
     log = False
     regions = True  # do plot with region lines (MX, TX, LA)
     baylabels = False  # mark bay locations with ticks
@@ -569,30 +568,27 @@ def plot_monthly():
     mat[:, ix, iy] = -mat[:, ix, iy]
 
     fig, axarr = plt.subplots(4,3, sharex=True, sharey=True, figsize=(8.9, 13.5))
-    fig.subplots_adjust(left=0.04, bottom=0.1, right=1.0, top=0.97, wspace=0.06, hspace=0.1)
+    fig.subplots_adjust(left=0.1, bottom=0.12, right=0.98, top=0.97, wspace=0.06, hspace=0.1)
 
     for i, ax in enumerate(axarr.flat):
         ax.set_frame_on(False)
-        if i == 11:
-            ax.get_xaxis().set_visible(False)
-            ax.get_yaxis().set_visible(False)
-            continue
         ax.set_title(datetime(1970,months[i],1,0,0).strftime('%b'))
         if i == 9:
             ax.set_ylabel('Along coast start location [km]')
             ax.set_xlabel('Along coast end location [km]')
+            # import pdb; pdb.set_trace()
+        if log:
+            mappable = ax.pcolormesh(mat[i,:,:]*100., cmap=cmap, vmin=1., vmax=100., norm=colors.LogNorm())
+        else:
+            mappable = ax.pcolormesh(X, Y, mat[i,:,:]*100., cmap=cmap, vmax=100., vmin=-100)
         ax.xaxis.set_ticks_position('bottom')  # turns off top tick marks
         ax.yaxis.set_ticks_position('left')
         ax.axis('equal')
         ax.set_xticks(xticklocs);
         ax.set_yticks(xticklocs);
-        if i != 9:
-            ax.yaxis.set_ticklabels([])
-            ax.xaxis.set_ticklabels([])
-        if log:
-            mappable = ax.pcolormesh(mat[i,:,:]*100., cmap=cmap, vmin=1., vmax=100., norm=colors.LogNorm())
-        else:
-            mappable = ax.pcolormesh(X, Y, mat[i,:,:]*100., cmap=cmap, vmax=100., vmin=-100)
+        # if i != 9:
+        #     ax.yaxis.set_ticklabels([])
+        #     ax.xaxis.set_ticklabels([])
         # import pdb; pdb.set_trace()
         # Plot a few ticks for notable locations
         left = -25; right = 35
@@ -653,7 +649,7 @@ def plot_monthly():
             ax.plot([340, 340], [0, dmax], '-', color='k', lw=2, alpha=0.1)
             # vertical: Texas-Louisiana border
             ax.plot([940, 940], [0, dmax], '-', color='k', lw=2, alpha=0.1)
-    cax = fig.add_axes([0.25, 0.04, 0.5, 0.02]) #colorbar axes
+    cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
     # cax = fig.add_axes([0.25, 0.03, 0.5, 0.02]) #colorbar axes
     ticklabels = ['100', '80', '60', '40', '20', '0', '20', '40', '60', '80', '100']
     if log:
@@ -665,7 +661,7 @@ def plot_monthly():
         cb.set_label('Connectivity [%]')
         cb.set_ticks(np.arange(-100, 120, 20))
         cb.set_ticklabels(ticklabels)
-        fname = 'figures/alongcoastconn/monthly-' + season
+        fname = 'figures/alongcoastconn/monthly'
         if regions:
             fname += '-regions'
         if baylabels:
