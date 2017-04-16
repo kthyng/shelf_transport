@@ -64,15 +64,20 @@ X, Y = np.meshgrid(dist, dist)
 # dic = {}
 # Port Mansfield, Port Aransas, Port O'Connor, Galveston, Atchafalaya,
 # Terrebonne, Barataria
-names = ['bpm', 'bpa', 'bpoc', 'bgalv', 'batch', 'bterr', 'bbara']
+names = ['bpm', 'bpa', 'bpoc', 'bgalv', 'batch', 'bterr', 'bbara', 'all']
 distances = [400, 555, 645, 840, 1175, 1280, 1350]  # atch 1190, bterr1290
 boxes = [np.arange(76,88), np.arange(107,119), np.arange(126,138), np.arange(165,177),
-         np.arange(234,246), np.arange(257,269), np.arange(271, 283)]
+         np.arange(234,246), np.arange(257,269), np.arange(271, 283), np.arange(0,342)]
 # # for name, dist, box in zip(names, dists, boxes):
 # for name, distance in zip(names, distances):
 #     dic[name] = {}
 #     dic[name]['dist'] = distance
 #     # dic[name]['boxes'] = box
+
+boxdict = {'bpm': np.arange(76,88), 'bpa': np.arange(107,119),
+         'bpoc': np.arange(126,138), 'bgalv': np.arange(165,177),
+         'batch': np.arange(234,246), 'bterr': np.arange(257,269),
+         'bbara': np.arange(271, 283), 'all': np.arange(0,342) }
 
 
 def plot_domain():
@@ -675,6 +680,36 @@ def plot_monthly():
     ####
 
 
+def plot_bayconn(boxnameto, boxnamefrom):
+    '''Plot connectivity between specific bays throughout the year.'''
+
+    # indices of boxes to which drifters are traveling
+    iboxto = boxdict[boxnameto]
+    # indices of boxes from which drifters are traveling
+    iboxfrom = boxdict[boxnamefrom]
+
+
+
+    fig, axarr = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(7, 3))
+    # fig.subplots_adjust(left=0.04, bottom=0.1, right=1.0, top=0.97, wspace=0.06, hspace=0.1)
+
+    for i, ax in enumerate(axarr.flat):
+        ax.set_frame_on(False)
+
+
+def calc_bayconn():
+    '''Combine together files from run_with_times() to use in plot_bayconn.
+
+    Files are of the types calcs/alongcoastconn/conn_in_time-20??-??.npz
+    '''
+
+    Files = glob('calcs/alongcoastconn/conn_in_time-20??-??.npz')
+
+    for File in Files:  # loop through year/month files
+        d = np.load(File)
+        # mat: time x coast boxes x coast boxes, t: 4 hourly times
+        mat = d['mat']; t = d['t']
+        d.close()
 
 
 def run():
@@ -708,8 +743,9 @@ def run():
     mat = np.zeros((len(paths),len(paths)))  # original along-coast conn, for 30 days
     # inmat = np.zeros((len(paths),len(paths), 5))  # drifters going into boxes
     # outmat = np.zeros((len(paths),len(paths), 5))  # drifters going out of boxes
-    years = np.arange(2014,2015)
-    months = [1,2,7,8]
+    years = np.arange(2013,2014)
+    months = np.arange(1, 13)
+    # months = [1,2,7,8]
     for year in years:
         for month in months:
             matfile = 'calcs/alongcoastconn/conn-' + str(year) + '-' + str(month).zfill(2) + '.npz'
@@ -804,7 +840,7 @@ def run_with_times():
     mat = np.zeros((ntimes, len(paths),len(paths)))
     # inmat = np.zeros((len(paths),len(paths), 5))  # drifters going into boxes
     # outmat = np.zeros((len(paths),len(paths), 5))  # drifters going out of boxes
-    years = np.arange(2013,2015)
+    years = np.arange(2004,2015)
     months = np.arange(1, 13)
     for year in years:
         for month in months:

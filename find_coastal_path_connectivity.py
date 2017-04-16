@@ -46,7 +46,7 @@ def run():
     # Find files to run through
     # Files = glob.glob('tracks/2014-0[1,2]-*gc.nc')
     # Files.extend(glob.glob('tracks/2014-0[7,8]-*gc.nc'))
-    Files = glob.glob('tracks/2013-09-*gc.nc')
+    Files = glob.glob('tracks/2008-??-*gc.nc')
 
     # grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
     # vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
