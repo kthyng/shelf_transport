@@ -716,8 +716,9 @@ def calc_bayconn():
     for tokey in boxdict.keys():  # dataframes are by transport "to"
         dfs[tokey] = pd.DataFrame(index=dfdates)
         for fromkey in boxdict.keys():  # each has a column of transport "from"
-            # add in column for ndrifters
-            dfs[tokey][fromkey] = 0
+            for nday in ndays:
+                # add in column for ndrifters
+                dfs[tokey][fromkey + '-' + str(nday)] = 0
         # add in column for # simulations integrated in ndrifters column
         dfs[tokey]['nsims'] = 0
 
@@ -732,27 +733,28 @@ def calc_bayconn():
         startdate = File.split('/')[-1].split('.')[0]  # start date of simulation in string form
         startdatedt = datetime.strptime(startdate, '%Y-%m-%dT%H')  # date in datetime format
 
-        for nday in ndays:
-            enddatedt = startdatedt + timedelta(days=nday)
-            enddate = enddatedt.strftime('%Y-%m-%dT%H')  # end date in string format
-            # dates that ndrifters in simulation cover
-            dates = pd.date_range(start=startdate, end=enddate, freq='14400S')
-            # remove first date since nothing happens then
-            dates = dates[1:]
+        for tokey in boxdict.keys():  # loop through TO areas
+            for fromkey in boxdict.keys():  # loop through FROM areas
+                isfrom = boxdict[fromkey][0]  # starting index for "from"
+                iefrom = boxdict[fromkey][-1]  # ending index for "from"
+                isto = boxdict[tokey][0]  # starting index for "to"
+                ieto = boxdict[tokey][-1]  # end index for "to"
 
-            for tokey in boxdict.keys():  # loop through TO areas
-                for fromkey in boxdict.keys():  # loop through FROM areas
-                    isfrom = boxdict[fromkey][0]  # starting index for "from"
-                    iefrom = boxdict[fromkey][-1]  # ending index for "from"
-                    isto = boxdict[tokey][0]  # starting index for "to"
-                    ieto = boxdict[tokey][-1]  # end index for "to"
+                for nday in ndays:
+                    enddatedt = startdatedt + timedelta(days=nday)
+                    enddate = enddatedt.strftime('%Y-%m-%dT%H')  # end date in string format
+                    # dates that ndrifters in simulation cover
+                    dates = pd.date_range(start=startdate, end=enddate, freq='14400S')
+                    # remove first date since nothing happens then
+                    dates = dates[1:]
+
                     # sum number of drifters across times for "from" and "to" regions
                     # then average across the number of "from" boxes
                     # ndrifters ends up being in time
                     # use up to the number of times in dates
                     ndrifters = mat[:len(dates), isfrom:iefrom, isto:ieto].sum(axis=2).sum(axis=1)/boxdict[fromkey].size
                     # add to dataframe at the relevant times
-                    dfs[tokey].loc[dates, fromkey] = ndrifters
+                    dfs[tokey].loc[dates, fromkey + '-' + nday] = ndrifters
                 # keep track of number of simulations being added together
                 dfs[tokey].loc[dates, 'nsims'] += 1
             # import pdb; pdb.set_trace()
