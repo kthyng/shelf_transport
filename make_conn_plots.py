@@ -688,7 +688,7 @@ def plot_bayconn(boxnameto, boxnamefrom):
     iboxfrom = boxdict[boxnamefrom]
 
     # load in dataframe from being calculated in calc_bayconn()
-    df = pd.from_csv(base + 'to_' + iboxto + '.csv')
+    df = pd.read_csv(base + 'to_' + boxnameto, parse_dates=True, index_col=0)
 
     import seaborn as sns
     # fig, axarr = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(7, 3))
@@ -696,7 +696,7 @@ def plot_bayconn(boxnameto, boxnamefrom):
 
     # for i, ax in enumerate(axarr.flat):
     # ax.set_frame_on(False)
-    df.
+    df['bpoc']['2004'].plot()
 
 
 
@@ -706,6 +706,9 @@ def calc_bayconn():
     Files are of the types calcs/alongcoastconn/conn_in_time/20??-??-??T0?.npz
     '''
     base = 'calcs/alongcoastconn/conn_in_time/'
+
+    ndays = np.array([5, 10, 15, 20, 25, 30])  # number of advection days to consider
+
     # create a dataframe for transport to each area, for all of the time examined, 4 hourly
     dfdates = pd.date_range(start='2004-01-01 00:00', end='2014-09-29 00:00', freq='14400S')
     # make a dictionary of dataframes. They are sorted by where transport is going to.
@@ -728,28 +731,31 @@ def calc_bayconn():
 
         startdate = File.split('/')[-1].split('.')[0]  # start date of simulation in string form
         startdatedt = datetime.strptime(startdate, '%Y-%m-%dT%H')  # date in datetime format
-        enddatedt = startdatedt + timedelta(days=30)
-        enddate = enddatedt.strftime('%Y-%m-%dT%H')  # end date in string format
-        # dates that ndrifters in simulation cover
-        dates = pd.date_range(start=startdate, end=enddate, freq='14400S')
-        # remove first date since nothing happens then
-        dates = dates[1:]
 
-        for tokey in boxdict.keys():  # loop through TO areas
-            for fromkey in boxdict.keys():  # loop through FROM areas
-                isfrom = boxdict[fromkey][0]  # starting index for "from"
-                iefrom = boxdict[fromkey][-1]  # ending index for "from"
-                isto = boxdict[tokey][0]  # starting index for "to"
-                ieto = boxdict[tokey][-1]  # end index for "to"
-                # sum number of drifters across times for "from" and "to" regions
-                # then average across the number of "from" boxes
-                # ndrifters ends up being in time
-                ndrifters = mat[:, isfrom:iefrom, isto:ieto].sum(axis=2).sum(axis=1)/boxdict[fromkey].size
-                # add to dataframe at the relevant times
-                dfs[tokey].loc[dates, fromkey] = ndrifters
-            # keep track of number of simulations being added together
-            dfs[tokey].loc[dates, 'nsims'] += 1
-        # import pdb; pdb.set_trace()
+        for nday in ndays:
+            enddatedt = startdatedt + timedelta(days=nday)
+            enddate = enddatedt.strftime('%Y-%m-%dT%H')  # end date in string format
+            # dates that ndrifters in simulation cover
+            dates = pd.date_range(start=startdate, end=enddate, freq='14400S')
+            # remove first date since nothing happens then
+            dates = dates[1:]
+
+            for tokey in boxdict.keys():  # loop through TO areas
+                for fromkey in boxdict.keys():  # loop through FROM areas
+                    isfrom = boxdict[fromkey][0]  # starting index for "from"
+                    iefrom = boxdict[fromkey][-1]  # ending index for "from"
+                    isto = boxdict[tokey][0]  # starting index for "to"
+                    ieto = boxdict[tokey][-1]  # end index for "to"
+                    # sum number of drifters across times for "from" and "to" regions
+                    # then average across the number of "from" boxes
+                    # ndrifters ends up being in time
+                    # use up to the number of times in dates
+                    ndrifters = mat[:len(dates), isfrom:iefrom, isto:ieto].sum(axis=2).sum(axis=1)/boxdict[fromkey].size
+                    # add to dataframe at the relevant times
+                    dfs[tokey].loc[dates, fromkey] = ndrifters
+                # keep track of number of simulations being added together
+                dfs[tokey].loc[dates, 'nsims'] += 1
+            # import pdb; pdb.set_trace()
 
     for tokey in boxdict.keys():  # dataframes are by transport "to"
         dfs[tokey].to_csv(base + 'to_' + tokey + '.csv')

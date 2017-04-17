@@ -1,2 +1,5 @@
 *.pyc
 *.txt
+.DS_Store
+.ipynb_checkpoints*
+notebooks/figures
