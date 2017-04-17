@@ -21,6 +21,7 @@ from matplotlib import ticker, colors, cbook
 import calendar
 import cmocean.cm as cmo
 import matplotlib.patches as Patches
+import pandas as pd
 
 
 mpl.rcParams.update({'font.size': 14})
@@ -679,44 +680,79 @@ def plot_monthly():
 def plot_bayconn(boxnameto, boxnamefrom):
     '''Plot connectivity between specific bays throughout the year.'''
 
+    base = 'calcs/alongcoastconn/conn_in_time/'
+
     # indices of boxes to which drifters are traveling
     iboxto = boxdict[boxnameto]
     # indices of boxes from which drifters are traveling
     iboxfrom = boxdict[boxnamefrom]
 
+    # load in dataframe from being calculated in calc_bayconn()
+    df = pd.from_csv(base + 'to_' + iboxto + '.csv')
 
-
-    fig, axarr = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(7, 3))
+    import seaborn as sns
+    # fig, axarr = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(7, 3))
     # fig.subplots_adjust(left=0.04, bottom=0.1, right=1.0, top=0.97, wspace=0.06, hspace=0.1)
 
-    for i, ax in enumerate(axarr.flat):
-        ax.set_frame_on(False)
+    # for i, ax in enumerate(axarr.flat):
+    # ax.set_frame_on(False)
+    df.
+
 
 
 def calc_bayconn():
     '''Combine together files from run_with_times() to use in plot_bayconn.
 
-    Files are of the types calcs/alongcoastconn/conn_in_time-20??-??.npz
+    Files are of the types calcs/alongcoastconn/conn_in_time/20??-??-??T0?.npz
     '''
+    base = 'calcs/alongcoastconn/conn_in_time/'
+    # create a dataframe for transport to each area, for all of the time examined, 4 hourly
+    dfdates = pd.date_range(start='2004-01-01 00:00', end='2014-09-29 00:00', freq='14400S')
+    # make a dictionary of dataframes. They are sorted by where transport is going to.
+    dfs = {}
+    for tokey in boxdict.keys():  # dataframes are by transport "to"
+        dfs[tokey] = pd.DataFrame(index=dfdates)
+        for fromkey in boxdict.keys():  # each has a column of transport "from"
+            # add in column for ndrifters
+            dfs[tokey][fromkey] = 0
+        # add in column for # simulations integrated in ndrifters column
+        dfs[tokey]['nsims'] = 0
 
-    Files = glob('calcs/alongcoastconn/conn_in_time-20??-??.npz')
+    Files = glob.glob(base + '20??-??-??T0?.npz')
 
-    for File in Files:  # loop through year/month files
+    for File in Files:  # loop through all daily simulation files
         d = np.load(File)
-        # mat: time x coast boxes x coast boxes, t: 4 hourly times
+        # mat: time x from coast boxes x to coast boxes, t: 4 hourly times
         mat = d['mat']; t = d['t']
         d.close()
 
-    for keys in boxdict.keys():
-        df = pd.DataFrame()
+        startdate = File.split('/')[-1].split('.')[0]  # start date of simulation in string form
+        startdatedt = datetime.strptime(startdate, '%Y-%m-%dT%H')  # date in datetime format
+        enddatedt = startdatedt + timedelta(days=30)
+        enddate = enddatedt.strftime('%Y-%m-%dT%H')  # end date in string format
+        # dates that ndrifters in simulation cover
+        dates = pd.date_range(start=startdate, end=enddate, freq='14400S')
+        # remove first date since nothing happens then
+        dates = dates[1:]
 
+        for tokey in boxdict.keys():  # loop through TO areas
+            for fromkey in boxdict.keys():  # loop through FROM areas
+                isfrom = boxdict[fromkey][0]  # starting index for "from"
+                iefrom = boxdict[fromkey][-1]  # ending index for "from"
+                isto = boxdict[tokey][0]  # starting index for "to"
+                ieto = boxdict[tokey][-1]  # end index for "to"
+                # sum number of drifters across times for "from" and "to" regions
+                # then average across the number of "from" boxes
+                # ndrifters ends up being in time
+                ndrifters = mat[:, isfrom:iefrom, isto:ieto].sum(axis=2).sum(axis=1)/boxdict[fromkey].size
+                # add to dataframe at the relevant times
+                dfs[tokey].loc[dates, fromkey] = ndrifters
+            # keep track of number of simulations being added together
+            dfs[tokey].loc[dates, 'nsims'] += 1
+        # import pdb; pdb.set_trace()
 
-
-            mat[j, :,:] += d['mat']
-            # if np.isnan(mat[j, i,:,:]).sum()>1:
-            #     pdb.set_trace()
-        mat[j, :,:] /= len(files)
-
+    for tokey in boxdict.keys():  # dataframes are by transport "to"
+        dfs[tokey].to_csv(base + 'to_' + tokey + '.csv')
 
 
 def run():
@@ -849,7 +885,7 @@ def run_with_times():
     Files = glob.glob('calcs/alongcoastconn/20??-??-??T0?.npz')
 
     for File in Files:
-        print(File)
+        # print(File)
         matfile = base + File.split('/')[-1]
         if os.path.exists(matfile):
             continue
