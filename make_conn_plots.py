@@ -754,7 +754,7 @@ def calc_bayconn():
                     # use up to the number of times in dates
                     ndrifters = mat[:len(dates), isfrom:iefrom, isto:ieto].sum(axis=2).sum(axis=1)/boxdict[fromkey].size
                     # add to dataframe at the relevant times
-                    dfs[tokey].loc[dates, fromkey + '-' + nday] = ndrifters
+                    dfs[tokey].loc[dates, fromkey + '-' + str(nday)] = ndrifters
                 # keep track of number of simulations being added together
                 dfs[tokey].loc[dates, 'nsims'] += 1
             # import pdb; pdb.set_trace()
