@@ -30,8 +30,14 @@ def load_tracks(File):
     yg = d.variables['yg'][:]
     #tp = d.variables['tp'][:]
     # Calculate times since they are messed up if a drifter exits the domain
-    tseas = d.variables['tseas'][:]
-    N = d.variables['N'][:]
+    try:
+        tseas = d.variables['tseas'][:]
+    except:
+        tseas = 4*3600  # 4 hours between model outputs typically
+    try:
+        N = d.variables['N'][:]
+    except:
+        N = 5
     iday = int((3600.*24)/(tseas/N))
     days = np.linspace(0, 30, xg.shape[1]) #tseas/N/(3600.*24)) # forward or backward, but doesn't matter here I guess
     # pdb.set_trace()
@@ -46,7 +52,7 @@ def run():
     # Find files to run through
     # Files = glob.glob('tracks/2014-0[1,2]-*gc.nc')
     # Files.extend(glob.glob('tracks/2014-0[7,8]-*gc.nc'))
-    Files = glob.glob('tracks/2008-??-*gc.nc')
+    Files = glob.glob('tracks/2014-??-*gc.nc')
 
     # grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
     # vert_filename='/atch/raid1/zhangxq/Projects/txla_nesting6/ocean_his_0001.nc'
@@ -76,7 +82,7 @@ def run():
         xg[nanind] = np.nan; yg[nanind] = np.nan
 
         # Remove points that never enter the outer box paths
-        inouter = pathouter.contains_points(np.vstack((xg.flat, yg.flat)).T).reshape(xg.shape)
+        inouter = pathouter.contains_points(np.vstack((xg.flatten(), yg.flatten())).T).reshape(xg.shape)
         # print('made it past contains_points')
         # print(time.time()-stime)
         iinside = find(inouter.sum(axis=1).astype(bool)) # indices of drifters that go inside
@@ -92,7 +98,7 @@ def run():
         for i,path in enumerate(paths):
 
             # which points are inside the regions
-            inside = path.contains_points(np.vstack((xgin.flat, ygin.flat)).T).reshape(xgin.shape)
+            inside = path.contains_points(np.vstack((xgin.flatten(), ygin.flatten())).T).reshape(xgin.shape)
             whencross = np.diff(inside.astype(int), axis=1) # will pick out when the drifters change from outside to inside region or vice versa
             whencross_sorted = np.sort(whencross, axis=1) # will pick out when the drifters change from outside to inside region or vice versa
             isort = np.argsort(whencross, axis=1)
