@@ -688,7 +688,10 @@ def plot_bayconn(boxnameto, boxnamefrom):
     iboxfrom = boxdict[boxnamefrom]
 
     # load in dataframe from being calculated in calc_bayconn()
-    df = pd.read_csv(base + 'to_' + boxnameto, parse_dates=True, index_col=0)
+    df = pd.read_csv(base + 'to_' + boxnameto + '.csv', parse_dates=True, index_col=0)
+
+    # calculate day of year with higher res for x axis
+    df['doy'] = df.index.dayofyear + df.index.hour/24.
 
     import seaborn as sns
     # fig, axarr = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(7, 3))
@@ -696,8 +699,26 @@ def plot_bayconn(boxnameto, boxnamefrom):
 
     # for i, ax in enumerate(axarr.flat):
     # ax.set_frame_on(False)
-    df['bpoc']['2004'].plot()
+    # (df['bpoc-30']['2004']/df['nsims']['2004']).plot()
 
+    # calculate quintile to quintile with groupby and show with fill between
+    # (df['bpoc-30']/df['nsims']).groupby(df['doy']).mean().plot()
+    # calculate quantile, which has 2 results for each index for the two quantiles
+    quantlow = df['bpoc-30'].groupby(df['doy']).quantile(0.367)
+    quanthigh = df['bpoc-30'].groupby(df['doy']).quantile(0.733)
+    # quantlow = (df['bpoc-30']/df['nsims']).groupby(df['doy']).quantile(0.367)
+    # quanthigh = (df['bpoc-30']/df['nsims']).groupby(df['doy']).quantile(0.733)
+    plt.fill_between(quantlow.index, quantlow, quanthigh, alpha=0.2)
+
+    df2 = (df['bpoc-30']/df['nsims']).groupby(df['doy']).mean()
+    (df['bpoc-30']/df['nsims']).groupby(df['doy']).mean().plot()
+    (df['bpoc-20']/df['nsims']).groupby(df['doy']).mean().plot()
+
+    # label ticks at start of month
+    # ticks for months on river discharge
+    mticks = [bisect.bisect_left(datesRiver, monthdate) for monthdate in np.asarray(monthdates)]
+    mticknames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+    # how to easily get 1st day of each month in terms of day of year
 
 
 def calc_bayconn():
