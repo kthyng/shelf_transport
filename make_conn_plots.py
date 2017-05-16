@@ -731,7 +731,7 @@ def calc_bayconn():
     ndays = np.array([5, 10, 15, 20, 25, 30])  # number of advection days to consider
 
     # create a dataframe for transport to each area, for all of the time examined, 4 hourly
-    dfdates = pd.date_range(start='2004-01-01 00:00', end='2014-09-29 00:00', freq='14400S')
+    dfdates = pd.date_range(start='2004-01-01 00:00', end='2014-10-01 00:00', freq='14400S')
     # make a dictionary of dataframes. They are sorted by where transport is going to.
     dfs = {}
     for tokey in boxdict.keys():  # dataframes are by transport "to"
@@ -756,13 +756,14 @@ def calc_bayconn():
 
         for tokey in boxdict.keys():  # loop through TO areas
             for fromkey in boxdict.keys():  # loop through FROM areas
+                # import pdb; pdb.set_trace()
                 isfrom = boxdict[fromkey][0]  # starting index for "from"
                 iefrom = boxdict[fromkey][-1]  # ending index for "from"
                 isto = boxdict[tokey][0]  # starting index for "to"
                 ieto = boxdict[tokey][-1]  # end index for "to"
 
                 for nday in ndays:
-                    enddatedt = startdatedt + timedelta(days=nday)
+                    enddatedt = startdatedt + timedelta(days=int(nday))
                     enddate = enddatedt.strftime('%Y-%m-%dT%H')  # end date in string format
                     # dates that ndrifters in simulation cover
                     dates = pd.date_range(start=startdate, end=enddate, freq='14400S')
@@ -815,7 +816,7 @@ def run():
     mat = np.zeros((len(paths),len(paths)))  # original along-coast conn, for 30 days
     # inmat = np.zeros((len(paths),len(paths), 5))  # drifters going into boxes
     # outmat = np.zeros((len(paths),len(paths), 5))  # drifters going out of boxes
-    years = np.arange(2013,2014)
+    years = np.arange(2004,2015)
     months = np.arange(1, 13)
     # months = [1,2,7,8]
     for year in years:
@@ -966,4 +967,6 @@ def run_with_times():
 
 
 if __name__ == "__main__":
-    run_with_times()
+    calc_bayconn()
+    # run()
+    # run_with_times()
