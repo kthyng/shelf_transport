@@ -10,30 +10,18 @@ import os
 import netCDF4 as netCDF
 import pdb
 import matplotlib.pyplot as plt
-# import tracpy
-# import tracpy.plotting
-# import tracpy.calcs
 from datetime import datetime, timedelta
 import glob
-# import op
 from matplotlib.mlab import find
 from matplotlib import ticker, colors, cbook
 import calendar
 import cmocean.cm as cmo
 import matplotlib.patches as Patches
 import pandas as pd
+import seaborn as sns
 
 
 mpl.rcParams.update({'font.size': 14})
-mpl.rcParams['font.sans-serif'] = 'Arev Sans, Bitstream Vera Sans, Lucida Grande, Verdana, Geneva, Lucid, Helvetica, Avant Garde, sans-serif'
-mpl.rcParams['mathtext.fontset'] = 'custom'
-mpl.rcParams['mathtext.cal'] = 'cursive'
-mpl.rcParams['mathtext.rm'] = 'sans'
-mpl.rcParams['mathtext.tt'] = 'monospace'
-mpl.rcParams['mathtext.it'] = 'sans:italic'
-mpl.rcParams['mathtext.bf'] = 'sans:bold'
-mpl.rcParams['mathtext.sf'] = 'sans'
-mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 colu = '#218983'  # upcoast color
 cold = '#cb6863'  # downcoast color
 
@@ -79,6 +67,135 @@ boxdict = {'bpm': np.arange(76,88), 'bpa': np.arange(107,119),
          'bpoc': np.arange(126,138), 'bgalv': np.arange(165,177),
          'batch': np.arange(234,246), 'bterr': np.arange(257,269),
          'bbara': np.arange(271, 283), 'all': np.arange(0,342) }
+
+
+def plot_bayconn(boxnameto):
+    '''Plot connectivity between specific bays throughout the year.'''
+
+    base = 'calcs/alongcoastconn/conn_in_time/'
+
+    # indices of boxes to which drifters are traveling
+    iboxto = boxdict[boxnameto]
+    # load in dataframe from being calculated in calc_bayconn()
+    df = pd.read_csv(base + 'to_' + boxnameto + '.csv', parse_dates=True, index_col=0)
+    # calculate day of year with higher res for x axis
+    df['doy'] = df.index.dayofyear + df.index.hour/24.
+
+    # set up plot
+    fig, axarr = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(7, 3))
+    # fig.subplots_adjust(left=0.04, bottom=0.1, right=1.0, top=0.97, wspace=0.06, hspace=0.1)
+    # i = 0
+    for boxnamefrom in names:  # loop through "from" bays for this "to" bay
+
+        if boxnamefrom == boxnameto or boxnamefrom == 'all':
+            continue  # don't use itself
+
+        # indices of boxes from which drifters are traveling
+        iboxfrom = boxdict[boxnamefrom]
+
+        # comparison to make: with 30 days for now
+        comp = boxnamefrom + '-30'
+
+        ax = axarr #[i]
+        ax.set_frame_on(False)
+        ax.set_ylabel(boxnamefrom)
+
+        # # calculate quintile to quintile with groupby and show with fill between
+        # # (df['bpoc-30']/df['nsims']).groupby(df['doy']).mean().plot()
+        # # calculate quantile, which has 2 results for each index for the two quantiles
+        # # quantlow = df['bpoc-30'].groupby(df['doy']).quantile(0.367)
+        # # quanthigh = df['bpoc-30'].groupby(df['doy']).quantile(0.733)
+        # # quantlow = (df[comp]/df['nsims']).groupby(df['doy']).quantile(0.25)
+        # # quanthigh = (df[comp]/df['nsims']).groupby(df['doy']).quantile(0.75)
+        # quantlow = (df[comp]/df['nsims']).groupby(df['doy']).min()
+        # quanthigh = (df[comp]/df['nsims']).groupby(df['doy']).max()
+
+        # choose color based on if movement is up or down coast
+        if names.index(boxnameto) < names.index(boxnamefrom):  # flowing downcoast
+            color = cold
+        elif names.index(boxnameto) > names.index(boxnamefrom):  # flowing upcoast
+            color = colu
+        # ax.fill_between(quantlow.index, quantlow, quanthigh, alpha=0.7, color=color)
+
+        # df2 = (df[comp]/df['nsims']).groupby(df['doy']).mean()
+        # (df[comp]/df['nsims']).groupby(df['doy']).mean().plot(ax=ax)
+        ax.plot(quantlow.index, (df[comp]/df['nsims']).groupby(df['doy']).mean(), color=color)
+        # plt.yscale('log', nonposy='clip')
+        # (df['bpoc-20']/df['nsims']).groupby(df['doy']).mean().plot(ax=ax)
+
+        ax.axis('tight')
+        i += 1
+
+    # just for last axes: ticks for months on river discharge
+    mticknames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+    inds = (df['2012'].index.day == 1)*(df['2012'].index.hour == 0)
+    tickdoys = df['2012'][inds].doy  # use a leap year to find doy values for grouped array
+    ax.xaxis.set_ticks(tickdoys)  # set ticks to starts of months
+    ax.xaxis.set_ticklabels(mticknames)  # label ticks at start of month
+
+
+def calc_bayconn():
+    '''Combine together files from run_with_times() to use in plot_bayconn.
+
+    Files are of the types calcs/alongcoastconn/conn_in_time/20??-??-??T0?.npz
+    '''
+    base = 'calcs/alongcoastconn/conn_in_time/'
+
+    ndays = np.array([5, 10, 15, 20, 25, 30])  # number of advection days to consider
+
+    # create a dataframe for transport to each area, for all of the time examined, 4 hourly
+    dfdates = pd.date_range(start='2004-01-01 00:00', end='2014-10-01 00:00', freq='14400S')
+    # make a dictionary of dataframes. They are sorted by where transport is going to.
+    dfs = {}
+    for tokey in boxdict.keys():  # dataframes are by transport "to"
+        dfs[tokey] = pd.DataFrame(index=dfdates)
+        for fromkey in boxdict.keys():  # each has a column of transport "from"
+            for nday in ndays:
+                # add in column for ndrifters
+                dfs[tokey][fromkey + '-' + str(nday)] = 0
+        # add in column for # simulations integrated in ndrifters column
+        dfs[tokey]['nsims'] = 0
+
+    Files = glob.glob(base + '20??-??-??T0?.npz')
+
+    for File in Files:  # loop through all daily simulation files
+        d = np.load(File)
+        # mat: time x from coast boxes x to coast boxes, t: 4 hourly times
+        mat = d['mat']; t = d['t']
+        d.close()
+
+        startdate = File.split('/')[-1].split('.')[0]  # start date of simulation in string form
+        startdatedt = datetime.strptime(startdate, '%Y-%m-%dT%H')  # date in datetime format
+
+        for tokey in boxdict.keys():  # loop through TO areas
+            for fromkey in boxdict.keys():  # loop through FROM areas
+                # import pdb; pdb.set_trace()
+                isfrom = boxdict[fromkey][0]  # starting index for "from"
+                iefrom = boxdict[fromkey][-1]  # ending index for "from"
+                isto = boxdict[tokey][0]  # starting index for "to"
+                ieto = boxdict[tokey][-1]  # end index for "to"
+
+                for nday in ndays:
+                    enddatedt = startdatedt + timedelta(days=int(nday))
+                    enddate = enddatedt.strftime('%Y-%m-%dT%H')  # end date in string format
+                    # dates that ndrifters in simulation cover
+                    dates = pd.date_range(start=startdate, end=enddate, freq='14400S')
+                    # remove first date since nothing happens then
+                    dates = dates[1:]
+
+                    # sum number of drifters across times for "from" and "to" regions
+                    # then average across the number of "from" boxes
+                    # ndrifters ends up being in time
+                    # use up to the number of times in dates
+                    ndrifters = mat[:len(dates), isfrom:iefrom, isto:ieto].sum(axis=2).sum(axis=1)/boxdict[fromkey].size
+                    # add to dataframe at the relevant times
+                    dfs[tokey].loc[dates, fromkey + '-' + str(nday)] = ndrifters
+                # keep track of number of simulations being added together
+                dfs[tokey].loc[dates, 'nsims'] += 1
+            # import pdb; pdb.set_trace()
+
+    for tokey in boxdict.keys():  # dataframes are by transport "to"
+        dfs[tokey].to_csv(base + 'to_' + tokey + '.csv')
 
 
 def plot_domain():
@@ -677,112 +794,6 @@ def plot_monthly():
     ####
 
 
-def plot_bayconn(boxnameto, boxnamefrom):
-    '''Plot connectivity between specific bays throughout the year.'''
-
-    base = 'calcs/alongcoastconn/conn_in_time/'
-
-    # indices of boxes to which drifters are traveling
-    iboxto = boxdict[boxnameto]
-    # indices of boxes from which drifters are traveling
-    iboxfrom = boxdict[boxnamefrom]
-
-    # load in dataframe from being calculated in calc_bayconn()
-    df = pd.read_csv(base + 'to_' + boxnameto + '.csv', parse_dates=True, index_col=0)
-
-    # calculate day of year with higher res for x axis
-    df['doy'] = df.index.dayofyear + df.index.hour/24.
-
-    import seaborn as sns
-    # fig, axarr = plt.subplots(1, 1, sharex=True, sharey=True, figsize=(7, 3))
-    # fig.subplots_adjust(left=0.04, bottom=0.1, right=1.0, top=0.97, wspace=0.06, hspace=0.1)
-
-    # for i, ax in enumerate(axarr.flat):
-    # ax.set_frame_on(False)
-    # (df['bpoc-30']['2004']/df['nsims']['2004']).plot()
-
-    # calculate quintile to quintile with groupby and show with fill between
-    # (df['bpoc-30']/df['nsims']).groupby(df['doy']).mean().plot()
-    # calculate quantile, which has 2 results for each index for the two quantiles
-    quantlow = df['bpoc-30'].groupby(df['doy']).quantile(0.367)
-    quanthigh = df['bpoc-30'].groupby(df['doy']).quantile(0.733)
-    # quantlow = (df['bpoc-30']/df['nsims']).groupby(df['doy']).quantile(0.367)
-    # quanthigh = (df['bpoc-30']/df['nsims']).groupby(df['doy']).quantile(0.733)
-    plt.fill_between(quantlow.index, quantlow, quanthigh, alpha=0.2)
-
-    df2 = (df['bpoc-30']/df['nsims']).groupby(df['doy']).mean()
-    (df['bpoc-30']/df['nsims']).groupby(df['doy']).mean().plot()
-    (df['bpoc-20']/df['nsims']).groupby(df['doy']).mean().plot()
-
-    # label ticks at start of month
-    # ticks for months on river discharge
-    mticks = [bisect.bisect_left(datesRiver, monthdate) for monthdate in np.asarray(monthdates)]
-    mticknames = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
-    # how to easily get 1st day of each month in terms of day of year
-
-
-def calc_bayconn():
-    '''Combine together files from run_with_times() to use in plot_bayconn.
-
-    Files are of the types calcs/alongcoastconn/conn_in_time/20??-??-??T0?.npz
-    '''
-    base = 'calcs/alongcoastconn/conn_in_time/'
-
-    ndays = np.array([5, 10, 15, 20, 25, 30])  # number of advection days to consider
-
-    # create a dataframe for transport to each area, for all of the time examined, 4 hourly
-    dfdates = pd.date_range(start='2004-01-01 00:00', end='2014-10-01 00:00', freq='14400S')
-    # make a dictionary of dataframes. They are sorted by where transport is going to.
-    dfs = {}
-    for tokey in boxdict.keys():  # dataframes are by transport "to"
-        dfs[tokey] = pd.DataFrame(index=dfdates)
-        for fromkey in boxdict.keys():  # each has a column of transport "from"
-            for nday in ndays:
-                # add in column for ndrifters
-                dfs[tokey][fromkey + '-' + str(nday)] = 0
-        # add in column for # simulations integrated in ndrifters column
-        dfs[tokey]['nsims'] = 0
-
-    Files = glob.glob(base + '20??-??-??T0?.npz')
-
-    for File in Files:  # loop through all daily simulation files
-        d = np.load(File)
-        # mat: time x from coast boxes x to coast boxes, t: 4 hourly times
-        mat = d['mat']; t = d['t']
-        d.close()
-
-        startdate = File.split('/')[-1].split('.')[0]  # start date of simulation in string form
-        startdatedt = datetime.strptime(startdate, '%Y-%m-%dT%H')  # date in datetime format
-
-        for tokey in boxdict.keys():  # loop through TO areas
-            for fromkey in boxdict.keys():  # loop through FROM areas
-                # import pdb; pdb.set_trace()
-                isfrom = boxdict[fromkey][0]  # starting index for "from"
-                iefrom = boxdict[fromkey][-1]  # ending index for "from"
-                isto = boxdict[tokey][0]  # starting index for "to"
-                ieto = boxdict[tokey][-1]  # end index for "to"
-
-                for nday in ndays:
-                    enddatedt = startdatedt + timedelta(days=int(nday))
-                    enddate = enddatedt.strftime('%Y-%m-%dT%H')  # end date in string format
-                    # dates that ndrifters in simulation cover
-                    dates = pd.date_range(start=startdate, end=enddate, freq='14400S')
-                    # remove first date since nothing happens then
-                    dates = dates[1:]
-
-                    # sum number of drifters across times for "from" and "to" regions
-                    # then average across the number of "from" boxes
-                    # ndrifters ends up being in time
-                    # use up to the number of times in dates
-                    ndrifters = mat[:len(dates), isfrom:iefrom, isto:ieto].sum(axis=2).sum(axis=1)/boxdict[fromkey].size
-                    # add to dataframe at the relevant times
-                    dfs[tokey].loc[dates, fromkey + '-' + str(nday)] = ndrifters
-                # keep track of number of simulations being added together
-                dfs[tokey].loc[dates, 'nsims'] += 1
-            # import pdb; pdb.set_trace()
-
-    for tokey in boxdict.keys():  # dataframes are by transport "to"
-        dfs[tokey].to_csv(base + 'to_' + tokey + '.csv')
 
 
 def run():
