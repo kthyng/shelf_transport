@@ -2,6 +2,7 @@
 Present the likelihood that oil spilled in an area will reach the coastline.
 Use analysis already calculated in find_coastal_path_connectivity.
 Also look at the vulnerability of the coastline for the boxes.
+
 '''
 
 import matplotlib as mpl
@@ -94,12 +95,13 @@ def plot_interannual():
     Plot interannual comparison of likelihood, either overall or just certain parts.
     '''
 
-    cmap = 'YlGn'
+    cmap = cmo.speed
     log = False
     season = 'summer' # 'winter' or 'summer'
     # zoomed = True
-    whichboxes = 'both' # 'all', 'porta', 'galveston', 'both'
+    whichboxes = 'pacyto' # 'all', 'porta', 'galveston', 'both'
     # which boxes along coast to use for vulnerability. 0:342 for all
+    lanes = False
     # Port A:
     if whichboxes=='all':
         boxes = np.arange(0,342)
@@ -109,6 +111,21 @@ def plot_interannual():
         boxes = np.arange(0,342)
         whichH = 'H' # use coast box histograms instead of combined
         zoomed = False
+    elif whichboxes=='pacyto':  # port aransas cytobot
+        boxes = np.arange(112,115)
+        whichH = 'H' # use coast box histograms instead of combined
+        zoomed = False
+        plume = False
+    elif whichboxes=='sscyto':  # surfside cytobot
+        boxes = np.arange(155,158)
+        whichH = 'H' # use coast box histograms instead of combined
+        zoomed = False
+        plume = False
+    elif whichboxes=='bothcyto':  # pa and surfside cytobot
+        boxes = np.hstack((np.arange(112,115), np.arange(155,158)))
+        whichH = 'H' # use coast box histograms instead of combined
+        zoomed = False
+        plume = False
     elif whichboxes=='porta':
         boxes = np.arange(103,123)
         whichH = 'H'
@@ -166,7 +183,7 @@ def plot_interannual():
         for i,files in enumerate(Files): # winter and summer
             numfiles = 0
             for File in files: # months/years within winter or summer
-                print File
+                print(File)
                 d = np.load(File)
                 numfiles += d['numfiles']
                 idstemp = d['ids'].item()
@@ -212,12 +229,12 @@ def plot_interannual():
        # Titles for subplots
         if i==10:#4:
             tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3),
-                pars=np.arange(20, 36, 2), outline=False, parslabels=[0, 1, 0, 0])
+                pars=np.arange(20, 36, 2), outline=[0, 0, 0, 0], parslabels=[0, 1, 0, 0])
         elif i==11:#7:
             ax.set_axis_off()
         else:
             tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 3),
-                pars=np.arange(20, 36, 2), outline=False,
+                pars=np.arange(20, 36, 2), outline=[0, 0, 0, 0],
                 merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
         if i!=11:
             # if whichH=='Hall':
@@ -279,7 +296,7 @@ def plot_interannual():
 
                     # Inset image
                     axins = zoomed_inset_axes(ax, zoom, loc=4) # zoom=6
-                    tracpy.plotting.background(grid=grid, ax=axins, outline=False, merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
+                    tracpy.plotting.background(grid=grid, ax=axins, outline=[0, 0, 0, 0], merslabels=[0, 0, 0, 0], parslabels=[0, 0, 0, 0])
                     axins.contourf(XE, YE, var, cmap=cmap, levels=levels)
 
                     if plume: # add isohalines from surface salinity
@@ -334,10 +351,10 @@ def plot_seasonal():
 
     cmap = cmo.speed  # 'YlGn'
     log = False
-    vulnerability = True  # Whether or not to plot the orange vulnerability along the coast
-    lanes = True  # to plot shipping lanes over plots
+    vulnerability = False  # Whether or not to plot the orange vulnerability along the coast
+    lanes = False  # to plot shipping lanes over plots
     # zoomed = True # True to add in a magnified region, for the 30 days advection timing
-    whichboxes = 'galveston' # 'all', 'porta', 'galveston', 'both-zoom'
+    whichboxes = 'sscyto' # 'all', 'porta', 'galveston', 'both-zoom'
     # which boxes along coast to use for vulnerability. 0:342 for all
     # Port A:
     if whichboxes=='all':
@@ -346,6 +363,18 @@ def plot_seasonal():
         zoomed = False
     elif whichboxes=='all2':
         boxes = np.arange(0,342)
+        whichH = 'H' # use coast box histograms instead of combined
+        zoomed = False
+    elif whichboxes=='pacyto':  # port aransas cytobot
+        boxes = np.arange(112,115)
+        whichH = 'H' # use coast box histograms instead of combined
+        zoomed = False
+    elif whichboxes=='sscyto':  # surfside cytobot
+        boxes = np.arange(155,158)
+        whichH = 'H' # use coast box histograms instead of combined
+        zoomed = False
+    elif whichboxes=='bothcyto':  # pa and surfside cytobot
+        boxes = np.hstack((np.arange(112,115), np.arange(155,158)))
         whichH = 'H' # use coast box histograms instead of combined
         zoomed = False
     elif whichboxes=='porta':
@@ -387,7 +416,7 @@ def plot_seasonal():
         for i,files in enumerate(Files): # winter and summer
             numfiles = 0
             for File in files: # months/years within winter or summer
-                print File
+                print(File)
                 d = np.load(File)
                 numfiles += d['numfiles']
                 # size [simulations in file x advection days x coast box]
@@ -544,13 +573,20 @@ def likelihood():
 
     nd = np.load('calcs/xyg0.npz')['xg0'].size # # of drifters
 
+    # original name was 'hist', for green connectivity plots
+    # now can use to differentiate
+    # 'pa' and 'ss' for cytobot locations
+    name = 'hist'
+
     # Loop through along-coast boxes to find which other boxes they are connected to
-    years = np.arange(2014,2015)
+    years = np.arange(2004,2015)
     months = [1,2,7,8]
+    # months = [1,2,3,4,5,6,7,8,9,10,11,12]
     days = np.array([3,5,10,15,20,30])
+    # days = np.arange(1,31)
     for year in years:
         for month in months:
-            fname = 'calcs/coastconn/likelihood/hist-' + str(year) + '-' + str(month).zfill(2) + '.npz'
+            fname = 'calcs/coastconn/likelihood/' + name + '-' + str(year) + '-' + str(month).zfill(2) + '.npz'
             if not os.path.exists(fname):
                 Files = glob.glob('calcs/alongcoastconn/' + str(year) \
                             + '-' + str(month).zfill(2) + '-*T0*.npz')
@@ -564,7 +600,7 @@ def likelihood():
                 ids = defaultdict(lambda  : defaultdict(list)) # drifter ids, will have to convert to starting location later
 
                 for k, File in enumerate(Files):
-                    print File
+                    print(File)
                     d = np.load(File)
                     # [# of box paths x # drifters that enter a box x 5 (max # of crosses checked for)]
                     inbox = d['inbox'] # time in decimal days when a drifter enters a box path
