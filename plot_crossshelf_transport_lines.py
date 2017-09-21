@@ -17,7 +17,7 @@ from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import matplotlib.ticker as mticker
 import os
 from glob import glob
-# from pyproj import Proj
+from pyproj import Proj
 
 merc = ccrs.Mercator(central_longitude=-85.0)
 pc = ccrs.PlateCarree()
@@ -33,6 +33,20 @@ lon = v[:,0]
 lat = v[:,1]
 Iso = shapely.geometry.LineString(zip(lon, lat))  # isobath as Line
 
+# loop through drifters that cross 100m isobath
+
+
+# for the first time it crosses, find out where in a 1d histogram bin
+
+# # convert to projected coordinates for subtracting distance
+# inputs = {'proj': 'lcc', 'ellps': 'clrk66', 'datum': 'NAD27',
+#           'lat_1': 22.5, 'lat_2': 31.0, 'lat_0': 30, 'lon_0': -94,
+#           'x_0': 0, 'y_0': 0}
+# proj = Proj(**inputs)
+# x, y = proj(lon, lat)
+# figure(); plot(x, y, 'k')
+# # shift 0.5 km SE
+# plot(x+250, y-250,'r')
 
 ## not using box intersection anymore ##
 # # make Polygons from grid cells bounded by psi grid, and see which intersect
