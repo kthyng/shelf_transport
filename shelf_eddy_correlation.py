@@ -9,16 +9,16 @@ import os
 import netCDF4 as netCDF
 import pdb
 import matplotlib.pyplot as plt
-import tracpy
+# import tracpy
 from datetime import datetime, timedelta
 import glob
-from cmPong import cmPong
+# from cmPong import cmPong
 from matplotlib.mlab import find
 import bisect
 from matplotlib import delaunay
 import csv
 import dateutil.relativedelta
-import op
+# import op
 import scipy.stats
 from calendar import monthrange
 import seaborn as sns
@@ -41,9 +41,9 @@ mpl.rcParams['mathtext.fallback_to_cm'] = 'True'
 
 maketable = False
 runcorr = True  # run correlation coefficients
-doplot = False
+doplot = True
 explore = False  # True to do exploratory plots, False to do polished plot
-whichseason = 'dispersion'  # 'winter' or 'summer' or 'dispersion'
+whichseason = 'summer'  # 'winter' or 'summer' or 'dispersion'
 makesmalltable = False  # create a subset table for analysis in R
 if whichseason == 'dispersion':
     col = 0
@@ -67,7 +67,7 @@ if makesmalltable:
 
 headers = ('Dispersion_summer_R4', 'Transport_winter_R3', 'Transport_summer_R4',
             'Instantaneous-discharge-Qi-Jan', 'Qi-Feb', 'Qi-Mar', 'Qi-Apr', 'Qi-May', 'Qi-Jun', 'Qi-Jul',
-            'Qi-Aug', 'Qi-Sep', 'Qi-Oct', 'Qi-Nov', 'Qi-Dec', 
+            'Qi-Aug', 'Qi-Sep', 'Qi-Oct', 'Qi-Nov', 'Qi-Dec',
             'Cumulative-discharge-Qcum-Jan', 'Qcum-Feb', 'Qcum-Mar', 'Qcum-Apr', 'Qcum-May', 'Qcum-Jun', 'Qcum-Jul',
             'Qcum-Aug', 'Qcum-Sep', 'Qcum-Oct', 'Qcum-Nov', 'Qcum-Dec',
             'Running-sum-discharge-Q1-Jan', 'Q1-Feb', 'Q1-Mar', 'Q1-Apr', 'Q1-May', 'Q1-Jun', 'Q1-Jul',
@@ -109,7 +109,7 @@ def rot2d(x, y, ang):
     return xr, yr
 
 # grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
-grid_filename = '../../grid.nc'
+grid_filename = '../grid.nc'
 dtemp = netCDF.Dataset(grid_filename)
 anglev = dtemp.variables['angle'][:]
 dtemp.close()
@@ -159,7 +159,7 @@ elif runcorr:
     #     T = d[:,1] # the transport is the first column
     r = np.empty(d.shape[1]*2)  # to store the correlation coefficients
     p = np.empty(d.shape[1]*2)  # to store the correlation coefficients
-    for i in xrange(d.shape[1]):
+    for i in range(d.shape[1]):
         # metric to compare with, 2004-2014, year before transport
         # store in the immediate location
         comp = d[1:, i]
@@ -173,14 +173,14 @@ elif runcorr:
 
     # double the headers for the correlations
     headers2 = list(headers)
-    for i in xrange(len(headers2)):
+    for i in range(len(headers2)):
         headers2[i] += '_previous'
     headers = np.hstack((headers, headers2))
 
     ind = np.argsort(p)  # indices that would sort p in ascending order
     # print the best ones
-    for i in xrange(20):
-        print headers[ind[i]] + ': p=%1.4f, r=%1.2f' % (p[ind[i]], r[ind[i]])
+    for i in range(20):
+        print(headers[ind[i]] + ': p=%1.4f, r=%1.2f' % (p[ind[i]], r[ind[i]]))
 
     # hard wiring this for now. Sorry future Kristen!
     if whichseason == 'winter':
@@ -263,14 +263,14 @@ if doplot:
                 fig = plt.figure(figsize=(6,6))
                 ax = fig.add_subplot(111)
                 # ax.plot(T, Wbest, 'o', ms=10, color='0.2', mec='k')
-                sns.regplot(x=T, y=Wbest, ax=ax);
                 ax.set_xlim(T.min()-0.1, T.max()+0.1)
                 ax.set_ylim(Wbest.min()-5, Wbest.max()+5)
+                sns.regplot(x=T, y=Wbest, ax=ax, scatter_kws={'s': 50});
                 ax.set_xlabel('Transport relative to mean [%]', fontsize=14)
                 ax.set_ylabel('January-February-March mean wind direction [deg]', fontsize=14)
                 plt.tick_params('both', labelsize=14)
-                ax.text(0.1, 0.15, 'r=%1.2f' % Wbestr, color='#15317E', transform=ax.transAxes, alpha=0.7)
-                ax.text(0.1, 0.1, 'p=%1.4f' % Wbestp, color='#15317E', transform=ax.transAxes, alpha=0.7)
+                ax.text(0.1, 0.15, 'r=%1.2f' % Wbestr, color='#15317E', transform=ax.transAxes, alpha=0.7, fontsize=24)
+                ax.text(0.1, 0.07, 'p=%1.4f' % Wbestp, color='#15317E', transform=ax.transAxes, alpha=0.7, fontsize=24)
                 # ax.set_frame_on(False)
                 fig.savefig('figures/winter-transport-correlations.pdf', bbox_inches='tight')
             elif whichseason == 'summer':
@@ -292,14 +292,14 @@ if doplot:
                 fig = plt.figure(figsize=(6,6))
                 ax = fig.add_subplot(111)
                 # mappable = ax.plot(T, d[:,29]/1e4, 'o', ms=10, color='0.2', mec='k')
-                sns.regplot(x=T, y=Qbest, ax=ax);
                 ax.set_xlim(T.min()-0.1, T.max()+0.1)
                 ax.set_ylim(1.0, 2.8)
+                sns.regplot(x=T, y=Qbest, ax=ax, scatter_kws={'s': 50});
                 ax.set_xlabel('Transport relative to mean [%]', fontsize=14)
-                ax.set_ylabel('Mean March river discharge [$10^4$m$^3\!$/s]', fontsize=14)
+                ax.set_ylabel('Mean March river discharge~' + r'$\left[10^4\mathrm{m}^3\mathrm{s}^{-1}\right]$', fontsize=14)
                 plt.tick_params('both', labelsize=14)
-                ax.text(0.75, 0.15, 'r=%1.2f' % Qbestr, color='#15317E', transform=ax.transAxes, alpha=0.7)
-                ax.text(0.75, 0.1, 'p=%1.4f' % Qbestp, color='#15317E', transform=ax.transAxes, alpha=0.7)
+                ax.text(0.6, 0.13, 'r=%1.2f' % Qbestr, color='#15317E', transform=ax.transAxes, alpha=0.7, fontsize=24)
+                ax.text(0.6, 0.04, 'p=%1.4f' % Qbestp, color='#15317E', transform=ax.transAxes, alpha=0.7, fontsize=24)
                 # ax.set_frame_on(False)
                 fig.savefig('figures/summer-transport-correlations1.pdf', bbox_inches='tight')
 
@@ -373,7 +373,7 @@ if maketable:
 
     # Loop through years and write a data point in each column for the row each the year
     for j,year in enumerate(years):
-        print year
+        print(year)
 
         # if year == 2014:
         #     months = np.arange(1,10)
@@ -599,7 +599,7 @@ if maketable:
 
 
         # Combine together into one row (actually put into matrix)
-        table[j,:] = np.hstack((Tw[j], Ts[j], Qi, Qcum, Q1, Q2, Q3, Wsm1, Wsm2, Wsm3, 
+        table[j,:] = np.hstack((Tw[j], Ts[j], Qi, Qcum, Q1, Q2, Q3, Wsm1, Wsm2, Wsm3,
             Wsv1, Wsv2, Wsv3, Wdm1, Wdm2, Wdm3, Wdv1, Wdv2, Wdv3))
 
         # write table to file - to have something in case it breaks
@@ -621,7 +621,7 @@ if maketable:
 #    .....:     r, p = scipy.stats.pearsonr(T[ind], Wbest[ind])
 #    .....:     rr.append(r)
 #    .....:     pp.append(p)
-#    .....:     
+#    .....:
 # hist(rr, bins=100)100)
 
 
