@@ -67,7 +67,7 @@ if makesmalltable:
 
 headers = ('Dispersion_summer_R4', 'Transport_winter_R3', 'Transport_summer_R4',
             'Instantaneous-discharge-Qi-Jan', 'Qi-Feb', 'Qi-Mar', 'Qi-Apr', 'Qi-May', 'Qi-Jun', 'Qi-Jul',
-            'Qi-Aug', 'Qi-Sep', 'Qi-Oct', 'Qi-Nov', 'Qi-Dec', 
+            'Qi-Aug', 'Qi-Sep', 'Qi-Oct', 'Qi-Nov', 'Qi-Dec',
             'Cumulative-discharge-Qcum-Jan', 'Qcum-Feb', 'Qcum-Mar', 'Qcum-Apr', 'Qcum-May', 'Qcum-Jun', 'Qcum-Jul',
             'Qcum-Aug', 'Qcum-Sep', 'Qcum-Oct', 'Qcum-Nov', 'Qcum-Dec',
             'Running-sum-discharge-Q1-Jan', 'Q1-Feb', 'Q1-Mar', 'Q1-Apr', 'Q1-May', 'Q1-Jun', 'Q1-Jul',
@@ -599,7 +599,7 @@ if maketable:
 
 
         # Combine together into one row (actually put into matrix)
-        table[j,:] = np.hstack((Tw[j], Ts[j], Qi, Qcum, Q1, Q2, Q3, Wsm1, Wsm2, Wsm3, 
+        table[j,:] = np.hstack((Tw[j], Ts[j], Qi, Qcum, Q1, Q2, Q3, Wsm1, Wsm2, Wsm3,
             Wsv1, Wsv2, Wsv3, Wdm1, Wdm2, Wdm3, Wdv1, Wdv2, Wdv3))
 
         # write table to file - to have something in case it breaks
@@ -621,7 +621,7 @@ if maketable:
 #    .....:     r, p = scipy.stats.pearsonr(T[ind], Wbest[ind])
 #    .....:     rr.append(r)
 #    .....:     pp.append(p)
-#    .....:     
+#    .....:
 # hist(rr, bins=100)100)
 
 

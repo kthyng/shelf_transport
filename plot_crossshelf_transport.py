@@ -5,7 +5,8 @@ Plot aggregated.
 Example usage:
 python3 plot_crossshelf_transport.py "summer" 'calc' --whichcalc '2Dtransport' --year 2004
 python3 plot_crossshelf_transport.py "summer" 'calc' --whichcalc '1Dcrossing' --year 2004
-python3 plot_crossshelf_transport.py "summer" 'plot'
+python3 plot_crossshelf_transport.py "winter" 'calc' --whichcalc '1Dcrossing' --year 2004
+python3 plot_crossshelf_transport.py "summer" 'plot' --whichcalc '1Dcrossing'
 '''
 
 import numpy as np
@@ -87,6 +88,10 @@ def calc(year, whichcalc):
     flat = mtri.LinearTriInterpolator(tri, grid.lat_rho.data.flatten())
     fhg = mtri.LinearTriInterpolator(tri, grid.h.data.flatten())
 
+    # set up projection for correct distances
+    aecart = cartopy.crs.AzimuthalEquidistant(central_longitude=-96, central_latitude=28)
+    ae = Proj(aecart.proj4_init)  # initialize proj4 projection for distances
+
     # how to choose drifters from which region to plot
     d = np.load('calcs/xyg0.npz')
     xg0 = d['xg0']; yg0 = d['yg0']
@@ -119,6 +124,16 @@ def calc(year, whichcalc):
         p = cs.collections[0].get_paths()[0]  # pull out main isobath (not islands)
         v = p.vertices
         Iso = shapely.geometry.LineString(zip(v[:,0], v[:,1]))  # isobath as Line
+        # save as lat lon too
+        Iso_lon = flon(v[:,0], v[:,1])
+        Iso_lat = flat(v[:,0], v[:,1])
+        # save ll as Line
+        Isoll = shapely.geometry.LineString(zip(Iso_lon, Iso_lat))  # isobath as Line
+        # convert to equal distance projection
+        Isoxy = aecart.project_geometry(Isoll, pc)[0]
+        # Isopts = aecart.transform_points(pc, Iso_lon, Iso_lat)
+        # Iso_x = Isopts[:,0]; Iso_y = Isopts[:,1]
+
 
 
 
@@ -148,6 +163,7 @@ def calc(year, whichcalc):
         elif whichseason == 'summer':
             Files = glob('tracks/' + str(year) + '-0[7-8]-??T0?gc.nc')
 
+        distances = []
         for File in Files:
             print(File)
             d = netCDF.Dataset(File)
@@ -189,22 +205,41 @@ def calc(year, whichcalc):
                 Htemp, xe, ye = np.histogram2d(xgt.flatten(), ygt.flatten(), bins=[imt-1,jmt-1], range=[[0, imt-2], [0, jmt-2]])
                 H += Htemp.T
             elif whichcalc == '1Dcrossing':
+                # import pdb; pdb.set_trace()
+                lines = [shapely.geometry.LineString(zip(xgt[i,~np.isnan(xgt[i,:])], ygt[i,~np.isnan(ygt[i,:])])) for i in range(xgt.shape[0])]
+                # Lines = shapely.geometry.MultiLineString(lines)
                 # find intersection point(s) of dline with Iso, but just take first
-                pts = []
-                for i in range(xgt.shape[0]):
-                    # print(i)
-                    inter = shapely.geometry.LineString(zip(xgt[i,~np.isnan(xgt[i,:])], ygt[i,~np.isnan(ygt[i,:])])).intersection(Iso)
+                for line in lines:
+                    # find intersection of drifter trajectory and isobath
+                    inter = line.intersection(Iso)
+                    # define the Point of intersection
                     if isinstance(inter, shapely.geometry.point.Point):
-                        pts.append(inter.coords[0])
+                        # convert to lat/lon
+                        lon = flon(*inter.coords[0]).data
+                        lat = flat(*inter.coords[0]).data
+                        pt = shapely.geometry.Point(inter.coords[0])
+                        # pts.append(inter.coords[0])
                     elif isinstance(inter, shapely.geometry.multipoint.MultiPoint):
-                        pts.append(inter[0].coords[0])
-                x, y = zip(*pts)
-                import pdb; pdb.set_trace()
+                        lon = flon(*inter[0].coords[0]).data
+                        lat = flat(*inter[0].coords[0]).data
+                        # convert from lat lon to equal distance projection
+                        x, y = aecart.transform_point(lon, lat, pc)
+                        # create Point
+                        pt = shapely.geometry.Point(x, y)
+                        # pts.append(inter[0].coords[0])
+                    # find the distance along Iso to the intersection Point pt
+                    # with project
+                    # distances stores along-isobath distance in projected space
+                    distances.append(Isoxy.project(pt))
+                # x, y = zip(*pts)
+                    # import pdb; pdb.set_trace()
 
         lon_psi = grid.lon_psi; lat_psi = grid.lat_psi
 
         if whichcalc == '2Dtransport':
             np.savez(fname, H=H, lon_psi=grid.lon_psi, lat_psi=grid.lat_psi)
+        elif whichcalc == '1Dcrossing':
+            np.savez(fname, distances=distances, Iso=Iso, Isoll=Isoll, Isoxy=Isoxy)
 
     else:
         if whichcalc == '2Dtransport':
@@ -218,54 +253,60 @@ def plot(whichcalc="2Dtransport"):
 
     years = np.arange(2004, 2015)
 
-    if cross:
-        cmap = cmo.ice_r
-    else:
-        cmap = 'darkcyan'
+    if whichcalc == '2Dtransport':
 
-
-    fig, axarr = plt.subplots(4,3)
-    fig.set_size_inches(8.9, 11.5)
-    fig.subplots_adjust(left=0.04, bottom=0.1, right=1.0, top=0.99, wspace=0.0001, hspace=0.05)
-    for i in range(12):
-
-        # Titles for subplots
-        if i==11:
-            ax.set_axis_off()
-            continue
+        if cross:
+            cmap = cmo.ice_r
         else:
-            ax = fig.add_subplot(4,3,i+1, projection=merc)
-            gl = ax.gridlines(linewidth=0.2, color='gray', alpha=0.5, linestyle='-', draw_labels=True)
-            # the following two make the labels look like lat/lon format
-            gl.xformatter = LONGITUDE_FORMATTER
-            gl.yformatter = LATITUDE_FORMATTER
-            # gl.xlocator = mticker.FixedLocator([-105, -95, -85, -75, -65])  # control where the ticks are
-            # gl.xlabel_style = {'size': 15, 'color': 'gray'}  # control how the tick labels look
-            # gl.ylabel_style = {'color': 'red', 'weight': 'bold'}
-            gl.xlabels_bottom = False  # turn off labels where you don't want them
-            gl.ylabels_right = False
-            ax.add_feature(land_10m, facecolor='0.8')
-            ax.coastlines(resolution='10m')  # coastline resolution options are '110m', '50m', '10m'
-            ax.add_feature(states_provinces, edgecolor='0.2')
-            ax.add_feature(cfeature.BORDERS, linestyle='-', edgecolor='0.2')
-            ax.set_extent(figextent, pc)
+            cmap = 'darkcyan'
 
-        H, lon, lat = calc(years[i], whichcalc)
 
-        # plot
-        # ind = np.isnan(H)
-        # H = np.ma.masked_where(ind, H)
-        # import pdb; pdb.set_trace()
-        mappable = ax.pcolormesh(lon, lat, H, cmap=cmap, transform=pc, vmin=0, vmax=100000)#, norm=LogNorm(vmin=2, vmax=1000))
-        plt.colorbar(mappable)
-        # ax.plot(lonp[icross,:].T, latp[icross,:].T, color=color, alpha=0.2, lw=0.1, transform=pc)
+        fig, axarr = plt.subplots(4,3)
+        fig.set_size_inches(8.9, 11.5)
+        fig.subplots_adjust(left=0.04, bottom=0.1, right=1.0, top=0.99, wspace=0.0001, hspace=0.05)
+        for i in range(12):
 
-    if cross:
-        plt.savefig('figures/transport/' + whichseason + str(region) + '_depth' + str(shelf_depth) + '_drifters-cross_lowres.png', bbox_inches='tight', dpi=100)
-        plt.savefig('figures/transport/' + whichseason + str(region) + '_depth' + str(shelf_depth) + '_drifters-cross.png', bbox_inches='tight', dpi=300)
-    else:
-        plt.savefig('figures/transport/' + whichseason + str(region) + '_depth' + str(shelf_depth) + '_drifters-notcross_lowres.png', bbox_inches='tight', dpi=100)
-        plt.savefig('figures/transport/' + whichseason + str(region) + '_depth' + str(shelf_depth) + '_drifters-notcross.png', bbox_inches='tight', dpi=300)
+            # Titles for subplots
+            if i==11:
+                ax.set_axis_off()
+                continue
+            else:
+                ax = fig.add_subplot(4,3,i+1, projection=merc)
+                gl = ax.gridlines(linewidth=0.2, color='gray', alpha=0.5, linestyle='-', draw_labels=True)
+                # the following two make the labels look like lat/lon format
+                gl.xformatter = LONGITUDE_FORMATTER
+                gl.yformatter = LATITUDE_FORMATTER
+                # gl.xlocator = mticker.FixedLocator([-105, -95, -85, -75, -65])  # control where the ticks are
+                # gl.xlabel_style = {'size': 15, 'color': 'gray'}  # control how the tick labels look
+                # gl.ylabel_style = {'color': 'red', 'weight': 'bold'}
+                gl.xlabels_bottom = False  # turn off labels where you don't want them
+                gl.ylabels_right = False
+                ax.add_feature(land_10m, facecolor='0.8')
+                ax.coastlines(resolution='10m')  # coastline resolution options are '110m', '50m', '10m'
+                ax.add_feature(states_provinces, edgecolor='0.2')
+                ax.add_feature(cfeature.BORDERS, linestyle='-', edgecolor='0.2')
+                ax.set_extent(figextent, pc)
+
+            H, lon, lat = calc(years[i], whichcalc)
+
+            # plot
+            # ind = np.isnan(H)
+            # H = np.ma.masked_where(ind, H)
+            # import pdb; pdb.set_trace()
+            mappable = ax.pcolormesh(lon, lat, H, cmap=cmap, transform=pc, vmin=0, vmax=100000)#, norm=LogNorm(vmin=2, vmax=1000))
+            plt.colorbar(mappable)
+            # ax.plot(lonp[icross,:].T, latp[icross,:].T, color=color, alpha=0.2, lw=0.1, transform=pc)
+
+        if cross:
+            plt.savefig('figures/transport/' + whichseason + str(region) + '_depth' + str(shelf_depth) + '_drifters-cross_lowres.png', bbox_inches='tight', dpi=100)
+            plt.savefig('figures/transport/' + whichseason + str(region) + '_depth' + str(shelf_depth) + '_drifters-cross.png', bbox_inches='tight', dpi=300)
+        else:
+            plt.savefig('figures/transport/' + whichseason + str(region) + '_depth' + str(shelf_depth) + '_drifters-notcross_lowres.png', bbox_inches='tight', dpi=100)
+            plt.savefig('figures/transport/' + whichseason + str(region) + '_depth' + str(shelf_depth) + '_drifters-notcross.png', bbox_inches='tight', dpi=300)
+
+    elif whichcalc == '1Dcrossing':
+
+
 
 
 if __name__ == '__main__':
