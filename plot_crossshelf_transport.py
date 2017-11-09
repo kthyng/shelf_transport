@@ -217,8 +217,8 @@ def calc(year, whichcalc):
                         # convert to lat/lon
                         lon = flon(*inter.coords[0]).data
                         lat = flat(*inter.coords[0]).data
-                        pt = shapely.geometry.Point(inter.coords[0])
-                        # pts.append(inter.coords[0])
+                        x, y = aecart.transform_point(lon, lat, pc)
+                        pt = shapely.geometry.Point(x, y)
                     elif isinstance(inter, shapely.geometry.multipoint.MultiPoint):
                         lon = flon(*inter[0].coords[0]).data
                         lat = flat(*inter[0].coords[0]).data
@@ -226,7 +226,6 @@ def calc(year, whichcalc):
                         x, y = aecart.transform_point(lon, lat, pc)
                         # create Point
                         pt = shapely.geometry.Point(x, y)
-                        # pts.append(inter[0].coords[0])
                     # find the distance along Iso to the intersection Point pt
                     # with project
                     # distances stores along-isobath distance in projected space
@@ -249,7 +248,7 @@ def calc(year, whichcalc):
     return H, lon_psi, lat_psi
 
 
-def plot(whichcalc="2Dtransport"):
+def plot(whichcalc="2Dtransport", whichseason='summer'):
 
     years = np.arange(2004, 2015)
 
@@ -306,7 +305,18 @@ def plot(whichcalc="2Dtransport"):
 
     elif whichcalc == '1Dcrossing':
 
+        Files = glob('calcs/shelfconn/crossshelfcrossing-' + whichseason + '*.npz')
 
+        for i, File in enumerate(Files):
+
+            d = np.load(File)
+            if i==0:  # just need to do this once
+                Isoxypts = d['Isoxy']/1000.
+                Isoxy = shapely.geometry.LineString(Isoxypts)
+                # start: Isoxy.project(shapely.geometry.Point(Isoxypts[0,:]))
+                dmax = Isoxy.project(shapely.geometry.Point(Isoxypts[-1,:]))/1000.
+            distances = d['distances']/1000.  # convert from meters to km
+            n, bins, patches = plt.hist(distances, range=(0, dmax), bins=500)
 
 
 if __name__ == '__main__':
