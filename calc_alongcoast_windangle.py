@@ -29,7 +29,7 @@ if not os.path.exists(base):
 
 # load in grid
 proj = tracpy.tools.make_proj('nwgom-pyproj')
-grid = tracpy.inout.readgrid('../../grid.nc', proj)
+grid = tracpy.inout.readgrid('grid.nc', proj)
 lon_rho = grid.lon_rho[1:-1,1:-1]
 lat_rho = grid.lat_rho[1:-1,1:-1]
 x_rho, y_rho = proj(lon_rho, lat_rho)
