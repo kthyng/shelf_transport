@@ -7,6 +7,7 @@ python3 plot_crossshelf_transport.py "summer" 'calc' --whichcalc '2Dtransport' -
 python3 plot_crossshelf_transport.py "summer" 'calc' --whichcalc '1Dcrossing' --year 2004
 python3 plot_crossshelf_transport.py "winter" 'calc' --whichcalc '1Dcrossing' --year 2004
 python3 plot_crossshelf_transport.py "summer" 'plot' --whichcalc '1Dcrossing'
+python3 plot_crossshelf_transport.py "None" 'plot' --whichcalc '1Dcrossing'
 '''
 
 import numpy as np
@@ -52,7 +53,9 @@ datex, datey = 0.01, 0.82  # location of date on figure
 datax, datay = 0.41, 0.97  # location of data note on figure
 
 merc = ccrs.Mercator(central_longitude=-85.0)
+lcc = ccrs.LambertConformal(central_longitude=-95.0, central_latitude=28)
 pc = ccrs.PlateCarree()
+aecart = cartopy.crs.AzimuthalEquidistant(central_longitude=-96, central_latitude=28)
 land_10m = cfeature.NaturalEarthFeature('physical', 'land', '10m',
                                         edgecolor='face',
                                         facecolor=cfeature.COLORS['land'])
@@ -64,8 +67,9 @@ states_provinces = cfeature.NaturalEarthFeature(
 hlevs = [10, 20, 50, 100, 150, 200, 250, 300, 350, 400, 450]  # isobath contour depths
 
 
-grid_filename = '/atch/raid1/zhangxq/Projects/txla_nesting6/txla_grd_v4_new.nc'
+grid_filename = '../grid.nc'
 grid = xr.open_dataset(grid_filename)
+
 
 
 def calc(year, whichcalc):
@@ -89,7 +93,6 @@ def calc(year, whichcalc):
     fhg = mtri.LinearTriInterpolator(tri, grid.h.data.flatten())
 
     # set up projection for correct distances
-    aecart = cartopy.crs.AzimuthalEquidistant(central_longitude=-96, central_latitude=28)
     ae = Proj(aecart.proj4_init)  # initialize proj4 projection for distances
 
     # how to choose drifters from which region to plot
@@ -305,18 +308,103 @@ def plot(whichcalc="2Dtransport", whichseason='summer'):
 
     elif whichcalc == '1Dcrossing':
 
-        Files = glob('calcs/shelfconn/crossshelfcrossing-' + whichseason + '*.npz')
+        nbins = 500
+        seasons = ['winter', 'summer']
 
-        for i, File in enumerate(Files):
+        # read in isobath
+        File = 'calcs/shelfconn/crossshelfcrossing-summer-2014.npz'
+        d = np.load(File)
+        Isoxypts = d['Isoxy'][::-1,:]  # in meters, flip direction
+        Isoxy = shapely.geometry.LineString(Isoxypts)  # in meters
+        # start: Isoxy.project(shapely.geometry.Point(Isoxypts[0,:]))
+        dmax = Isoxy.project(shapely.geometry.Point(Isoxypts[-1,:]))/1000
+        ds = np.linspace(0, dmax, nbins)
 
-            d = np.load(File)
-            if i==0:  # just need to do this once
-                Isoxypts = d['Isoxy']/1000.
-                Isoxy = shapely.geometry.LineString(Isoxypts)
-                # start: Isoxy.project(shapely.geometry.Point(Isoxypts[0,:]))
-                dmax = Isoxy.project(shapely.geometry.Point(Isoxypts[-1,:]))/1000.
-            distances = d['distances']/1000.  # convert from meters to km
-            n, bins, patches = plt.hist(distances, range=(0, dmax), bins=500)
+        # Rename for convenience
+        lon_psi = grid['lon_psi'][:].data
+        lat_psi = grid['lat_psi'][:].data
+        lon_rho = grid['lon_rho'][:].data
+        lat_rho = grid['lat_rho'][:].data
+        hlevs = [10, 20, 50]#, 100, 150, 200, 250, 300, 350, 400, 450]  # isobath contour depths
+
+        # Set up plot
+        fig = plt.figure(figsize=(8.5, 7.1), dpi=100)
+        ax = fig.add_axes([0.06, 0.01, 0.93, 0.95], projection=merc)
+        ax.set_extent([-98, -87.5, 22.8, 30.5], pc)
+        gl = ax.gridlines(linewidth=0.2, color='gray', alpha=0.5, linestyle='-', draw_labels=True)
+        # the following two make the labels look like lat/lon format
+        gl.xformatter = LONGITUDE_FORMATTER
+        gl.yformatter = LATITUDE_FORMATTER
+        gl.xlabels_bottom = False  # turn off labels where you don't want them
+        gl.ylabels_right = False
+        ax.add_feature(land_10m, facecolor='0.8')
+        ax.coastlines(resolution='10m')  # coastline resolution options are '110m', '50m', '10m'
+        ax.add_feature(states_provinces, edgecolor='0.2')
+        ax.add_feature(cfeature.BORDERS, linestyle='-', edgecolor='0.2')
+        # plot isobaths
+        ax.contour(lon_rho, lat_rho, grid.h, hlevs, colors='0.6', transform=pc, linewidths=0.5)
+
+        ax.plot(*Isoxy.xy, 'k', lw=1, transform=aecart)
+        # plot lines every 100000 meters
+        dlen = 100000
+        i = 0
+        while i*dlen < dmax*1000:
+            p = Isoxy.interpolate(dlen*i)
+            ax.plot(*p.xy, marker='+', transform=aecart, ms=10, color='k')
+            if i != 15:  # lame way to turn off last label
+                ax.text(p.coords[0][0], p.coords[0][1]-25000,
+                        str(int(dlen*i/1000)), transform=aecart, fontsize=12)
+            i += 1
+
+        # overlay lines plot
+        ax2 = fig.add_axes([0.2, 0.1, 0.775, 0.6])
+        hist_total = np.zeros((2,nbins))
+        hmax = 0
+        for season in seasons:
+            Files = glob('calcs/shelfconn/crossshelfcrossing-' + season + '*.npz')
+            if season == 'summer':
+                color = 'r'
+                isea = 0
+            elif season == 'winter':
+                color = '#034183'
+                isea = 1
+
+            for i, File in enumerate(Files):
+                d = np.load(File)
+                # convert from meters to km and flip origin
+                distances = dmax - d['distances']/1000.
+                hist, bin_edges = np.histogram(distances, range=(0, dmax), bins=nbins)
+                hist_total[isea,1:] += hist[1:]
+                hmax = max((hmax, hist[1:].max()))
+                ax2.plot(ds[1:], hist[1:], color=color, alpha=0.15, lw=0.8)
+            ax2.plot(ds[1:], hist_total[isea,1:]/len(Files), color=color, lw=2)
+        # import pdb; pdb.set_trace()
+        ax2.set_ylim(-10, hmax)
+        ax2.set_xlim(0, dmax)
+        ax2.tick_params(
+            axis='y',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            left='off',      # ticks along the bottom edge are off
+            labelleft='off') # labels along the bottom edge are off
+        ax2.set_xticks(np.arange(0, 1500, 100));
+        ax2.set_frame_on(False) # kind of like it without the box
+        ax2.tick_params('x', labelsize=10)
+        ax2.text(0.25, 0.5, 'Drifter crossings by along-isobath distance',
+                 fontsize=12, transform=ax.transAxes)
+        ax2.set_xlabel('Distance along 100 meter isobath [km]', fontsize=10)
+        ax2.text(0.1, 0.4, 'Winter', color='#034183', transform=ax2.transAxes)
+        ax2.text(0.875, 0.4, 'Summer', color='r', transform=ax2.transAxes)
+
+        # scatter plot with data values
+        dhist = np.diff(hist_total, axis=0)[0]
+        vmax = abs(dhist.max())
+        for i in range(0,len(ds), 5):
+            p = Isoxy.interpolate(ds[i]*1000)  # distance along isobath
+            ax.scatter(*p.xy, s=60, c=dhist[i], cmap=cmo.balance_r, transform=aecart,
+                       vmin=-vmax, vmax=vmax, marker='s')
+
+        # fig.savefig('figures/transport/crossshelf-transport-lines.pdf', bbox_inches='tight')
+        fig.savefig('figures/transport/crossshelf-transport-lines.png', bbox_inches='tight', dpi=300)
 
 
 if __name__ == '__main__':
@@ -346,4 +434,4 @@ if __name__ == '__main__':
     if which == 'calc':
         calc(year, whichcalc)  # using input year
     elif which == 'plot':
-        plot()
+        plot(whichcalc, whichseason=None)
