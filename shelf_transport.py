@@ -7,7 +7,6 @@ mpl.use("Agg") # set matplotlib to use the backend that does not require a windo
 import numpy as np
 import os
 import netCDF4 as netCDF
-import pdb
 import matplotlib.pyplot as plt
 import tracpy
 from datetime import datetime, timedelta
@@ -23,7 +22,6 @@ def init(name):
     '''
     Initialization for the simulation.
     '''
-    print('init: start')
 
     # loc = 'http://barataria.tamu.edu:6060/thredds/dodsC/NcML/txla_nesting6.nc'
 
@@ -63,7 +61,6 @@ def init(name):
     tp = Tracpy(loc, grid=grid, name=name, tseas=tseas, ndays=ndays, nsteps=nsteps, dostream=dostream, savell=False, doperiodic=0,
                 N=N, ff=ff, ah=ah, av=av, doturb=doturb, do3d=do3d, z0=z0, zpar=zpar,
                 time_units=time_units)
-    print('init: after tp class')
 
     # tp._readgrid()
 
@@ -97,7 +94,6 @@ def init(name):
     # V = np.ma.zeros(tp.grid['xv'].shape, order='F')
 
     # pdb.set_trace()
-    print('init: after lon0, lat0')
 
     return tp, lon0, lat0
 
@@ -115,14 +111,11 @@ def run():
     # overallstopdate = datetime(2014, 7, 1, 4, 1)
 
     date = overallstartdate
-    print('st: before')
     # Start from the beginning and add days on for loop
     # keep running until we hit the next month
     while date < overallstopdate:
 
         name = date.isoformat()[0:13]
-        print('st: name')
-        print(name)
 
         # If the particle trajectories have not been run, run them
         if not os.path.exists('tracks/' + name + '.nc') and \
@@ -130,12 +123,10 @@ def run():
 
             # Read in simulation initialization
             tp, lon0, lat0 = init(name)
-            print('st: after init')
-            import pdb; pdb.set_trace()
+#            import pdb; pdb.set_trace()
             # Run tracpy
             # Save directly to grid coordinates
             lonp, latp, zp, t, T0, U, V = tracpy.run.run(tp, date, lon0, lat0)
-            print('st: after tracpy run')
 
         # Increment by 24 hours for next loop, to move through more quickly
         date = date + timedelta(hours=24)
