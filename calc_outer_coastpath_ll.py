@@ -24,3 +24,8 @@ outerpathll = Path(np.vstack(verts).T)
 
 # save
 np.savez('calcs/coastpath_outerll.npz', outerpathll=outerpathll)
+
+# check - looks good
+plt.plot(*outerpathll.vertices.T)
+pathsll = np.load('calcs/coastpaths.npz')['paths']
+[plt.plot(*pathll.vertices.T) for pathll in pathsll];
