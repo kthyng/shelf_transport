@@ -33,14 +33,25 @@ pts_v_boxes = [pts_v[pathll.contains_points(pts_v)] for pathll in pathsll]
 pts_rho_boxes = [pts_rho[pathll.contains_points(pts_rho)] for pathll in pathsll]
 pts_psi_boxes = [pts_psi[pathll.contains_points(pts_psi)] for pathll in pathsll]
 
+## indices by box ##
+# find points in each box, find flattened index, unravel to coordinate (2d) index
+inds_u_boxes = [np.unravel_index(np.where(pathll.contains_points(pts_u))[0], grid.lon_u.shape) for pathll in pathsll]
+inds_v_boxes = [np.unravel_index(np.where(pathll.contains_points(pts_v))[0], grid.lon_v.shape) for pathll in pathsll]
+inds_rho_boxes = [np.unravel_index(np.where(pathll.contains_points(pts_rho))[0], grid.lon_rho.shape) for pathll in pathsll]
+inds_psi_boxes = [np.unravel_index(np.where(pathll.contains_points(pts_psi))[0], grid.lon_psi.shape) for pathll in pathsll]
+
 # check - looks good!
 plt.plot(*outerpathll.vertices.T)
-plt.plot(*pts_u_all.T, '.');
+plt.plot(*pts_u_all.T, 'o');
 [plt.plot(*pathll.vertices.T) for pathll in pathsll];
 plt.plot(*pts_u_boxes[100].T, 'x');
+plt.plot(grid.lon_u[inds_u_boxes[100]], grid.lat_u[inds_u_boxes[100]], '.k');
 
-# save
+## save ##
+# lon/lat points
 np.savez('calcs/coastpaths_pts.npz', pts_u_all=pts_u_all, pts_v_all=pts_v_all,
          pts_rho_all=pts_rho_all, pts_psi_all=pts_psi_all,
          pts_u_boxes=pts_u_boxes, pts_v_boxes=pts_v_boxes,
-         pts_rho_boxes=pts_rho_boxes, pts_psi_boxes=pts_psi_boxes)
+         pts_rho_boxes=pts_rho_boxes, pts_psi_boxes=pts_psi_boxes,
+         inds_u_boxes=inds_u_boxes, inds_v_boxes=inds_v_boxes,
+         inds_rho_boxes=inds_rho_boxes, inds_psi_boxes=inds_psi_boxes)
