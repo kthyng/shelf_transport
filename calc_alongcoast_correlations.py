@@ -6,7 +6,7 @@ and forcing mechanisms along the coast.
 import numpy as np
 import matplotlib.pyplot as plt
 import xarray as xr
-import tracpy
+# import tracpy
 from matplotlib.path import Path
 import cartopy
 import os
@@ -51,8 +51,8 @@ dist = d['dist']
 
 
 ## load in grid
-proj = tracpy.tools.make_proj('nwgom-pyproj')
-grid = tracpy.inout.readgrid('../grid.nc', proj)
+# proj = tracpy.tools.make_proj('nwgom-pyproj')
+# grid = tracpy.inout.readgrid('../grid.nc', proj)
 # lon_rho = grid.lon_rho[1:-1,1:-1]
 # lat_rho = grid.lat_rho[1:-1,1:-1]
 # x_rho, y_rho = proj(lon_rho, lat_rho)
