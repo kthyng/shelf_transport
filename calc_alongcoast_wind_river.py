@@ -56,10 +56,13 @@ years = np.arange(2004, 2015)
 
 for year in years:
     dates = m['ocean_time'].sel(ocean_time=str(year))
-    fname_wind = base_wind + str(year) + '.csv'
-    fname_river = base_river + str(year) + '.csv'
+    fname_wind_across = base_wind + str(year) + '_across.csv'
+    fname_wind_along = base_wind + str(year) + '_along.csv'
+    fname_river_miss = base_river + str(year) + '_miss.csv'
+    fname_river_atch = base_river + str(year) + '_atch.csv'
+    fname_river_braz = base_river + str(year) + '_braz.csv'
 
-    if (not os.path.exists(fname_wind)) and (not os.path.exists(fname_river)):
+    if (not os.path.exists(fname_wind_across)) and (not os.path.exists(fname_river_miss)):
 
         # units of m^2/s for wind stress
         walong = pd.DataFrame(index=dates[::4], columns=np.arange(0,len(dist)))
@@ -104,8 +107,8 @@ for year in years:
             temp = [m.dye_04.sel(ocean_time=date).isel(s_rho=-1, eta_rho=inds_rho_box[0], xi_rho=inds_rho_box[1])[0,:].mean() for inds_rho_box in inds_rho_boxes]
             braz.loc[datepd,:] = np.vstack(temp)[:,0]
 
-        walong.to_csv(fname_wind)
-        wacross.to_csv(fname_wind)
-        miss.to_csv(fname_river)
-        atch.to_csv(fname_river)
-        braz.to_csv(fname_river)
+        walong.to_csv(fname_wind_along)
+        wacross.to_csv(fname_wind_across)
+        miss.to_csv(fname_river_miss)
+        atch.to_csv(fname_river_atch)
+        braz.to_csv(fname_river_braz)
