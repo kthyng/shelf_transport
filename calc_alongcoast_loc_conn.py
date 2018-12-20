@@ -26,11 +26,11 @@ base = 'calcs/alongcoastconn/conn_in_time/between_locs/'
 os.makedirs(base, exist_ok=True)
 for File in Files:
     # File = Files[0]
+    day = File.split('/')[-1][:-4]
     savename = '%s/%s.csv' % (base,day)
     if os.path.exists(savename):
         continue
     d = np.load(File)
-    day = File.split('/')[-1][:-4]
     index = [(pd.Timestamp(day) + pd.Timedelta(str(tt) + ' days')).round('H') for tt in t]
     df = pd.DataFrame(index=index)
     for loc0, iboxes0 in locs.items():
