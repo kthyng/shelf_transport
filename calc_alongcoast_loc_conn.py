@@ -6,9 +6,7 @@ aggregate connections between significant locations along the coast.
 from glob import glob
 import numpy as np
 import pandas as pd
-
-# boxes for each location
-# bpa = [111,112,113,114,115]; bss = [154,155,156,157,158]
+import os
 
 locs = {'Port Mansfield': [79,80, 81, 82, 83],
         'Port Aransas': [111,112,113,114,115],
@@ -23,10 +21,14 @@ locs = {'Port Mansfield': [79,80, 81, 82, 83],
 Files = glob('calcs/alongcoastconn/conn_in_time/2*.npz')
 # decimal days
 t = np.load('calcs/alongcoastconn/conn_in_time/pa_ss/t.npz')['t']
-# dt = t[1] - t[0]  # in days
 
+base = 'calcs/alongcoastconn/conn_in_time/between_locs/'
+os.makedirs(base, exist_ok=True)
 for File in Files:
     # File = Files[0]
+    savename = '%s/%s.csv' % (base,day)
+    if os.path.exists(savename):
+        continue
     d = np.load(File)
     day = File.split('/')[-1][:-4]
     index = [(pd.Timestamp(day) + pd.Timedelta(str(tt) + ' days')).round('H') for tt in t]
@@ -37,3 +39,4 @@ for File in Files:
             if loc0 == loc1:
                 continue
             df['%s to %s' % (loc0, loc1)] = d['mat'][:,iboxes0,iboxes1].sum(axis=1)
+    df.to_csv(savename)
