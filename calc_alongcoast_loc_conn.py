@@ -8,7 +8,8 @@ import numpy as np
 import pandas as pd
 import os
 
-locs = {'Port Mansfield': [79,80, 81, 82, 83],
+locs = {'Brownsville': [67, 68, 69, 70, 71],
+        'Port Mansfield': [79,80, 81, 82, 83],
         'Port Aransas': [111,112,113,114,115],
         "Port O'Connor": [129, 130, 131, 132, 133],
         'Surfside': [154,155,156,157,158],
