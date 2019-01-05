@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from glob import glob
 import os
+import cartopy
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 
 locs = {'Brownsville': [67, 68, 69, 70, 71],
@@ -35,11 +37,14 @@ base = 'calcs/alongcoastconn/conn_in_time/between_locs/'
 allFiles = sorted(glob('%s/*.csv' % base))
 dates = [pd.Timestamp(File.split('/')[-1][:-4]) for File in allFiles]
 
-# aggregate files seasonally
 months = [1,2]
+winFiles = [File for date, File in zip(dates, allFiles) if date.month in months]
+df = pd.read_csv(winFiles[0], parse_dates=True, index_col=0)
+
+# aggregate files seasonally
 fname = base + 'sum_winter.npz'
 if not os.path.exists(fname):
-    winFiles = [File for date, File in zip(dates, allFiles) if date.month in months]
+    # winFiles = [File for date, File in zip(dates, allFiles) if date.month in months]
     win = np.zeros((len(winFiles), df.columns.size, t.size))  # sim file x locations x 30 days time
     for i, File in enumerate(winFiles):
         df = pd.read_csv(File, parse_dates=True, index_col=0)
@@ -66,12 +71,15 @@ else:
     t = d['t']; dates = d['dates']; sum = d['sum']
     d.close()
 
+columns = df.columns
 
 # plot up results: mean and standard deviation for 2 seasons
+base = 'figures/alongcoastconn/conn_in_time/between_locs/all_lines'
+os.makedirs(base, exist_ok=True)
 for loc0 in locs.keys():
     fig, axes = plt.subplots(len(locs)-1, 1, sharex=True, sharey=True, figsize=(8,7))
     fig.suptitle('Transport from %s to ...' % loc0)
-    fig.subplots_adjust(top=0.96, left=0.07, right=0.98)
+    fig.subplots_adjust(top=0.96, left=0.07, right=0.98, hspace=0.35, bottom=0.07)
     axes[-1].set_xlabel('Time [days]')
     axes[0].set_ylim(0, 2)
     axes[0].set_xlim(0, 30)
@@ -94,8 +102,16 @@ for loc0 in locs.keys():
         ax.plot(t, win[:,icol,:].T, color=color, alpha=0.2, lw=2);
         ax.plot(t, sum[:,icol,:].T, color=color, alpha=0.6, lw=1);
         ax.text(0.8, 0.8, loc1, transform=ax.transAxes)
+        if i == 0:
+            axes[i].text(0.01, 0.7, 'winter', color=color, alpha=0.4, transform=axes[i].transAxes)
+            axes[i].text(0.15, 0.7, 'summer', color=color, alpha=0.8, transform=axes[i].transAxes)
+        if i == 1:
+            axes[i].text(0.01, 0.7, 'downcoast', color=cold, alpha=0.6, transform=axes[i].transAxes)
+            axes[i].text(0.15, 0.7, 'upcoast', color=colu, alpha=0.6, transform=axes[i].transAxes)
         i += 1
-
+    fig.savefig('%s/%s.png' % (base,loc0), bbox_inches='tight')
+    fig.savefig('%s/%s.pdf' % (base,loc0), bbox_inches='tight')
+    plt.close(fig)
 
 # calculate new arrays where if any connectivity has occurred, it is marked as
 # yes for the rest of the 30 days
@@ -116,29 +132,187 @@ for icol, col in enumerate(columns):
         except:
             pass
 
-
+# save plot properties
+params = {}
 for loc0 in locs.keys():
-    fig, axes = plt.subplots(len(locs)-1, 1, sharex=True, sharey=True, figsize=(8,7))
-    fig.suptitle('Transport from %s to ...' % loc0)
-    fig.subplots_adjust(top=0.95, left=0.07, right=0.98, bottom=0.05)
+    params[loc0] = {}
+params['Port Mansfield']['axes'] = [0.15, 0.35, 0.3, 0.8]
+params['Terrebonne']['axes'] = [0.15, 0.1, 0.3, 0.8]
+params['Barataria']['axes'] = [0.15, -0.1, 0.3, 0.8]
+params['Atchafalaya']['axes'] = [0.15, 0.01, 0.3, 0.8]
+params['Galveston']['axes'] = [0.12, -0.1, 0.3, 0.8]
+params['Surfside']['axes'] = [0.105, -0.225, 0.27, 0.8]
+params["Port O'Connor"]['axes'] = [0.105, 0.4275, 0.3, 0.8]
+params['Port Aransas']['axes'] = [0.15, 0.4, 0.3, 0.8]
+params['Brownsville']['axes'] = [0.105, 0.35, 0.3, 0.8]
+
+# axes index and left (x) starting location for winter text (summer to right)
+params['Port Mansfield']['text'] = [2, 0.02]
+params['Terrebonne']['text'] = [2, 0.02]
+params['Barataria']['text'] = [2, 0.02]
+params['Atchafalaya']['text'] = [0, 0.02]
+params['Galveston']['text'] = [2, 0.02]
+params['Surfside']['text'] = [2, 0.02]
+params["Port O'Connor"]['text'] = [4, 0.02]
+params['Port Aransas']['text'] = [3, 0.02]
+params['Brownsville']['text'] = [0, 0.51]
+
+base = 'figures/alongcoastconn/conn_in_time/between_locs/sum_lines'
+os.makedirs(base, exist_ok=True)
+# save no transport times for table
+f = open('calcs/alongcoastconn/conn_in_time/between_locs/times_notransport.txt', 'w')
+for loc0 in locs.keys():
+    # run through bay options once to see how many there are and store time series
+    res = {}  # save results in dictionary
+    for loc1 in locsorder:
+        if loc0 == loc1:
+            continue
+        col = '%s to %s' % (loc0, loc1)
+        icol = np.where(columns == col)[0][0]
+        winmean = ((winconn[:,icol,:]>0).sum(axis=0)/(win.shape[0]))
+        winmean[winmean==0] = np.nan
+        winstd = ((winconn[:,icol,:]>0).std(axis=0))
+        winstdm = (winmean-winstd)*100; winstdp = (winmean+winstd)*100
+        winstdm[winstdm<=0] = 0; winstdp[winstdp>100] = 100
+        summean = ((sumconn[:,icol,:]>0).sum(axis=0)/(sum.shape[0]))
+        summean[summean==0] = np.nan
+        sumstd = ((sumconn[:,icol,:]>0).std(axis=0))
+        sumstdm = (summean-sumstd)*100; sumstdp = (summean+sumstd)*100
+        sumstdm[sumstdm<=0] = 0; sumstdp[sumstdp>100] = 100
+
+        # write no-transport times to file
+        inotransport = np.where(np.isnan(winmean))[0][-1]
+        f.write('From %s to %s in winter: %2.1f days\n' % (loc0, loc1, t[inotransport]))
+        inotransport = np.where(np.isnan(summean))[0][-1]
+        f.write('From %s to %s in summer: %2.1f days\n' % (loc0, loc1, t[inotransport]))
+
+        # don't use if all mean values are nan
+        if (np.isnan(winmean).sum() == winmean.size) and \
+            (np.isnan(summean).sum() == summean.size):
+            pass
+        else:  # save
+            res[loc1] = {}
+            res[loc1]['winmean'] = winmean
+            res[loc1]['summean'] = summean
+            res[loc1]['winstdm'] = winstdm
+            res[loc1]['sumstdm'] = sumstdm
+            res[loc1]['winstdp'] = winstdp
+            res[loc1]['sumstdp'] = sumstdp
+
+    nrows = len(res.keys())
+    fig, axes = plt.subplots(nrows, 1, sharex=True, sharey=True, figsize=(5,nrows*0.85))
+    fig.subplots_adjust(top=0.95, left=0.1, right=0.98, hspace=0.35, bottom=0.07)
     axes[-1].set_xlabel('Time [days]')
-    axes[0].set_ylim(0, 50)
+    # axes[-1].set_ylabel('Likelihood any connectivity [%]', horizontalalignment='left')
+    irow = int(np.floor(nrows/2))
+    axes[irow].text(-0.125, 0.5, 'Likelihood any connectivity [%]',
+                    verticalalignment='center', rotation=90,
+                    transform=axes[irow].transAxes)
+    axes[0].text(0.01, 1.1, 'Transport from %s to ...' % loc0, transform=axes[0].transAxes, fontsize=12)
+    axes[0].set_ylim(0, 100)
     axes[0].set_xlim(0, 30)
     i = 0
     for loc1 in locsorder:
         if loc0 == loc1:
             continue
+        # only use to-location if has non-nan results
+        if not loc1 in res.keys():
+            continue
         ax = axes[i]
-        col = '%s to %s' % (loc0, loc1)
-        icol = np.where(columns == col)[0][0]
+        if locs[loc1][0] > locs[loc0][0]:  # loc1 is upcoast from loc0
+            color = colu
+        else:  # loc1 is downcoast from loc0
+            color = cold
+        ax.plot(t, res[loc1]['winmean']*100, ls='-', alpha=0.6, lw=3, color=color)
+        ax.fill_between(t, res[loc1]['winstdm'], res[loc1]['winstdp'], alpha=0.15, color=color)
+        ax.plot(t, res[loc1]['summean']*100, ls='--', alpha=0.6, lw=3, color=color)
+        ax.fill_between(t, res[loc1]['sumstdm'], res[loc1]['sumstdp'], alpha=0.15, color=color, hatch='/')
+        ax.text(0.775, 1.05, loc1, transform=ax.transAxes)
+        ax.grid(True)
+        if i == params[loc0]['text'][0]:
+            axes[i].text(params[loc0]['text'][1], 0.75, 'winter $-$', color=color, alpha=0.8, transform=axes[i].transAxes)
+            axes[i].text(params[loc0]['text'][1]+0.16, 0.75, 'summer $--$', color=color, alpha=0.8, transform=axes[i].transAxes)
+        i += 1
+
+    # add map
+    # fig = plt.figure(figsize=(7, 4))
+    axm = fig.add_axes(params[loc0]['axes'], projection=merc)
+    axm.set_frame_on(False) # kind of like it without the box
+    axm.set_extent([-98, -88.5, 25.5, 30.3], pc)
+    gl = axm.gridlines(linewidth=0.2, color='gray', alpha=0.5, linestyle='-', draw_labels=True)
+    # the following two make the labels look like lat/lon format
+    gl.xformatter = LONGITUDE_FORMATTER
+    gl.yformatter = LATITUDE_FORMATTER
+    gl.xlabels_bottom = False  # turn off labels where you don't want them
+    gl.ylabels_right = False
+    gl.xlabels_top = False  # turn off labels where you don't want them
+    gl.ylabels_left = False
+    axm.add_feature(land_10m, facecolor='0.85')
+    # axm.coastlines(resolution='10m')  # coastline resolution options are '110m', '50m', '10m'
+    axm.add_feature(cartopy.feature.BORDERS, facecolor='0.8')
+    axm.add_feature(states_provinces, edgecolor='gray')
+    # add location
+    pts_u_boxes = np.load('calcs/coastpaths_pts.npz')['pts_u_boxes']
+    pt = pts_u_boxes[locs[loc0][2]][0]
+    axm.plot(*pt, '*', color='yellow', markersize=10, transform=pc, mec='k')
+    # connectivity locations
+    for loc1 in locsorder:
+        if loc0 == loc1:
+            continue
+        # plot as empty if has nan results
+        if not loc1 in res.keys():
+            pts_u_boxes = np.load('calcs/coastpaths_pts.npz')['pts_u_boxes']
+            pt = pts_u_boxes[locs[loc1][2]][0]
+            axm.plot(*pt, 'o', color='none', markersize=5, transform=pc, mec='k')
+            continue
+        # ax = axes[i]
+        # col = '%s to %s' % (loc0, loc1)
+        # icol = np.where(columns == col)[0][0]
         if locs[loc1][0] > locs[loc0][0]:  # loc1 is upcoast from loc0
             color = colu
             # sign = 1
         else:  # loc1 is downcoast from loc0
             color = cold
-            # sign = -1
-        ax.plot(t, ((winconn[:,icol,:]>0).sum(axis=0).cumsum()/(win.shape[0]*win.shape[2]))*100, ls='-', alpha=0.4, lw=3, color=color)
-        ax.plot(t, ((sumconn[:,icol,:]>0).sum(axis=0).cumsum()/(sum.shape[0]*sum.shape[2]))*100, ls='--', lw=3, alpha=0.4, color=color)
-        ax.text(0.025, 0.8, loc1, transform=ax.transAxes)
-        ax.grid(True)
-        i += 1
+        pts_u_boxes = np.load('calcs/coastpaths_pts.npz')['pts_u_boxes']
+        pt = pts_u_boxes[locs[loc1][2]][0]
+        axm.plot(*pt, 'o', color=color, markersize=5, transform=pc)#, mec='k')
+
+    fig.savefig('%s/%s.png' % (base,loc0), bbox_inches='tight')
+    fig.savefig('%s/%s.pdf' % (base,loc0), bbox_inches='tight')
+    plt.close(fig)
+f.close()
+
+# map to have as subset
+merc = cartopy.crs.Mercator()
+pc = cartopy.crs.PlateCarree()
+land_10m = cartopy.feature.NaturalEarthFeature('physical', 'land', '10m',
+                                        edgecolor='face',
+                                        facecolor=cartopy.feature.COLORS['land'])
+states_provinces = cartopy.feature.NaturalEarthFeature(
+    category='cultural',
+    name='admin_1_states_provinces_lines',
+    scale='50m',
+    facecolor='none')
+
+# vecname = 'calcs/along_coast_wind/coast_vectors.npz'
+# dist = np.load(vecname)['dist']
+#
+# fig = plt.figure(figsize=(7, 4))
+# ax = fig.add_axes([0.1, 0.01, 0.87, 0.95], projection=merc)
+# ax.set_frame_on(False) # kind of like it without the box
+# ax.set_extent([-98, -88.5, 25.5, 30.3], pc)
+# gl = ax.gridlines(linewidth=0.2, color='gray', alpha=0.5, linestyle='-', draw_labels=True)
+# # the following two make the labels look like lat/lon format
+# gl.xformatter = LONGITUDE_FORMATTER
+# gl.yformatter = LATITUDE_FORMATTER
+# gl.xlabels_bottom = False  # turn off labels where you don't want them
+# gl.ylabels_right = False
+# ax.add_feature(land_10m, facecolor='0.8')
+# ax.coastlines(resolution='10m')  # coastline resolution options are '110m', '50m', '10m'
+# ax.add_feature(cartopy.feature.BORDERS, facecolor='0.8')
+# ax.add_feature(states_provinces, edgecolor='gray')
+#
+# # add location
+# pts_u_boxes = np.load('calcs/coastpaths_pts.npz')['pts_u_boxes']
+# pt = pts_u_boxes[locs['Terrebonne'][2]][0]
+# ax.plot(*pt, '*', color='yellow', markersize=20, transform=pc, mec='k')
