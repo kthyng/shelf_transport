@@ -16,6 +16,11 @@ import os
 # 'monthly': (this was done in make_conn_plots.run()) save conn by month-year
 time_res = '4hours'
 
+vecname = 'calcs/along_coast_wind/coast_vectors.npz'
+d = np.load(vecname)
+# along-coast distance (km)
+dist = d['dist']
+d.close()
 
 base = 'calcs/alongcoastconn/conn_in_time/'
 os.makedirs(base, exist_ok=True)
