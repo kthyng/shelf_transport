@@ -14,7 +14,7 @@ import os
 # '4hours': preserve time resolution across individual simulation to 4 hourly per each sim
 # 'sim': save connectivity by individual simulation
 # 'monthly': (this was done in make_conn_plots.run()) save conn by month-year
-time_res = 'sim'
+time_res = '4hours'
 
 
 base = 'calcs/alongcoastconn/conn_in_time/'
@@ -66,6 +66,7 @@ for i, File in enumerate(Files):
         mat[:, ix, iy] = -mat[:, ix, iy]
         matp = np.ma.masked_where(mat<0, mat)
         matn = np.ma.masked_where(mat>0, mat)
+        # SHOULD THIS BE SUM OR MEAN?
         startingp[i,:] = matp.sum(axis=2).sum(axis=0) # gives upcoast alongcoast conn as function of starting position
         endingp[i,:] = matp.sum(axis=1).sum(axis=0)
         startingn[i,:] = matn.sum(axis=2).sum(axis=0)  # gives downcoast alongcoast conn as function of starting position
