@@ -21,7 +21,7 @@ base = 'calcs/alongcoastconn/conn_in_time/'
 os.makedirs(base, exist_ok=True)
 lnamest = base + 'lines_by_start_%s.npz' % time_res
 lnameen = base + 'lines_by_end_%s.npz' % time_res
-Files = sorted(glob(base + '*.npz'))
+Files = sorted(glob(base + '2*.npz'))
 
 t = np.load(Files[0])['t']
 
