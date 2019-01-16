@@ -26,6 +26,7 @@ base = 'calcs/alongcoastconn/conn_in_time/'
 os.makedirs(base, exist_ok=True)
 lnamest = base + 'lines_by_start_%s.npz' % time_res
 lnameen = base + 'lines_by_end_%s.npz' % time_res
+# these files were created in make_conn_plots.run_with_times()
 Files = sorted(glob(base + '2*.npz'))
 
 t = np.load(Files[0])['t']

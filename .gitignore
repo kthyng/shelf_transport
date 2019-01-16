@@ -1,5 +1,13 @@
+lacasce2008fsle.gc
+calcs
+figures
+fairway*
+foo.py
+tracks
+LaCasce2008.png
 *.pyc
 *.txt
 .DS_Store
 .ipynb_checkpoints*
+notebooks/calcs
 notebooks/figures

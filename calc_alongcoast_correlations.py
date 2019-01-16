@@ -240,6 +240,12 @@ for year in np.arange(2004,2012):
         missmonth.loc[month,:] = miss[month].sum(axis=0).values
         atchmonth.loc[month,:] = atch[month].sum(axis=0).values
         brazmonth.loc[month,:] = braz[month].sum(axis=0).values
+        # mean over month
+        walongmonth.loc[month,:] = walong[month].sum(axis=0).values
+        wacrossmonth.loc[month,:] = wacross[month].sum(axis=0).values
+        missmonth.loc[month,:] = miss[month].sum(axis=0).values
+        atchmonth.loc[month,:] = atch[month].sum(axis=0).values
+        brazmonth.loc[month,:] = braz[month].sum(axis=0).values
 
 # # df to store correlations along coast
 # corrsp = pd.DataFrame(index=walong.columns, columns=['walong','wacross','miss','atch','braz'])
@@ -273,6 +279,28 @@ for year in np.arange(2004,2012):
 # axes[1].plot(dist, abs(corrsn['braz']), 'r:')
 
 
+# # how often is the wind along/across coast and in what directions
+# fig = plt.figure(figsize=(7, 4))
+# ax = fig.add_axes(params[loc0]['axes'], projection=merc)
+# ax.set_frame_on(False) # kind of like it without the box
+# ax.set_extent([-98, -88.5, 25.5, 30.3], pc)
+# gl = ax.gridlines(linewidth=0.2, color='gray', alpha=0.5, linestyle='-', draw_labels=True)
+# # the following two make the labels look like lat/lon format
+# gl.xformatter = LONGITUDE_FORMATTER
+# gl.yformatter = LATITUDE_FORMATTER
+# gl.xlabels_bottom = False  # turn off labels where you don't want them
+# gl.ylabels_right = False
+# gl.xlabels_top = False  # turn off labels where you don't want them
+# gl.ylabels_left = False
+# ax.add_feature(land_10m, facecolor='0.85')
+# # ax.coastlines(resolution='10m')  # coastline resolution options are '110m', '50m', '10m'
+# ax.add_feature(cartopy.feature.BORDERS, facecolor='0.8')
+# ax.add_feature(states_provinces, edgecolor='gray')
+
+
+
+
+
 # how to separate correlation and causation with river water (which is blown by wind too)
 # get associated p values to see where to count
 # how to decide when to add over a bump vs. correlate point by point?
@@ -283,74 +311,420 @@ cols2 = ['%s-p' % col  for col in cols0]
 cols3 = ['%s-p2' % col  for col in cols0 if '+' in col]
 cols = cols1 + cols2 + cols3
 
-corrspall = pd.DataFrame(index=walong.columns, columns=cols)
-corrsnall = pd.DataFrame(index=walong.columns, columns=cols)
-# loop over coastal boxes
-for ibox in range(342):
-    dftp = pd.DataFrame(data={'sp': sp[ibox],'walong': walongmonth[str(ibox)],
-                             'wacross': wacrossmonth[str(ibox)],
-                             'miss': missmonth[str(ibox)],
-                             'atch':atchmonth[str(ibox)],
-                             'braz':brazmonth[str(ibox)]}, dtype=float64)
-    dftn = pd.DataFrame(data={'sn': sn[ibox],'walong': walongmonth[str(ibox)],
-                             'wacross': wacrossmonth[str(ibox)],
-                             'miss': missmonth[str(ibox)],
-                             'atch':atchmonth[str(ibox)],
-                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+# loop over range of wind angle shifts to see impact on correlations alongcoast
+for rot in np.arange(0,360,15):  # every 15 deg
+
+    corrspall = pd.DataFrame(index=walong.columns, columns=cols)
+    corrsnall = pd.DataFrame(index=walong.columns, columns=cols)
+    # loop over coastal boxes
+    for ibox in range(342):
+        # rotate wind components by angle rot
+        walonguse = walongmonth[str(ibox)]*np.cos(np.deg2rad(rot)) \
+                    - wacrossmonth[str(ibox)]*np.sin(np.deg2rad(rot))
+        wacrossuse = walongmonth[str(ibox)]*np.sin(np.deg2rad(rot)) \
+                    + wacrossmonth[str(ibox)]*np.cos(np.deg2rad(rot))
+        dftp = pd.DataFrame(data={'sp': sp[ibox],'walong': walonguse,
+                                 'wacross': wacrossuse,
+                                 'miss': missmonth[str(ibox)],
+                                 'atch':atchmonth[str(ibox)],
+                                 'braz':brazmonth[str(ibox)]}, dtype=float64)
+        dftn = pd.DataFrame(data={'sn': sn[ibox],'walong': walonguse,
+                                 'wacross': wacrossuse,
+                                 'miss': missmonth[str(ibox)],
+                                 'atch':atchmonth[str(ibox)],
+                                 'braz':brazmonth[str(ibox)]}, dtype=float64)
+        for col in cols0:
+            result = sm.ols(formula="sp ~ " + col, data=dftp).fit()
+            corrspall.loc[str(ibox),col+'-r2'] = result.rsquared_adj
+            corrspall.loc[str(ibox),col+'-p'] = result.pvalues[1]
+            if '+' in col:
+                corrspall.loc[str(ibox),col+'-p2'] = result.pvalues[2]
+            result = sm.ols(formula="sn ~ " + col, data=dftn).fit()
+            corrsnall.loc[str(ibox),col+'-r2'] = result.rsquared_adj
+            corrsnall.loc[str(ibox),col+'-p'] = result.pvalues[1]
+            if '+' in col:
+                corrsnall.loc[str(ibox),col+'-p2'] = result.pvalues[2]
+    # print(result.summary())
+
+    # only show r^2 if p is low enough, p<0.01
+    pcrit = 0.01
+    fig, ax = plt.subplots(1,1,figsize=(12,4))
     for col in cols0:
-        result = sm.ols(formula="sp ~ " + col, data=dftp).fit()
-        corrspall.loc[str(ibox),col+'-r2'] = result.rsquared_adj
-        corrspall.loc[str(ibox),col+'-p'] = result.pvalues[1]
         if '+' in col:
-            corrspall.loc[str(ibox),col+'-p2'] = result.pvalues[2]
-        result = sm.ols(formula="sn ~ " + col, data=dftn).fit()
-        corrsnall.loc[str(ibox),col+'-r2'] = result.rsquared_adj
-        corrsnall.loc[str(ibox),col+'-p'] = result.pvalues[1]
+            inds = (corrspall[col+'-p']<pcrit) & (corrspall[col+'-p2']<pcrit)
+        else:
+            inds = corrspall[col+'-p']<pcrit
+        x = dist.copy()
+        y = corrspall[col+'-r2'].values
+        y[~inds] = np.nan
+        ax.plot(x, y, lw=2, label=col)
+    fig.legend()
+    ax.set_xlabel('Along-coast distance [km]')
+    ax.set_ylabel('r$^2$')
+    # also plot overall connectivity
+    ax2 = ax.twinx()
+    ax2.fill_between(dist, sp.iloc[:,:342].sum(axis=0), color=colu, alpha=0.3)
+    fig.savefig('figures/alongcoastconn/alongcoast_r2_adj_upcoast_rot%i.png' % rot, bbox_inches='tight')
+    fig.savefig('figures/alongcoastconn/alongcoast_r2_adj_upcoast_rot%i.pdf' % rot, bbox_inches='tight')
+
+    fig, ax = plt.subplots(1,1,figsize=(12,4))
+    for col in cols0:
         if '+' in col:
-            corrsnall.loc[str(ibox),col+'-p2'] = result.pvalues[2]
-# print(result.summary())
-
-# only show r^2 if p is low enough, p<0.01
-pcrit = 0.01
-fig, ax = plt.subplots(1,1,figsize=(12,4))
-for col in cols0:
-    if '+' in col:
-        inds = (corrspall[col+'-p']<pcrit) & (corrspall[col+'-p2']<pcrit)
-    else:
-        inds = corrspall[col+'-p']<pcrit
-    x = dist.copy()
-    y = corrspall[col+'-r2'].values
-    y[~inds] = np.nan
-    ax.plot(x, y, lw=2, label=col)
-fig.legend()
-ax.set_xlabel('Along-coast distance [km]')
-ax.set_ylabel('r$^2$')
-# also plot overall connectivity
-ax2 = ax.twinx()
-ax2.fill_between(dist, sp.iloc[:,:342].sum(axis=0), color=colu, alpha=0.3)
-fig.savefig('figures/alongcoastconn/alongcoast_r2_adj_upcoast.png', bbox_inches='tight')
-fig.savefig('figures/alongcoastconn/alongcoast_r2_adj_upcoast.pdf', bbox_inches='tight')
-
-fig, ax = plt.subplots(1,1,figsize=(12,4))
-for col in cols0:
-    if '+' in col:
-        inds = (corrsnall[col+'-p']<pcrit) & (corrsnall[col+'-p2']<pcrit)
-    else:
-        inds = corrsnall[col+'-p']<pcrit
-    x = dist.copy()
-    y = corrsnall[col+'-r2'].values
-    y[~inds] = np.nan
-    ax.plot(x, y, lw=2, label=col)
-fig.legend()
-ax.set_xlabel('Along-coast distance [km]')
-ax.set_ylabel('r$^2$')
-# also plot overall connectivity
-ax2 = ax.twinx()
-ax2.fill_between(dist, abs(sn.iloc[:,:342].sum(axis=0)), color=cold, alpha=0.3)
-fig.savefig('figures/alongcoastconn/alongcoast_r2_adj_downcoast.png', bbox_inches='tight')
-fig.savefig('figures/alongcoastconn/alongcoast_r2_adj_downcoast.pdf', bbox_inches='tight')
+            inds = (corrsnall[col+'-p']<pcrit) & (corrsnall[col+'-p2']<pcrit)
+        else:
+            inds = corrsnall[col+'-p']<pcrit
+        x = dist.copy()
+        y = corrsnall[col+'-r2'].values
+        y[~inds] = np.nan
+        ax.plot(x, y, lw=2, label=col)
+    fig.legend()
+    ax.set_xlabel('Along-coast distance [km]')
+    ax.set_ylabel('r$^2$')
+    # also plot overall connectivity
+    ax2 = ax.twinx()
+    ax2.fill_between(dist, abs(sn.iloc[:,:342].sum(axis=0)), color=cold, alpha=0.3)
+    fig.savefig('figures/alongcoastconn/alongcoast_r2_adj_downcoast_rot%i.png' % rot, bbox_inches='tight')
+    fig.savefig('figures/alongcoastconn/alongcoast_r2_adj_downcoast_rot%i.pdf' % rot, bbox_inches='tight')
 
 # corrspall[['walong-r2','miss-r2','walong+miss-r2']].plot()
+
+
+# look at scatter plot of a particular coastal box to see what is being correlated
+# ibox = 75
+base = 'figures/alongcoastconn/test/windvec'
+os.makedirs(base, exist_ok=True)
+# for rot in np.arange(0,360,15):  # every 15 deg
+rot = 0
+for ibox in [20,75,150]:
+    walonguse = walongmonth[str(ibox)]*np.cos(np.deg2rad(rot)) \
+            - wacrossmonth[str(ibox)]*np.sin(np.deg2rad(rot))
+    wacrossuse = walongmonth[str(ibox)]*np.sin(np.deg2rad(rot)) \
+            + wacrossmonth[str(ibox)]*np.cos(np.deg2rad(rot))
+    dftp = pd.DataFrame(data={'sp': sp[ibox],'walong': walonguse,
+                             'wacross': wacrossuse,
+                             'miss': missmonth[str(ibox)],
+                             'atch':atchmonth[str(ibox)],
+                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+    dftn = pd.DataFrame(data={'sn': sn[ibox],'walong': walonguse,
+                             'wacross': wacrossuse,
+                             'miss': missmonth[str(ibox)],
+                             'atch':atchmonth[str(ibox)],
+                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+    vmax = max((abs(dftn['sn']).max(), abs(dftp['sp']).max()))
+
+    fig, axes = plt.subplots(1,2)#, sharex=True, sharey=True)
+    fig.subplots_adjust(left=0.09, bottom=0.22, right=0.97, top=0.94, wspace=0.11)
+    axes[0].set_ylabel('wind: across')
+    axes[0].set_xlabel('wind: along')
+    axes[1].set_xlabel('wind: along')
+    axes[0].scatter(dftn['walong'], dftn['wacross'], c=dftn['sn'], s=100,cmap='cmo.curl_r', vmin=-vmax, vmax=vmax)
+    mappable = axes[1].scatter(dftp['walong'], dftp['wacross'], c=dftp['sp'], s=100,cmap='cmo.curl_r', vmin=-vmax, vmax=vmax)
+    axes[0].hlines(0, dftp['walong'].min(), dftp['walong'].max(), linestyle=':')
+    axes[0].vlines(0, dftp['wacross'].min(), dftp['wacross'].max(), linestyle=':')
+    axes[1].hlines(0, dftp['walong'].min(), dftp['walong'].max(), linestyle=':')
+    axes[1].vlines(0, dftp['wacross'].min(), dftp['wacross'].max(), linestyle=':')
+    axes[0].set_ylim(-3,3); axes[0].set_xlim(-3,3);
+    axes[1].set_ylim(-3,3); axes[1].set_xlim(-3,3);
+    # axes[0].axis('equal'); axes[1].axis('equal')
+    cax = fig.add_axes([0.2, 0.09, 0.7, 0.025])
+    cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')
+    cb.set_label('Connectivity')
+    # add wind stats to plot
+    for i, col in enumerate(['walong', 'wacross', 'walong+wacross']):
+        result = sm.ols(formula="sp ~ " + col, data=dftp).fit()
+        ax = axes[1]
+        ax.text(0.01, 0.95-i*0.2, '%s' % col, transform=ax.transAxes)
+        ax.text(0.01, 0.9-i*0.2, 'r$^2$=%0.2f' % result.rsquared_adj, transform=ax.transAxes)
+        # print('r$^2$=%0.2f' % result.rsquared_adj)
+        ax.text(0.01, 0.85-i*0.2, 'p=%0.2f' % result.pvalues[1], transform=ax.transAxes)
+        if '+' in col:
+            ax.text(0.01, 0.8-i*0.2, 'p2=%0.2f' % result.pvalues[2], transform=ax.transAxes)
+
+        result = sm.ols(formula="sn ~ " + col, data=dftn).fit()
+        ax = axes[0]
+        ax.text(0.01, 0.95-i*0.2, '%s' % col, transform=ax.transAxes)
+        ax.text(0.01, 0.9-i*0.2, 'r$^2$=%0.2f' % result.rsquared_adj, transform=ax.transAxes)
+        # print('r$^2$=%0.2f' % result.rsquared_adj)
+        ax.text(0.01, 0.85-i*0.2, 'p=%0.2f' % result.pvalues[1], transform=ax.transAxes)
+        if '+' in col:
+            ax.text(0.01, 0.8-i*0.2, 'p2=%0.2f' % result.pvalues[2], transform=ax.transAxes)
+    fig.suptitle('ibox=%2d, dist=%4d' % (ibox,dist[ibox]))
+    fig.savefig('%s/ibox_%i_rot_%2d' % (base, ibox, rot))
+    plt.close(fig)
+
+
+# separate by up/downcoast dominant first for two time series
+ibox = 75
+base = 'figures/alongcoastconn/test/windvec/sep'
+os.makedirs(base, exist_ok=True)
+for rot in np.arange(0,360,15):  # every 15 deg
+# rot = 0
+    walonguse = walongmonth[str(ibox)]*np.cos(np.deg2rad(rot)) \
+            - wacrossmonth[str(ibox)]*np.sin(np.deg2rad(rot))
+    wacrossuse = walongmonth[str(ibox)]*np.sin(np.deg2rad(rot)) \
+            + wacrossmonth[str(ibox)]*np.cos(np.deg2rad(rot))
+    dftp = pd.DataFrame(data={'sp': sp[ibox],'walong': walonguse,
+                             'wacross': wacrossuse,
+                             'miss': missmonth[str(ibox)],
+                             'atch':atchmonth[str(ibox)],
+                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+    dftn = pd.DataFrame(data={'sn': sn[ibox],'walong': walonguse,
+                             'wacross': wacrossuse,
+                             'miss': missmonth[str(ibox)],
+                             'atch':atchmonth[str(ibox)],
+                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+    vmax = max((abs(dftn['sn']).max(), abs(dftp['sp']).max()))
+
+    iup = abs(dftp['sp']) > abs(dftn['sn'])
+    idown = ~iup  # time indices when downcoast dominant
+
+    fig, axes = plt.subplots(1,2, sharex=True, sharey=True)
+    fig.subplots_adjust(left=0.09, bottom=0.22, right=0.97, top=0.94, wspace=0.11)
+    axes[0].set_ylabel('wind: across')
+    axes[0].set_xlabel('wind: along')
+    axes[1].set_xlabel('wind: along')
+    axes[0].scatter(dftn['walong'][idown], dftn['wacross'][idown], c=dftn['sn'][idown], s=100,cmap='cmo.curl_r', vmin=-vmax, vmax=vmax)
+    mappable = axes[1].scatter(dftp['walong'][iup], dftp['wacross'][iup], c=dftp['sp'][iup], s=100,cmap='cmo.curl_r', vmin=-vmax, vmax=vmax)
+    axes[0].hlines(0, dftp['walong'][idown].min(), dftp['walong'][idown].max(), linestyle=':')
+    axes[0].vlines(0, dftp['wacross'][iup].min(), dftp['wacross'][iup].max(), linestyle=':')
+    axes[1].hlines(0, dftp['walong'][idown].min(), dftp['walong'][idown].max(), linestyle=':')
+    axes[1].vlines(0, dftp['wacross'][iup].min(), dftp['wacross'][iup].max(), linestyle=':')
+    cax = fig.add_axes([0.2, 0.09, 0.7, 0.025])
+    cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')
+    cb.set_label('Connectivity')
+    # add wind stats to plot
+    for i, col in enumerate(['walong', 'wacross', 'walong+wacross']):
+        result = sm.ols(formula="sp ~ " + col, data=dftp[iup]).fit()
+        ax = axes[1]
+        ax.text(0.01, 0.95-i*0.2, '%s' % col, transform=ax.transAxes)
+        ax.text(0.01, 0.9-i*0.2, 'r$^2$=%0.2f' % result.rsquared_adj, transform=ax.transAxes)
+        # print('r$^2$=%0.2f' % result.rsquared_adj)
+        ax.text(0.01, 0.85-i*0.2, 'p=%0.2f' % result.pvalues[1], transform=ax.transAxes)
+        if '+' in col:
+            ax.text(0.01, 0.8-i*0.2, 'p2=%0.2f' % result.pvalues[2], transform=ax.transAxes)
+
+        result = sm.ols(formula="sn ~ " + col, data=dftn[idown]).fit()
+        ax = axes[0]
+        ax.text(0.01, 0.95-i*0.2, '%s' % col, transform=ax.transAxes)
+        ax.text(0.01, 0.9-i*0.2, 'r$^2$=%0.2f' % result.rsquared_adj, transform=ax.transAxes)
+        # print('r$^2$=%0.2f' % result.rsquared_adj)
+        ax.text(0.01, 0.85-i*0.2, 'p=%0.2f' % result.pvalues[1], transform=ax.transAxes)
+        if '+' in col:
+            ax.text(0.01, 0.8-i*0.2, 'p2=%0.2f' % result.pvalues[2], transform=ax.transAxes)
+    fig.suptitle('rotation angle=%2d' % rot)
+    fig.savefig('%s/ibox_%i_rot_%2d' % (base, ibox, rot))
+    plt.close(fig)
+
+
+
+
+
+
+# several examples follow, which I am now using to systematically find the angle
+# for each coastal box for which 1. wacross>0 and 2. r^2 is minimized.
+# these tend to give the best relationship for walong once all are
+
+# another scatter plot attempt
+ibox = 120
+base = 'figures/alongcoastconn/test/'
+os.makedirs(base, exist_ok=True)
+# for rot in np.arange(0,360,15):  # every 15 deg
+rot = 0
+    walonguse = walongmonth[str(ibox)]*np.cos(np.deg2rad(rot)) \
+            - wacrossmonth[str(ibox)]*np.sin(np.deg2rad(rot))
+    wacrossuse = walongmonth[str(ibox)]*np.sin(np.deg2rad(rot)) \
+            + wacrossmonth[str(ibox)]*np.cos(np.deg2rad(rot))
+    dftp = pd.DataFrame(data={'sp': sp[ibox],'walong': walonguse,
+                             'wacross': wacrossuse,
+                             'miss': missmonth[str(ibox)],
+                             'atch':atchmonth[str(ibox)],
+                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+    dftn = pd.DataFrame(data={'sn': sn[ibox],'walong': walonguse,
+                             'wacross': wacrossuse,
+                             'miss': missmonth[str(ibox)],
+                             'atch':atchmonth[str(ibox)],
+                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+
+
+    fig, axes = plt.subplots(2,2, sharex=True, sharey=True)
+    vmax = dftp['atch'].max(); vmin = dftp['atch'].min()
+    for i, row in enumerate([dftn['sn'], dftp['sp']]):
+        for j, col in enumerate(['walong', 'wacross']):
+            ax = axes[i,j]
+            ax.scatter(dftp[col], row, c=dftp['atch'], s=50, cmap='cmo.amp', vmin=vmin, vmax=vmax)#, norm=matplotlib.colors.LogNorm())
+            ax.hlines(0, dftp[col].min(), dftp[col].max())
+            ax.vlines(0, row.min(), row.max())
+            if i==0:
+                result = sm.ols(formula="sn ~ " + col, data=dftn).fit()
+                ax.text(0.01, 0.9, '%s' % col, transform=ax.transAxes)
+                ax.text(0.01, 0.8, 'r$^2$=%0.2f' % result.rsquared_adj, transform=ax.transAxes)
+                ax.text(0.01, 0.7, 'p=%0.2f' % result.pvalues[1], transform=ax.transAxes)
+            elif i==1:
+                result = sm.ols(formula="sp ~ " + col, data=dftp).fit()
+                ax.text(0.01, 0.9, '%s' % col, transform=ax.transAxes)
+                ax.text(0.01, 0.8, 'r$^2$=%0.2f' % result.rsquared_adj, transform=ax.transAxes)
+                ax.text(0.01, 0.7, 'p=%0.2f' % result.pvalues[1], transform=ax.transAxes)
+
+    axes[0,0].set_ylabel('downcoast')
+    axes[1,0].set_ylabel('upcoast')
+    axes[1,0].set_xlabel('walong')
+    axes[1,1].set_xlabel('wacross')
+    fig.suptitle('rotation angle=%2d' % rot)
+    fig.savefig('%s/ibox_%i_rot_%2d' % (base, ibox, rot))
+    plt.close(fig)
+
+# another scatter plot attempt
+ibox = 150
+base = 'figures/alongcoastconn/test/'
+os.makedirs(base, exist_ok=True)
+for rot in np.arange(0,360,15):  # every 15 deg
+# rot = 45
+    walonguse = walongmonth[str(ibox)]*np.cos(np.deg2rad(rot)) \
+            - wacrossmonth[str(ibox)]*np.sin(np.deg2rad(rot))
+    wacrossuse = walongmonth[str(ibox)]*np.sin(np.deg2rad(rot)) \
+            + wacrossmonth[str(ibox)]*np.cos(np.deg2rad(rot))
+    dftp = pd.DataFrame(data={'sp': sp[ibox],'walong': walonguse,
+                             'wacross': wacrossuse,
+                             'miss': missmonth[str(ibox)],
+                             'atch':atchmonth[str(ibox)],
+                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+    dftn = pd.DataFrame(data={'sn': sn[ibox],'walong': walonguse,
+                             'wacross': wacrossuse,
+                             'miss': missmonth[str(ibox)],
+                             'atch':atchmonth[str(ibox)],
+                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+
+
+    fig, axes = plt.subplots(2,2, sharex=True, sharey=True)
+    vmax = dftp['atch'].max(); vmin = dftp['atch'].min()
+    for i, row in enumerate([dftn['sn'], dftp['sp']]):
+        for j, col in enumerate(['walong', 'wacross']):
+            ax = axes[i,j]
+            ax.scatter(dftp[col], row, c=dftp['atch'], s=50, cmap='cmo.amp', vmin=vmin, vmax=vmax)#, norm=matplotlib.colors.LogNorm())
+            ax.hlines(0, dftp[col].min(), dftp[col].max())
+            ax.vlines(0, row.min(), row.max())
+            if i==0:
+                result = sm.ols(formula="sn ~ " + col, data=dftn).fit()
+                ax.text(0.01, 0.9, '%s' % col, transform=ax.transAxes)
+                ax.text(0.01, 0.8, 'r$^2$=%0.2f' % result.rsquared_adj, transform=ax.transAxes)
+                ax.text(0.01, 0.7, 'p=%0.2f' % result.pvalues[1], transform=ax.transAxes)
+            elif i==1:
+                result = sm.ols(formula="sp ~ " + col, data=dftp).fit()
+                ax.text(0.01, 0.9, '%s' % col, transform=ax.transAxes)
+                ax.text(0.01, 0.8, 'r$^2$=%0.2f' % result.rsquared_adj, transform=ax.transAxes)
+                ax.text(0.01, 0.7, 'p=%0.2f' % result.pvalues[1], transform=ax.transAxes)
+
+    axes[0,0].set_ylabel('downcoast')
+    axes[1,0].set_ylabel('upcoast')
+    axes[1,0].set_xlabel('walong')
+    axes[1,1].set_xlabel('wacross')
+    fig.suptitle('rotation angle=%2d' % rot)
+    fig.savefig('%s/ibox_%i_rot_%2d' % (base, ibox, rot))
+    plt.close(fig)
+
+# 315 angle shows only connectivity when onshore, which makes sense
+# check a box between 250 and 500 to see how that looks
+ibox = 75
+base = 'figures/alongcoastconn/test/'
+os.makedirs(base, exist_ok=True)
+for rot in np.arange(0,360,15):  # every 15 deg
+# rot = 45
+    walonguse = walongmonth[str(ibox)]*np.cos(np.deg2rad(rot)) \
+            - wacrossmonth[str(ibox)]*np.sin(np.deg2rad(rot))
+    wacrossuse = walongmonth[str(ibox)]*np.sin(np.deg2rad(rot)) \
+            + wacrossmonth[str(ibox)]*np.cos(np.deg2rad(rot))
+    dftp = pd.DataFrame(data={'sp': sp[ibox],'walong': walonguse,
+                             'wacross': wacrossuse,
+                             'miss': missmonth[str(ibox)],
+                             'atch':atchmonth[str(ibox)],
+                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+    dftn = pd.DataFrame(data={'sn': sn[ibox],'walong': walonguse,
+                             'wacross': wacrossuse,
+                             'miss': missmonth[str(ibox)],
+                             'atch':atchmonth[str(ibox)],
+                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+
+
+    fig, axes = plt.subplots(2,2, sharex=True, sharey=True)
+    # i = 0
+    for i, row in enumerate([dftn['sn'], dftp['sp']]):
+        for j, col in enumerate(['walong', 'wacross']):
+            ax = axes[i,j]
+            ax.plot(dftp[col], row, 'o')
+            ax.hlines(0, dftp[col].min(), dftp[col].max())
+            ax.vlines(0, row.min(), row.max())
+            if i==0:
+                result = sm.ols(formula="sn ~ " + col, data=dftn).fit()
+                ax.text(0.01, 0.9, '%s' % col, transform=ax.transAxes)
+                ax.text(0.01, 0.8, 'r$^2$=%0.2f' % result.rsquared_adj, transform=ax.transAxes)
+                ax.text(0.01, 0.7, 'p=%0.2f' % result.pvalues[1], transform=ax.transAxes)
+            elif i==1:
+                result = sm.ols(formula="sp ~ " + col, data=dftp).fit()
+                ax.text(0.01, 0.9, '%s' % col, transform=ax.transAxes)
+                ax.text(0.01, 0.8, 'r$^2$=%0.2f' % result.rsquared_adj, transform=ax.transAxes)
+                ax.text(0.01, 0.7, 'p=%0.2f' % result.pvalues[1], transform=ax.transAxes)
+
+    axes[0,0].set_ylabel('downcoast')
+    axes[1,0].set_ylabel('upcoast')
+    axes[1,0].set_xlabel('walong')
+    axes[1,1].set_xlabel('wacross')
+    fig.suptitle('rotation angle=%2d' % rot)
+    fig.savefig('%s/ibox_%i_rot_%2d' % (base, ibox, rot))
+    plt.close(fig)
+
+
+ibox = 20
+base = 'figures/alongcoastconn/test/'
+os.makedirs(base, exist_ok=True)
+for rot in np.arange(0,360,15):  # every 15 deg
+# rot = 45
+    walonguse = walongmonth[str(ibox)]*np.cos(np.deg2rad(rot)) \
+            - wacrossmonth[str(ibox)]*np.sin(np.deg2rad(rot))
+    wacrossuse = walongmonth[str(ibox)]*np.sin(np.deg2rad(rot)) \
+            + wacrossmonth[str(ibox)]*np.cos(np.deg2rad(rot))
+    dftp = pd.DataFrame(data={'sp': sp[ibox],'walong': walonguse,
+                             'wacross': wacrossuse,
+                             'miss': missmonth[str(ibox)],
+                             'atch':atchmonth[str(ibox)],
+                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+    dftn = pd.DataFrame(data={'sn': sn[ibox],'walong': walonguse,
+                             'wacross': wacrossuse,
+                             'miss': missmonth[str(ibox)],
+                             'atch':atchmonth[str(ibox)],
+                             'braz':brazmonth[str(ibox)]}, dtype=float64)
+
+
+    fig, axes = plt.subplots(2,2, sharex=True, sharey=True)
+    # i = 0
+    for i, row in enumerate([dftn['sn'], dftp['sp']]):
+        for j, col in enumerate(['walong', 'wacross']):
+            ax = axes[i,j]
+            ax.plot(dftp[col], row, 'o')
+            ax.hlines(0, dftp[col].min(), dftp[col].max())
+            ax.vlines(0, row.min(), row.max())
+            if i==0:
+                result = sm.ols(formula="sn ~ " + col, data=dftn).fit()
+                ax.text(0.01, 0.9, '%s' % col, transform=ax.transAxes)
+                ax.text(0.01, 0.8, 'r$^2$=%0.2f' % result.rsquared_adj, transform=ax.transAxes)
+                ax.text(0.01, 0.7, 'p=%0.2f' % result.pvalues[1], transform=ax.transAxes)
+            elif i==1:
+                result = sm.ols(formula="sp ~ " + col, data=dftp).fit()
+                ax.text(0.01, 0.9, '%s' % col, transform=ax.transAxes)
+                ax.text(0.01, 0.8, 'r$^2$=%0.2f' % result.rsquared_adj, transform=ax.transAxes)
+                ax.text(0.01, 0.7, 'p=%0.2f' % result.pvalues[1], transform=ax.transAxes)
+
+    axes[0,0].set_ylabel('downcoast')
+    axes[1,0].set_ylabel('upcoast')
+    axes[1,0].set_xlabel('walong')
+    axes[1,1].set_xlabel('wacross')
+    fig.suptitle('rotation angle=%2d' % rot)
+    fig.savefig('%s/ibox_%i_rot_%2d' % (base, ibox, rot))
+    plt.close(fig)
+
+# should i still keep up and downcoast separately or how to deal otherwise?
+# Maybe I need to account for time lag of wind, or how long it has been blowing
+
+
 
 # seem to be able to pull out brazos, atch, convergence in cross shelf wind,
 # but not miss — seem to need to add over bump for that
@@ -584,3 +958,190 @@ for col in cols0:
         ax.plot(dist[::dd][inds], corrsnall[col+'-r2'][inds], marker='.')
 fig.legend()
 ####
+
+
+
+
+# correlate with high time res
+# this didn't really work out
+walong2 = walong.resample('4H').interpolate()
+wacross2 = wacross.resample('4H').interpolate()
+
+d = np.load('calcs/alongcoastconn/conn_in_time/lines_by_start.npz')
+sp2 = d['startingp']; sn2 = d['startingn']
+# there are a bunch of -0.0625 in downcoast sn. Set to nan because I think they
+# are a replacement for 0 and for high time res they don't look right to include
+sn2[sn2 == -0.0625] = np.nan
+# run correlations for simulations across season
+r2 = []
+vmax = abs(np.nanmin(sn2[:11,:,ibox]))
+for dstart in pd.date_range(start=dstartoverall, end=pd.Timestamp('2004-1-11'), freq= '1D'):
+    # dstart = pd.Timestamp('2004-01-02'); dt = pd.Timedelta('30 days')
+    dstartoverall = pd.Timestamp('2004-01-01')
+    dend = dstart + dt - pd.Timedelta('4 hours')
+    ibox = 150
+    idays = (dstart - dstartoverall).days  # days after 2st possible date, which gives index
+
+    fig = plt.figure()
+    x = walong2.loc[dstart:dend,str(ibox)]
+    y = wacross2.loc[dstart:dend,str(ibox)]
+    mappable = plt.scatter(x, y, c=sn2[idays,:,ibox], s=100, cmap='cmo.curl_r', vmin=-vmax, vmax=vmax)
+    # plt.scatter(walong2.loc[dstart:dend,str(ibox)], wacross2.loc[dstart:dend,str(ibox)], c=sp2[idays,:,ibox], s=100, cmap='cmo.curl_r')
+    fig.colorbar(mappable)
+    plt.hlines(0, x.min(), x.max(), linestyle=':')
+    plt.vlines(0, y.min(), y.max(), linestyle=':')
+    plt.ylabel('wacross')
+    plt.xlabel('walong')
+
+    result = sm.ols(formula="sn ~ walong", data={'walong': walong2.loc[dstart:dend,str(ibox)], 'sn': sn2[idays,:,ibox]}).fit()
+    r2.append(result.rsquared)
+    # print(result.rsquared)
+    # print(result.pvalues[1:])
+
+
+
+# try with time res of 1 per simulation
+walong2 = walong.resample('1D').interpolate()
+wacross2 = wacross.resample('1D').interpolate()
+walong3 = walong.resample('1MS').sum()
+wacross3 = wacross.resample('1MS').sum()
+
+d = np.load('calcs/alongcoastconn/conn_in_time/lines_by_start_sim.npz')
+sp2 = d['startingp']; sn2 = d['startingn']
+index = pd.DatetimeIndex(d['dates'])
+sn3 = pd.DataFrame(index=index, columns=np.arange(0,len(dist)), data=sn2)
+sp3 = pd.DataFrame(index=index, columns=np.arange(0,len(dist)), data=sp2)
+
+sp4 = sp3.resample('1MS').mean()
+sn4 = sn3.resample('1MS').mean()
+
+dend = pd.Timestamp('2011-12-31')
+ibox = 75
+# idays = (dstart - dstartoverall).days  # days after 2st possible date, which gives index
+iday = np.where(index == dend)[0][0]
+
+which = 'try3'  # 'orig', 'try1'
+fig = plt.figure()
+# LOOKS LIKE I CAN GET EVEN BETTER RESULTS NOW, BUT WHY ISN'T DAILY BETTER THAN
+# MONTHLY?
+# original
+if which == 'orig':
+    x = walongmonth.loc[:,str(ibox)]
+    y = wacrossmonth.loc[:,str(ibox)]
+    z = sn[ibox]
+    title = 'original'
+# all new, by day
+elif which == 'try1':
+    x = walong2.loc[:,str(ibox)]
+    y = wacross2.loc[:,str(ibox)]
+    z = sn3[:walong2.index[-1]][ibox]
+    title = 'all new, by day'
+# new daily, resampling to months
+elif which == 'try2':
+    x = walong3.loc[:,str(ibox)]
+    y = wacross3.loc[:,str(ibox)]
+    z = sn4[:walong3.index[-1]][ibox]
+    title = 'new daily, resampling to monthly'
+# new daily, using previous wind monthly sum
+elif which == 'try3':
+    x = walongmonth.loc[:,str(ibox)]
+    y = wacrossmonth.loc[:,str(ibox)]
+    z = sn4[ibox]
+    title = 'new daily, previous wind sum'
+#
+vmax = abs(np.nanmin(z))
+
+mappable = plt.scatter(x, y, c=z, s=100, cmap='cmo.curl_r', vmin=-vmax, vmax=vmax);
+# mappable = plt.scatter(x, y, c=sn2[:iday+1,ibox], s=100, cmap='cmo.curl_r', vmin=-vmax, vmax=vmax)
+# plt.scatter(walong2.loc[dstart:dend,str(ibox)], wacross2.loc[dstart:dend,str(ibox)], c=sp2[idays,:,ibox], s=100, cmap='cmo.curl_r')
+fig.colorbar(mappable)
+plt.hlines(0, x.min(), x.max(), linestyle=':')
+plt.vlines(0, y.min(), y.max(), linestyle=':')
+plt.ylabel('wacross')
+plt.xlabel('walong')
+
+# result = sm.ols(formula="sn ~ walong", data=dftn).fit()
+dftemp = pd.DataFrame(index=x.index, data={'sn': z, 'walong': x, 'wacross': y}, dtype=float)
+result = sm.ols(formula="sn ~ walong", data=dftemp).fit()
+# r2.append(result.rsquared)
+print(result.rsquared)
+# print(result.pvalues[1:])
+plt.title(title + ', r$^2$=%0.2f' % result.rsquared)
+
+
+
+
+d = np.load('calcs/alongcoastconn/conn_in_time/lines_by_start_4hours.npz')
+# number of simulations (matching dates) x time in simulation (4 hours) x alongcoast conn box
+sp5 = d['startingp']; sn5 = d['startingn']
+# change to monthly to match sp/sn:
+# leave 0 axis, sum of axis 1, leave axis 2
+# sum across month
+sp6 = pd.DataFrame(index=d['dates'], data=sp5.sum(axis=1))
+sp6 = sp6.resample('1MS').sum()
+sn6 = pd.DataFrame(index=d['dates'], data=sn5.sum(axis=1))
+sn6 = sn6.resample('1MS').sum()
+# change to monthly to match sp/sn:
+# leave 0 axis, sum of axis 1, leave axis 2
+# mean across month
+sp7 = pd.DataFrame(index=d['dates'], data=sp5.sum(axis=1))
+sp7 = sp7.resample('1MS').mean()
+sn7 = pd.DataFrame(index=d['dates'], data=sn5.sum(axis=1))
+sn7 = sn7.resample('1MS').mean()
+# change to monthly to match sp/sn:
+# leave 0 axis, mean of axis 1, leave axis 2
+# mean across month
+sp8 = pd.DataFrame(index=d['dates'], data=sp5.mean(axis=1))
+sp8 = sp8.resample('1MS').mean()
+sn8 = pd.DataFrame(index=d['dates'], data=sn5.mean(axis=1))
+sn8 = sn8.resample('1MS').mean()
+# change to monthly to match sp/sn:
+# leave 0 axis, mean of axis 1, leave axis 2
+# mean across month
+sp9 = pd.DataFrame(index=d['dates'], data=sp5.mean(axis=1))
+sp9 = sp9.resample('1MS').sum()
+sn9 = pd.DataFrame(index=d['dates'], data=sn5.mean(axis=1))
+sn9 = sn9.resample('1MS').sum()
+
+which = 'try6'
+# try to match original plot to make sure doing same process
+if which == 'orig':
+    x = walongmonth.loc[:,str(ibox)]
+    y = wacrossmonth.loc[:,str(ibox)]
+    z = sn[ibox]
+    title = 'original'
+elif which == 'try4':
+    x = walongmonth.loc[:,str(ibox)]
+    y = wacrossmonth.loc[:,str(ibox)]
+    z = sn6[ibox]
+    title = 'trying to match, with sum/sum'
+elif which == 'try5':
+    x = walongmonth.loc[:,str(ibox)]
+    y = wacrossmonth.loc[:,str(ibox)]
+    z = sn7[ibox]
+    title = 'trying to match, with sum/mean'
+elif which == 'try6':
+    x = walongmonth.loc[:,str(ibox)]
+    y = wacrossmonth.loc[:,str(ibox)]
+    z = sn8[ibox]
+    title = 'trying to match, with mean/mean'
+
+vmax = abs(np.nanmin(z))
+
+fig = plt.figure()
+mappable = plt.scatter(x, y, c=z, s=100, cmap='cmo.curl_r', vmin=-vmax, vmax=vmax);
+# mappable = plt.scatter(x, y, c=sn2[:iday+1,ibox], s=100, cmap='cmo.curl_r', vmin=-vmax, vmax=vmax)
+# plt.scatter(walong2.loc[dstart:dend,str(ibox)], wacross2.loc[dstart:dend,str(ibox)], c=sp2[idays,:,ibox], s=100, cmap='cmo.curl_r')
+fig.colorbar(mappable)
+plt.hlines(0, x.min(), x.max(), linestyle=':')
+plt.vlines(0, y.min(), y.max(), linestyle=':')
+plt.ylabel('wacross')
+plt.xlabel('walong')
+
+# result = sm.ols(formula="sn ~ walong", data=dftn).fit()
+dftemp = pd.DataFrame(index=x.index, data={'sn': z, 'walong': x, 'wacross': y}, dtype=float)
+result = sm.ols(formula="sn ~ walong", data=dftemp).fit()
+# r2.append(result.rsquared)
+print(result.rsquared)
+# print(result.pvalues[1:])
+plt.title(title + ', r$^2$=%0.2f' % result.rsquared)
