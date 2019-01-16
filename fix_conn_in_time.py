@@ -13,16 +13,22 @@ Files = sorted(glob('%s/2???-??-??T??.npz' % base))
 
 # move these files to another directory to not overwite
 newpath = 'calcs/alongcoastconn/conn_in_time/old_BEFOREFIXING/'
-os.makedirs(newpath, exist_ok=True)
-[shutil.move(File, newpath) for File in Files]
+
+# already done on hafen
+# os.makedirs(newpath, exist_ok=True)
+# [shutil.move(File, newpath) for File in Files]
 
 Files = sorted(glob('%s/2???-??-??T??.npz' % newpath))
 t = np.load(Files[0])['t']
 
 for File in Files:
-    print(File)
     # File = Files[0]
     fname = '%s/%s' % (base,File.split('/')[-1])
+    print(fname)
+
+    if os.path.exists(fname):
+        continue
+
     mat = np.load(File)['mat']
 
     mat[0,range(342),range(342)] = 1
