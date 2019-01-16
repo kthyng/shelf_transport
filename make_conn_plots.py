@@ -345,16 +345,14 @@ def plot_interannual():
     '''
 
     cmap = cmo.curl_r
-    season = 'summer'  # 'winter' or 'summer'
+    season = 'winter'  # 'winter' or 'summer'
     log = False
-    regions = False  # do plot with region lines (MX, TX, LA)
+    regions = True  # do plot with region lines (MX, TX, LA)
     baylabels = False  # mark locations with ticks
     bayvalues = False  # annotate bay values
     largefonts = False  # use large fonts for presentation plot
 
-    xticklocs = np.arange(0, 2000, 200)
-    xticklocsmin = np.arange(100, 2000, 200)  # minor
-
+    xticklocs = np.arange(0, 2000, 500)
     years = np.arange(2004, 2015)
 
     if season == 'winter':
@@ -399,10 +397,15 @@ def plot_interannual():
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
             continue
-        ax.text(0.05, 0.9, str(years[i]), transform=ax.transAxes, fontsize=18)
+        ax.set_title(str(years[i]))
         if i == 9:
             ax.set_ylabel('Along coast start location [km]')
             ax.set_xlabel('Along coast end location [km]')
+        ax.xaxis.set_ticks_position('bottom')  # turns off top tick marks
+        ax.yaxis.set_ticks_position('left')
+        ax.axis('equal')
+        ax.set_xticks(xticklocs);
+        ax.set_yticks(xticklocs);
         if i != 9:
             ax.yaxis.set_ticklabels([])
             ax.xaxis.set_ticklabels([])
@@ -410,16 +413,7 @@ def plot_interannual():
             mappable = ax.pcolormesh(mat[i,iseason,:,:]*100., cmap=cmap, vmin=1., vmax=100., norm=colors.LogNorm())
         else:
             mappable = ax.pcolormesh(X, Y, mat[i,iseason,:,:]*100., cmap=cmap, vmax=100., vmin=-100)
-        ax.set_frame_on(False)
-        ax.xaxis.set_ticks_position('bottom')  # turns off top tick marks
-        ax.yaxis.set_ticks_position('left')
-        ax.set_xticks(xticklocs, minor=False);
-        ax.set_yticks(xticklocs, minor=False);
-        ax.set_xticks(xticklocsmin, minor=True)
-        ax.set_yticks(xticklocsmin, minor=True)
-        ax.grid(which='major', lw=2, color='k', alpha=0.075)
-        ax.grid(which='minor', lw=1, color='k', alpha=0.075)
-        ax.axis('equal')
+        # import pdb; pdb.set_trace()
         # Plot a few ticks for notable locations
         left = -25; right = 35
         for distance, box in zip(distances, boxes):
@@ -505,14 +499,12 @@ def plot_seasonal():
 
     cmap = cmo.curl_r  # 'YlGn'
     log = False
-    regions = False  # do plot with region lines (MX, TX, LA)
-    baylabels = False  # mark locations with ticks
-    bayvalues = False  # annotate bay values
-    largefonts = False  # use large fonts for presentation plot
-    plotcontour = True  # plot contours at edge of light behavior
+    regions = True  # do plot with region lines (MX, TX, LA)
+    baylabels = True  # mark locations with ticks
+    bayvalues = True  # annotate bay values
+    largefonts = True  # use large fonts for presentation plot
 
-    xticklocs = np.arange(0, 2000, 200)
-    xticklocsmin = np.arange(100, 2000, 200)  # minor
+    xticklocs = np.arange(0, 2000, 500)
 
     ## Read in files ##
     filename = 'calcs/alongcoastconn/conn-seasonal.npz'
@@ -541,37 +533,40 @@ def plot_seasonal():
     mat[:, ix, iy] = -mat[:, ix, iy]
 
     ## Plot setup ##
-    fig, axarr = plt.subplots(1,2, sharey=True)#, sharex=True)
-    fig.set_size_inches(11.2, 6.6125)
-    fig.subplots_adjust(left=0.045, bottom=0.175, right=1.0, top=0.96, wspace=0.02, hspace=0.04)
+    fig, axarr = plt.subplots(1,2)#, sharex=True)
+    fig.set_size_inches(11.0, 6.6125)
+    fig.subplots_adjust(left=0.045, bottom=0.175, right=1.0, top=0.96, wspace=0.005, hspace=0.04)
     for i, ax in enumerate(axarr):
        # Titles for subplots
         if i==0:
             # tracpy.plotting.background(grid=grid, ax=ax, mers=np.arange(-100, -80, 2))
             ax.set_title('Winter')
             ax.set_ylabel('Along coast start location [km]')
+            ax.set_xlabel('Along coast end location [km]')
+            ax.xaxis.set_ticks_position('bottom')  # turns off top tick marks
+            ax.yaxis.set_ticks_position('left')
+            ax.axis('equal')
+            ax.set_xticks(xticklocs);
+            ax.set_yticks(xticklocs);
+            # ax.pcolormesh(mat[i,:,:], cmap=cmap)
         elif i==1:
             # tracpy.plotting.background(grid=grid, ax=ax, parslabels=[0,0,0,0], mers=np.arange(-100, -80, 2))
             ax.set_title('Summer')
+            ax.set_xlabel('Along coast end location [km]')
+            ax.xaxis.set_ticks_position('bottom')  # turns off top tick marks
+            ax.yaxis.set_ticks_position('left')
+            ax.axis('equal')
+            # ax.xaxis.set_ticklabels([])
+            ax.yaxis.set_ticklabels([])
+            ax.set_xticks(xticklocs);
+            ax.set_yticks(xticklocs);
+            # ax.get_xaxis().set_visible(False)
         if log:
             mappable = ax.pcolormesh(mat[i,:,:]*100., cmap=cmap, vmin=1., vmax=100., norm=colors.LogNorm())
         else:
             mappable = ax.pcolormesh(X, Y, mat[i,:,:]*100., cmap=cmap, vmax=100., vmin=-100)
-        if plotcontour:
-            # import pdb; pdb.set_trace()
-            ax.contour(X, Y, mat[i,:,:]*100., [-0.5,0.5], linestyles='-', colors='0.6', linewidths=2, alphas=0.1)
-            ax.contour(X, Y, mat[i,:,:]*100., [-5,5], linestyles='-', colors='0.6', linewidths=2, alphas=0.1)
+        # import pdb; pdb.set_trace()
         ax.set_frame_on(False)
-        ax.set_xlabel('Along coast end location [km]')
-        ax.xaxis.set_ticks_position('bottom')  # turns off top tick marks
-        ax.yaxis.set_ticks_position('left')
-        ax.set_xticks(xticklocs, minor=False);
-        ax.set_yticks(xticklocs, minor=False);
-        ax.set_xticks(xticklocsmin, minor=True)
-        ax.set_yticks(xticklocsmin, minor=True)
-        ax.grid(which='major', lw=2, color='k', alpha=0.075)
-        ax.grid(which='minor', lw=1, color='k', alpha=0.075)
-        ax.axis('equal')
         # Plot a few ticks for notable locations
         left = -25; right = 35
         for distance, box in zip(distances, boxes):
@@ -627,27 +622,25 @@ def plot_seasonal():
             ax.plot([940, 940], [0, dmax], '-', color='k', lw=2, alpha=0.1)
     cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
     ticklabels = ['100', '80', '60', '40', '20', '0', '20', '40', '60', '80', '100']
-    if log:
-        cb = plt.colorbar(mappable, cax=cax, orientation='horizontal', extend='min')
-        cb.set_label('Connectivity [%]')
-        fig.savefig('figures/alongcoastconn/seasonal-log.png', bbox_inches='tight')
-    else:
-        cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')#, pad=0.18)
-        cb.set_label('Connectivity [%]')
-        cb.set_ticks(np.arange(-100, 120, 20))
-        cb.set_ticklabels(ticklabels)
-        fname = 'figures/alongcoastconn/seasonal'
-        if regions:
-            fname += '-regions'
-        if baylabels:
-            fname += '-baylabels'
-        if bayvalues:
-            fname += '-bayvalues'
-        if largefonts:
-            fname += '-largefonts'
-        if plotcontour:
-            fname += '-contour'
-        fig.savefig(fname + '.png', bbox_inches='tight', dpi=300)
+    # if log:
+    #     cb = plt.colorbar(mappable, cax=cax, orientation='horizontal', extend='min')
+    #     cb.set_label('Connectivity [%]')
+    #     fig.savefig('figures/alongcoastconn/seasonal-log.png', bbox_inches='tight')
+    # else:
+    #     cb = fig.colorbar(mappable, cax=cax, orientation='horizontal')#, pad=0.18)
+    #     cb.set_label('Connectivity [%]')
+    #     cb.set_ticks(np.arange(-100, 120, 20))
+    #     cb.set_ticklabels(ticklabels)
+    #     fname = 'figures/alongcoastconn/seasonal'
+    #     if regions:
+    #         fname += '-regions'
+    #     if baylabels:
+    #         fname += '-baylabels'
+    #     if bayvalues:
+    #         fname += '-bayvalues'
+    #     if largefonts:
+    #         fname += '-largefonts'
+    #     fig.savefig(fname + '.png', bbox_inches='tight', dpi=300)
     ####
 
 
@@ -947,7 +940,16 @@ def run_with_times():
         d.close()
         # time x boxes x boxes
         # have to add across time to get results from connected
-        mattemp = np.eye(inbox.shape[0])[np.newaxis,:].repeat(ntimes, axis=0)
+        # THIS ARRAY FORM WAS WRONG!!!
+        # mattemp = np.eye(inbox.shape[0])[np.newaxis,:].repeat(ntimes, axis=0)
+        # only want diagonal on first time step. Also need to multiply by number
+        # of drifters starting in box
+        nbox = inbox.shape[0]
+        mattemp = np.vstack((np.eye(nbox)[np.newaxis,:,:], np.zeros((ntimes-1,nbox,nbox))))
+        npts = [len(pt) for pt in pts]
+        # fills initial time diagonal with number of initial starting pts in each box
+        np.fill_diagonal(mattemp[0,:,:], npts)
+
         # For each box, how many drifters go out from it in to another box?
         for i, path in enumerate(paths):
 
@@ -963,6 +965,7 @@ def run_with_times():
             # ii: indices of coast boxes drifters are interacting with
             # j: indices of drifters
             ii, j = np.where(~np.isnan(inbox[:,code,0]))
+            # times is len(pt) and has initial cross time for each drifter starting in box
             times = inbox[ii, [code[jj] for jj in j], 0]
             # import pdb; pdb.set_trace()
 
@@ -976,7 +979,6 @@ def run_with_times():
                 bins = bins[1:]  # skip first entry since these are edges of bins
 
                 # fill in rows of array, one for each box
-                # ndrifters is number of drifters arriving in each time chunk in the histogram
                 mattemp[:,i,ibox] = ndrifters
 
             # Normalize by the number of drifters that started in box path
