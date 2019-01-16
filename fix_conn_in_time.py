@@ -14,7 +14,7 @@ Files = sorted(glob('%s/2???-??-??T??.npz' % base))
 # move these files to another directory to not overwite
 newpath = 'calcs/alongcoastconn/conn_in_time/old_BEFOREFIXING/'
 
-# already done on hafen
+# already done on hafen and rainier
 # os.makedirs(newpath, exist_ok=True)
 # [shutil.move(File, newpath) for File in Files]
 
@@ -35,3 +35,5 @@ for File in Files:
     mat[1:,range(342),range(342)]  = 0
 
     np.savez(fname, mat=mat, t=t)
+
+    os.remove(File)
