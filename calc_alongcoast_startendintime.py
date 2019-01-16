@@ -54,15 +54,18 @@ for i, File in enumerate(Files):
     if time_res == '4hours':
         dates.append(pd.Timestamp(File.split('/')[-1][:10]))
         mat = np.load(File)['mat']
+        # these files from hafen and rainier have been fixed using fix_conn_in_time.py
         # make downcoast negative
         ix, iy = np.tril_indices(mat.shape[2], k=1)
+        #mat is 180 times (in a simulation) x 342 alongcoast boxes x 342 alongcoast boxes
         mat[:, ix, iy] = -mat[:, ix, iy]
         matp = np.ma.masked_where(mat<0, mat)
         matn = np.ma.masked_where(mat>0, mat)
-        startingp[i,:,:] = matp.sum(axis=2)  # gives upcoast alongcoast conn as function of starting position
-        endingp[i,:,:] = matp.sum(axis=1)
-        startingn[i,:,:] = matn.sum(axis=2)  # gives downcoast alongcoast conn as function of starting position
-        endingn[i,:,:] = matn.sum(axis=1)
+        # subtract or add one to account for adding 100% connectivity with its own box
+        startingp[i,:,:] = matp.sum(axis=2)-1  # gives upcoast alongcoast conn as function of starting position
+        endingp[i,:,:] = matp.sum(axis=1)-1
+        startingn[i,:,:] = matn.sum(axis=2)+1  # gives downcoast alongcoast conn as function of starting position
+        endingn[i,:,:] = matn.sum(axis=1)+1
     elif time_res == 'sim':
         # sums over 30 days of simulation time
         dates.append(pd.Timestamp(File.split('/')[-1][:10]))
