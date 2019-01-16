@@ -24,8 +24,6 @@ d.close()
 
 base = 'calcs/alongcoastconn/conn_in_time/'
 os.makedirs(base, exist_ok=True)
-lnamest = base + 'lines_by_start_%s.npz' % time_res
-lnameen = base + 'lines_by_end_%s.npz' % time_res
 # these files were created in make_conn_plots.run_with_times()
 Files = sorted(glob(base + '2*.npz'))
 
@@ -47,39 +45,44 @@ elif time_res == 'sim':
 
 
 dates = []
-
+year = 2004; newyear = 2004
 for i, File in enumerate(Files):
 
+    lnamest = base + 'lines_by_start_%s%i.npz' % (time_res, year)
+    lnameen = base + 'lines_by_end_%s%i.npz' % (time_res, year)
+
+    if os.path.exists(lnamest):
+        continue
+
     print(File)
+    date = pd.Timestamp(File.split('/')[-1][:10])
+
+    newyear = date.year
+    if newyear > year:
+        np.savez(lnamest, t=t, startingp=startingp, startingn=startingn, dates=dates, dist=dist)
+        np.savez(lnameen, t=t, endingp=endingp, endingn=endingn, dates=dates, dist=dist)
+        year = newyear.copy()
+
+    dates.append(date)
+
+    # sums over 30 days of simulation time
+    mat = np.load(File)['mat']
+    # make downcoast negative
+    ix, iy = np.tril_indices(mat.shape[2], k=1)
+    #mat is 180 times (in a simulation) x 342 alongcoast boxes x 342 alongcoast boxes
+    mat[:, ix, iy] = -mat[:, ix, iy]
+    matp = np.ma.masked_where(mat<0, mat)
+    matn = np.ma.masked_where(mat>0, mat)
+
     if time_res == '4hours':
-        dates.append(pd.Timestamp(File.split('/')[-1][:10]))
-        mat = np.load(File)['mat']
-        # these files from hafen and rainier have been fixed using fix_conn_in_time.py
-        # make downcoast negative
-        ix, iy = np.tril_indices(mat.shape[2], k=1)
-        #mat is 180 times (in a simulation) x 342 alongcoast boxes x 342 alongcoast boxes
-        mat[:, ix, iy] = -mat[:, ix, iy]
-        matp = np.ma.masked_where(mat<0, mat)
-        matn = np.ma.masked_where(mat>0, mat)
         # subtract or add one to account for adding 100% connectivity with its own box
         startingp[i,:,:] = matp.sum(axis=2)-1  # gives upcoast alongcoast conn as function of starting position
         endingp[i,:,:] = matp.sum(axis=1)-1
         startingn[i,:,:] = matn.sum(axis=2)+1  # gives downcoast alongcoast conn as function of starting position
         endingn[i,:,:] = matn.sum(axis=1)+1
     elif time_res == 'sim':
-        # sums over 30 days of simulation time
-        dates.append(pd.Timestamp(File.split('/')[-1][:10]))
-        mat = np.load(File)['mat']
-        # make downcoast negative
-        ix, iy = np.tril_indices(mat.shape[2], k=1)
-        mat[:, ix, iy] = -mat[:, ix, iy]
-        matp = np.ma.masked_where(mat<0, mat)
-        matn = np.ma.masked_where(mat>0, mat)
         # SHOULD THIS BE SUM OR MEAN?
         startingp[i,:] = matp.sum(axis=2).sum(axis=0) # gives upcoast alongcoast conn as function of starting position
         endingp[i,:] = matp.sum(axis=1).sum(axis=0)
         startingn[i,:] = matn.sum(axis=2).sum(axis=0)  # gives downcoast alongcoast conn as function of starting position
         endingn[i,:] = matn.sum(axis=1).sum(axis=0)
-
-np.savez(lnamest, t=t, startingp=startingp, startingn=startingn, dates=dates, dist=dist)
-np.savez(lnameen, t=t, endingp=endingp, endingn=endingn, dates=dates, dist=dist)
