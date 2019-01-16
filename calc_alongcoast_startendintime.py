@@ -24,65 +24,65 @@ d.close()
 
 base = 'calcs/alongcoastconn/conn_in_time/'
 os.makedirs(base, exist_ok=True)
-# these files were created in make_conn_plots.run_with_times()
-Files = sorted(glob(base + '2*.npz'))
+years = np.arange(2004, 2015)
+for year in years:
 
-t = np.load(Files[0])['t']
+    # these files were created in make_conn_plots.run_with_times()
+    Files = sorted(glob('%s/%s*.npz' % (base, year)))
 
-if time_res == '4hours':
-
-    startingp = np.empty((len(Files), t.size, 342));
-    startingn = np.empty((len(Files), t.size, 342))
-    endingp = np.empty((len(Files), t.size, 342));
-    endingn = np.empty((len(Files), t.size, 342))
-
-elif time_res == 'sim':
-
-    startingp = np.empty((len(Files), 342));
-    startingn = np.empty((len(Files), 342))
-    endingp = np.empty((len(Files), 342));
-    endingn = np.empty((len(Files), 342))
-
-
-dates = []
-year = 2004; newyear = 2004
-for i, File in enumerate(Files):
-
-    lnamest = base + 'lines_by_start_%s%i.npz' % (time_res, year)
-    lnameen = base + 'lines_by_end_%s%i.npz' % (time_res, year)
-
-    if os.path.exists(lnamest):
-        continue
-
-    print(File)
-    date = pd.Timestamp(File.split('/')[-1][:10])
-
-    newyear = date.year
-    if newyear > year:
-        np.savez(lnamest, t=t, startingp=startingp, startingn=startingn, dates=dates, dist=dist)
-        np.savez(lnameen, t=t, endingp=endingp, endingn=endingn, dates=dates, dist=dist)
-        year = newyear.copy()
-
-    dates.append(date)
-
-    # sums over 30 days of simulation time
-    mat = np.load(File)['mat']
-    # make downcoast negative
-    ix, iy = np.tril_indices(mat.shape[2], k=1)
-    #mat is 180 times (in a simulation) x 342 alongcoast boxes x 342 alongcoast boxes
-    mat[:, ix, iy] = -mat[:, ix, iy]
-    matp = np.ma.masked_where(mat<0, mat)
-    matn = np.ma.masked_where(mat>0, mat)
+    t = np.load(Files[0])['t']
 
     if time_res == '4hours':
-        # subtract or add one to account for adding 100% connectivity with its own box
-        startingp[i,:,:] = matp.sum(axis=2)-1  # gives upcoast alongcoast conn as function of starting position
-        endingp[i,:,:] = matp.sum(axis=1)-1
-        startingn[i,:,:] = matn.sum(axis=2)+1  # gives downcoast alongcoast conn as function of starting position
-        endingn[i,:,:] = matn.sum(axis=1)+1
+
+        startingp = np.empty((len(Files), t.size, 342));
+        startingn = np.empty((len(Files), t.size, 342))
+        endingp = np.empty((len(Files), t.size, 342));
+        endingn = np.empty((len(Files), t.size, 342))
+
     elif time_res == 'sim':
-        # SHOULD THIS BE SUM OR MEAN?
-        startingp[i,:] = matp.sum(axis=2).sum(axis=0) # gives upcoast alongcoast conn as function of starting position
-        endingp[i,:] = matp.sum(axis=1).sum(axis=0)
-        startingn[i,:] = matn.sum(axis=2).sum(axis=0)  # gives downcoast alongcoast conn as function of starting position
-        endingn[i,:] = matn.sum(axis=1).sum(axis=0)
+
+        startingp = np.empty((len(Files), 342));
+        startingn = np.empty((len(Files), 342))
+        endingp = np.empty((len(Files), 342));
+        endingn = np.empty((len(Files), 342))
+
+
+    dates = []
+
+    for i, File in enumerate(Files):
+
+        lnamest = base + 'lines_by_start_%s%i.npz' % (time_res, year)
+        lnameen = base + 'lines_by_end_%s%i.npz' % (time_res, year)
+
+        if os.path.exists(lnamest):
+            continue
+
+        print(File)
+        date = pd.Timestamp(File.split('/')[-1][:10])
+
+        dates.append(date)
+
+        # sums over 30 days of simulation time
+        mat = np.load(File)['mat']
+        # make downcoast negative
+        ix, iy = np.tril_indices(mat.shape[2], k=1)
+        #mat is 180 times (in a simulation) x 342 alongcoast boxes x 342 alongcoast boxes
+        mat[:, ix, iy] = -mat[:, ix, iy]
+        matp = np.ma.masked_where(mat<0, mat)
+        matn = np.ma.masked_where(mat>0, mat)
+
+        if time_res == '4hours':
+            # subtract or add one to account for adding 100% connectivity with its own box
+            startingp[i,:,:] = matp.sum(axis=2)-1  # gives upcoast alongcoast conn as function of starting position
+            endingp[i,:,:] = matp.sum(axis=1)-1
+            startingn[i,:,:] = matn.sum(axis=2)+1  # gives downcoast alongcoast conn as function of starting position
+            endingn[i,:,:] = matn.sum(axis=1)+1
+        elif time_res == 'sim':
+            # SHOULD THIS BE SUM OR MEAN?
+            startingp[i,:] = matp.sum(axis=2).sum(axis=0) # gives upcoast alongcoast conn as function of starting position
+            endingp[i,:] = matp.sum(axis=1).sum(axis=0)
+            startingn[i,:] = matn.sum(axis=2).sum(axis=0)  # gives downcoast alongcoast conn as function of starting position
+            endingn[i,:] = matn.sum(axis=1).sum(axis=0)
+
+        np.savez(lnamest, t=t, startingp=startingp, startingn=startingn, dates=dates, dist=dist)
+        np.savez(lnameen, t=t, endingp=endingp, endingn=endingn, dates=dates, dist=dist)
