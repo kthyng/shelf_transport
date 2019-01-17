@@ -49,13 +49,13 @@ for year in years:
 
     dates = []
 
+    lnamest = base + 'lines_by_start_%s%i.npz' % (time_res, year)
+    lnameen = base + 'lines_by_end_%s%i.npz' % (time_res, year)
+
+    if os.path.exists(lnamest):
+        continue
+
     for i, File in enumerate(Files):
-
-        lnamest = base + 'lines_by_start_%s%i.npz' % (time_res, year)
-        lnameen = base + 'lines_by_end_%s%i.npz' % (time_res, year)
-
-        if os.path.exists(lnamest):
-            continue
 
         print(File)
         date = pd.Timestamp(File.split('/')[-1][:10])
