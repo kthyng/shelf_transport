@@ -84,5 +84,5 @@ for year in years:
             startingn[i,:] = matn.sum(axis=2).sum(axis=0)  # gives downcoast alongcoast conn as function of starting position
             endingn[i,:] = matn.sum(axis=1).sum(axis=0)
 
-        np.savez(lnamest, t=t, startingp=startingp, startingn=startingn, dates=dates, dist=dist)
-        np.savez(lnameen, t=t, endingp=endingp, endingn=endingn, dates=dates, dist=dist)
+    np.savez(lnamest, t=t, startingp=startingp, startingn=startingn, dates=dates, dist=dist)
+    np.savez(lnameen, t=t, endingp=endingp, endingn=endingn, dates=dates, dist=dist)
