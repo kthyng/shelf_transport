@@ -72,11 +72,11 @@ for year in years:
         matn = np.ma.masked_where(mat>0, mat)
 
         if time_res == '4hours':
-            # subtract or add one to account for adding 100% connectivity with its own box
-            startingp[i,:,:] = matp.sum(axis=2)-1  # gives upcoast alongcoast conn as function of starting position
-            endingp[i,:,:] = matp.sum(axis=1)-1
-            startingn[i,:,:] = matn.sum(axis=2)+1  # gives downcoast alongcoast conn as function of starting position
-            endingn[i,:,:] = matn.sum(axis=1)+1
+            # subtract or add one at a later accounting point to account for adding 100% connectivity with its own box
+            startingp[i,:,:] = matp.sum(axis=2)  # gives upcoast alongcoast conn as function of starting position
+            endingp[i,:,:] = matp.sum(axis=1)
+            startingn[i,:,:] = matn.sum(axis=2)  # gives downcoast alongcoast conn as function of starting position
+            endingn[i,:,:] = matn.sum(axis=1)
         elif time_res == 'sim':
             # SHOULD THIS BE SUM OR MEAN?
             startingp[i,:] = matp.sum(axis=2).sum(axis=0) # gives upcoast alongcoast conn as function of starting position
