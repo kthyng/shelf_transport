@@ -19,7 +19,7 @@ locs = {'Brownsville': [67, 68, 69, 70, 71],
         'Barataria': [274, 275, 276, 277, 278]}
 
 # run in shelf_transport
-Files = glob('calcs/alongcoastconn/conn_in_time/2*.npz')
+Files = sorted(glob('calcs/alongcoastconn/conn_in_time/2*.npz'))
 # decimal days
 t = np.load('calcs/alongcoastconn/conn_in_time/pa_ss/t.npz')['t']
 
@@ -34,10 +34,13 @@ for File in Files:
     d = np.load(File)
     index = [(pd.Timestamp(day) + pd.Timedelta(str(tt) + ' days')).round('H') for tt in t]
     df = pd.DataFrame(index=index)
+    mat = d['mat']; d.close()
+    # subtract self-connectivity off
+    mat[0,:,:] -= np.eye(mat.shape[1])
     for loc0, iboxes0 in locs.items():
         for loc1, iboxes1 in locs.items():
             # don't run if same location
             if loc0 == loc1:
                 continue
-            df['%s to %s' % (loc0, loc1)] = d['mat'][:,iboxes0,iboxes1].sum(axis=1)
+            df['%s to %s' % (loc0, loc1)] = mat[:,iboxes0,iboxes1].sum(axis=1)
     df.to_csv(savename)
