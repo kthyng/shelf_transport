@@ -22,6 +22,12 @@ d = np.load(vecname)
 dist = d['dist']
 d.close()
 
+# need matrix of distances from a box to all other boxes
+ddist = np.empty((len(dist), len(dist)))
+for icol in range(len(dist)):
+    ddist[:,icol] = dist - dist[icol]
+ddist = abs(ddist)
+
 base = 'calcs/alongcoastconn/conn_in_time/'
 os.makedirs(base, exist_ok=True)
 years = np.arange(2004, 2015)
@@ -64,6 +70,10 @@ for year in years:
 
         # sums over 30 days of simulation time
         mat = np.load(File)['mat']
+
+        # subtract out self-connectivity in first time step
+        mat[0,:,:] -= np.eye(mat.shape[1])
+
         # make downcoast negative
         ix, iy = np.tril_indices(mat.shape[2], k=1)
         #mat is 180 times (in a simulation) x 342 alongcoast boxes x 342 alongcoast boxes
@@ -72,13 +82,17 @@ for year in years:
         matn = np.ma.masked_where(mat>0, mat)
 
         if time_res == '4hours':
-            # subtract or add one at a later accounting point to account for adding 100% connectivity with its own box
-            startingp[i,:,:] = matp.sum(axis=2)  # gives upcoast alongcoast conn as function of starting position
-            endingp[i,:,:] = matp.sum(axis=1)
-            startingn[i,:,:] = matn.sum(axis=2)  # gives downcoast alongcoast conn as function of starting position
-            endingn[i,:,:] = matn.sum(axis=1)
+            # this gives for each starting box the 30 day time series of km
+            # alongcoast traveled per drifter per day
+            # startingp gives upcoast alongcoast conn as function of starting position
+            startingp[i,:,:] = (matp*ddist).sum(axis=2)/t[:,np.newaxis]  # 180 x 342
+            endingp[i,:,:] = (matp*ddist).sum(axis=1)/t[:,np.newaxis]
+            # startingn gives downcoast alongcoast conn as function of starting position
+            startingn[i,:,:] = (matn*ddist).sum(axis=2)/t[:,np.newaxis]  # 180 x 342
+            endingn[i,:,:] = (matn*ddist).sum(axis=1)/t[:,np.newaxis]  # 180 x 342
         elif time_res == 'sim':
             # SHOULD THIS BE SUM OR MEAN?
+            # HAVEN'T UPDATED THIS BC NOT USING IT
             startingp[i,:] = matp.sum(axis=2).sum(axis=0) # gives upcoast alongcoast conn as function of starting position
             endingp[i,:] = matp.sum(axis=1).sum(axis=0)
             startingn[i,:] = matn.sum(axis=2).sum(axis=0)  # gives downcoast alongcoast conn as function of starting position
