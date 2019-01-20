@@ -12,6 +12,19 @@ import cartopy
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 
+# map to have as subset
+merc = cartopy.crs.Mercator()
+pc = cartopy.crs.PlateCarree()
+land_10m = cartopy.feature.NaturalEarthFeature('physical', 'land', '10m',
+                                        edgecolor='face',
+                                        facecolor=cartopy.feature.COLORS['land'])
+states_provinces = cartopy.feature.NaturalEarthFeature(
+    category='cultural',
+    name='admin_1_states_provinces_lines',
+    scale='50m',
+    facecolor='none')
+
+
 locs = {'Brownsville': [67, 68, 69, 70, 71],
         'Port Mansfield': [79,80, 81, 82, 83],
         'Port Aransas': [111,112,113,114,115],
@@ -138,6 +151,9 @@ for icol, col in enumerate(columns):
             sumconn[irow,icol,i1st:] = 1
         except:
             pass
+
+vecname = 'calcs/along_coast_wind/coast_vectors.npz'
+dist = np.load(vecname)['dist']
 
 # save plot properties
 params = {}
@@ -314,20 +330,6 @@ for loc0 in locsorder:
 # f.close()
 df.to_csv('calcs/alongcoastconn/conn_in_time/between_locs/nums.csv')
 
-# map to have as subset
-merc = cartopy.crs.Mercator()
-pc = cartopy.crs.PlateCarree()
-land_10m = cartopy.feature.NaturalEarthFeature('physical', 'land', '10m',
-                                        edgecolor='face',
-                                        facecolor=cartopy.feature.COLORS['land'])
-states_provinces = cartopy.feature.NaturalEarthFeature(
-    category='cultural',
-    name='admin_1_states_provinces_lines',
-    scale='50m',
-    facecolor='none')
-
-# vecname = 'calcs/along_coast_wind/coast_vectors.npz'
-# dist = np.load(vecname)['dist']
 #
 # fig = plt.figure(figsize=(7, 4))
 # ax = fig.add_axes([0.1, 0.01, 0.87, 0.95], projection=merc)
