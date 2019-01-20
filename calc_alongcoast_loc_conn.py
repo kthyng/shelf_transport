@@ -42,5 +42,5 @@ for File in Files:
             # don't run if same location
             if loc0 == loc1:
                 continue
-            df['%s to %s' % (loc0, loc1)] = mat[:,iboxes0,iboxes1].sum(axis=1)
+            df['%s to %s' % (loc0, loc1)] = mat[:,iboxes0,iboxes1[0]:iboxes1[-1]+1].sum(axis=1).sum(axis=1)
     df.to_csv(savename)
