@@ -305,31 +305,35 @@ for i, ax in enumerate(axarr.flatten()):
             plt.draw()
             plt.show()
 
-            # overlay wind and salinity data
-            buoy = '42035'
-            df = tabs.read(buoy, str(2004+i) + '-7-15', str(2004+i) + '-9-15', model=True)
-            Ukey = '%s: East [m/s] (air)' % buoy
-            Vkey = '%s: North [m/s] (air)' % buoy
-
-            # # check there are enough data points
-            # assert df[Ukey].count()/len(df) > 0.9
-
-            # plot mean wind
-            axins.quiver(np.array([-95.7]), np.array([29.5]),
-                         np.array([df[Ukey].mean()]), np.array([df[Vkey].mean()]),
-                         transform=pc, color='k', alpha=0.6, scale=9, width=0.03,
-                         pivot='middle', zorder=10, scale_units='width')
-# , headlength=3, headaxislength=2.8
-            # plot mean subtidal salt
-            key = '%s: Salinity' % buoy
-
-            # # check there are enough data points
-            # assert df[key].count()/len(df) > 0.9
-            # model has hourly output
-            meansalt = df[key].rolling(center=True, window=24).mean().mean()
-            axins.scatter([-95.3], [29.5], c=[meansalt], s=100, cmap=cmo.haline,
-                          transform=pc, vmin=20, vmax=34, zorder=10, edgecolors='k')
-            axins.text(-95.4, 29.25, '%2.0f' % meansalt, transform=pc)
+#             # overlay wind and salinity data
+#             buoy = '42035'
+#             df = tabs.read(buoy, str(2004+i) + '-7-15', str(2004+i) + '-9-15', model=True)
+#             Ukey = '%s: East [m/s] (air)' % buoy
+#             Vkey = '%s: North [m/s] (air)' % buoy
+#
+#             # # check there are enough data points
+#             # assert df[Ukey].count()/len(df) > 0.9
+#
+#             # plot mean wind
+#             axins.quiver(np.array([-95.7]), np.array([29.5]),
+#                          np.array([df[Ukey].mean()]), np.array([df[Vkey].mean()]),
+#                          transform=pc, color='k', alpha=0.6, scale=9, width=0.03,
+#                          pivot='middle', zorder=10, scale_units='width')
+# # , headlength=3, headaxislength=2.8
+#             # plot mean subtidal salt
+#             key = '%s: Salinity' % buoy
+#
+#             # # check there are enough data points
+#             # assert df[key].count()/len(df) > 0.9
+#             # model has hourly output
+#             meansalt = df[key].rolling(center=True, window=24).mean().mean()
+#             axins.scatter([-95.3], [29.5], c=[meansalt], s=100, cmap=cmo.haline,
+#                           transform=pc, vmin=20, vmax=34, zorder=10, edgecolors='k')
+#             axins.text(-95.4, 29.25, '%2.0f' % meansalt, transform=pc)
+#
+            # plot station location (N and V)
+            ax.plot(*tabs.meta('N')[['lon','lat']], 'kx', transform=pc, ms=5)
+            ax.plot(*tabs.meta('V')[['lon','lat']], 'kx', transform=pc, ms=5)
 
             # ax.set_frame_on(False)
 cax = fig.add_axes([0.25, 0.05, 0.5, 0.02]) #colorbar axes
