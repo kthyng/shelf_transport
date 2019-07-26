@@ -85,7 +85,7 @@ for year in years:
             # this gives for each starting box the 30 day time series of km
             # alongcoast traveled per drifter per day
             # startingp gives upcoast alongcoast conn as function of starting position
-            startingp[i,:,:] = (matp*ddist).sum(axis=2)/t[:,np.newaxis]  # 180 x 342
+            startingp[i,:,:] = (matp*ddist).sum(axis=2)/t[:,np.newaxis]  # i x 180 x 342
             endingp[i,:,:] = (matp*ddist).sum(axis=1)/t[:,np.newaxis]
             # startingn gives downcoast alongcoast conn as function of starting position
             startingn[i,:,:] = (matn*ddist).sum(axis=2)/t[:,np.newaxis]  # 180 x 342
