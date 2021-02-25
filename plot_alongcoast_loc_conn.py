@@ -54,9 +54,9 @@ t = np.load('calcs/alongcoastconn/conn_in_time/pa_ss/t.npz')['t']
 
 # read in files
 base = 'calcs/alongcoastconn/conn_in_time/between_locs/'
-allFiles = sorted(glob('%s/*.csv' % base))
+allFiles = sorted(glob('%s/????-??-??T??.csv' % base))
 dates = [pd.Timestamp(File.split('/')[-1][:-4]) for File in allFiles]
-
+#
 months = [1,2]
 winFiles = [File for date, File in zip(dates, allFiles) if date.month in months]
 df = pd.read_csv(winFiles[0], parse_dates=True, index_col=0)
@@ -72,7 +72,7 @@ if not os.path.exists(fname):
             win[i,j,:] += df[col]
     np.savez(fname, t=t, dates=dates, win=win, columns=df.columns)
 else:
-    d = np.load(fname)
+    d = np.load(fname, allow_pickle=True)
     t = d['t']; dates = d['dates']; win = d['win']
     d.close()
 
@@ -87,51 +87,51 @@ if not os.path.exists(fname):
             sum[i,j,:] += df[col]
     np.savez(fname, t=t, dates=dates, sum=sum)
 else:
-    d = np.load(fname)
+    d = np.load(fname, allow_pickle=True)
     t = d['t']; dates = d['dates']; sum = d['sum']
     d.close()
 
 columns = df.columns
-
-# plot up results: mean and standard deviation for 2 seasons
-base = 'figures/alongcoastconn/conn_in_time/between_locs/all_lines'
-os.makedirs(base, exist_ok=True)
-for loc0 in locs.keys():
-    fig, axes = plt.subplots(len(locs)-1, 1, sharex=True, sharey=True, figsize=(8,7))
-    fig.suptitle('Transport from %s to ...' % loc0)
-    fig.subplots_adjust(top=0.96, left=0.07, right=0.98, hspace=0.35, bottom=0.07)
-    axes[-1].set_xlabel('Time [days]')
-    axes[0].set_ylim(0, 2)
-    axes[0].set_xlim(0, 30)
-    i = 0
-    for loc1 in locsorder:
-        if loc0 == loc1:
-            continue
-        ax = axes[i]
-        col = '%s to %s' % (loc0, loc1)
-        icol = np.where(columns == col)[0][0]
-        if locs[loc1][0] > locs[loc0][0]:  # loc1 is upcoast from loc0
-            color = colu
-            # sign = 1
-        else:  # loc1 is downcoast from loc0
-            color = cold
-            # sign = -1
-        # winmean = win[:,icol,:].mean(axis=0)
-        # winstd = win[:,icol,:].std(axis=0)
-        # ax.fill_between(t, winmean-winstd, winmean+winstd, color=color, alpha=0.3)
-        ax.plot(t, win[:,icol,:].T, color=color, alpha=0.2, lw=2);
-        ax.plot(t, sum[:,icol,:].T, color=color, alpha=0.6, lw=1);
-        ax.text(0.8, 0.8, loc1, transform=ax.transAxes)
-        if i == 0:
-            axes[i].text(0.01, 0.7, 'winter', color=color, alpha=0.4, transform=axes[i].transAxes)
-            axes[i].text(0.15, 0.7, 'summer', color=color, alpha=0.8, transform=axes[i].transAxes)
-        if i == 1:
-            axes[i].text(0.01, 0.7, 'downcoast', color=cold, alpha=0.6, transform=axes[i].transAxes)
-            axes[i].text(0.15, 0.7, 'upcoast', color=colu, alpha=0.6, transform=axes[i].transAxes)
-        i += 1
-    fig.savefig('%s/%s.png' % (base,loc0), bbox_inches='tight')
-    fig.savefig('%s/%s.pdf' % (base,loc0), bbox_inches='tight')
-    plt.close(fig)
+#
+# # plot up results: mean and standard deviation for 2 seasons
+# base = 'figures/alongcoastconn/conn_in_time/between_locs/all_lines'
+# os.makedirs(base, exist_ok=True)
+# for loc0 in locs.keys():
+#     fig, axes = plt.subplots(len(locs)-1, 1, sharex=True, sharey=True, figsize=(8,7))
+#     fig.suptitle('Transport from %s to ...' % loc0)
+#     fig.subplots_adjust(top=0.96, left=0.07, right=0.98, hspace=0.35, bottom=0.07)
+#     axes[-1].set_xlabel('Time [days]')
+#     axes[0].set_ylim(0, 2)
+#     axes[0].set_xlim(0, 30)
+#     i = 0
+#     for loc1 in locsorder:
+#         if loc0 == loc1:
+#             continue
+#         ax = axes[i]
+#         col = '%s to %s' % (loc0, loc1)
+#         icol = np.where(columns == col)[0][0]
+#         if locs[loc1][0] > locs[loc0][0]:  # loc1 is upcoast from loc0
+#             color = colu
+#             # sign = 1
+#         else:  # loc1 is downcoast from loc0
+#             color = cold
+#             # sign = -1
+#         # winmean = win[:,icol,:].mean(axis=0)
+#         # winstd = win[:,icol,:].std(axis=0)
+#         # ax.fill_between(t, winmean-winstd, winmean+winstd, color=color, alpha=0.3)
+#         ax.plot(t, win[:,icol,:].T, color=color, alpha=0.2, lw=2);
+#         ax.plot(t, sum[:,icol,:].T, color=color, alpha=0.6, lw=1);
+#         ax.text(0.8, 0.8, loc1, transform=ax.transAxes)
+#         if i == 0:
+#             axes[i].text(0.01, 0.7, 'winter', color=color, alpha=0.4, transform=axes[i].transAxes)
+#             axes[i].text(0.15, 0.7, 'summer', color=color, alpha=0.8, transform=axes[i].transAxes)
+#         if i == 1:
+#             axes[i].text(0.01, 0.7, 'downcoast', color=cold, alpha=0.6, transform=axes[i].transAxes)
+#             axes[i].text(0.15, 0.7, 'upcoast', color=colu, alpha=0.6, transform=axes[i].transAxes)
+#         i += 1
+#     fig.savefig('%s/%s.png' % (base,loc0), bbox_inches='tight')
+#     fig.savefig('%s/%s.pdf' % (base,loc0), bbox_inches='tight')
+#     plt.close(fig)
 
 # calculate new arrays where if any connectivity has occurred, it is marked as
 # yes for the rest of the 30 days
@@ -187,24 +187,25 @@ df = pd.DataFrame(index=np.arange(0,9*8), columns=['from', 'to', 'dist [km]', 'm
                            'max speed winter [m/s]', 'min time summer [days]',
                            'max speed summer [m/s]'])
 j = 0
-for loc0 in locsorder:
+for loc0 in ['Surfside']:#locsorder:
     # run through bay options once to see how many there are and store time series
     res = {}  # save results in dictionary
     for loc1 in locsorder:
         if loc0 == loc1:
             continue
+        # col = '%s to %s' % (loc1, loc0)
         col = '%s to %s' % (loc0, loc1)
         icol = np.where(columns == col)[0][0]
         winmean = ((winconn[:,icol,:]>0).sum(axis=0)/(win.shape[0]))
         winmean[winmean==0] = np.nan
-        winstd = ((winconn[:,icol,:]>0).std(axis=0))
-        winstdm = (winmean-winstd)*100; winstdp = (winmean+winstd)*100
-        winstdm[winstdm<=0] = 0; winstdp[winstdp>100] = 100
+        # winstd = ((winconn[:,icol,:]>0).std(axis=0))
+        # winstdm = (winmean-winstd)*100; winstdp = (winmean+winstd)*100
+        # winstdm[winstdm<=0] = 0; winstdp[winstdp>100] = 100
         summean = ((sumconn[:,icol,:]>0).sum(axis=0)/(sum.shape[0]))
         summean[summean==0] = np.nan
-        sumstd = ((sumconn[:,icol,:]>0).std(axis=0))
-        sumstdm = (summean-sumstd)*100; sumstdp = (summean+sumstd)*100
-        sumstdm[sumstdm<=0] = 0; sumstdp[sumstdp>100] = 100
+        # sumstd = ((sumconn[:,icol,:]>0).std(axis=0))
+        # sumstdm = (summean-sumstd)*100; sumstdp = (summean+sumstd)*100
+        # sumstdm[sumstdm<=0] = 0; sumstdp[sumstdp>100] = 100
 
         # # write no-transport times to file
         # inotransport = np.where(np.isnan(winmean))[0][-1]
@@ -241,94 +242,95 @@ for loc0 in locsorder:
             res[loc1] = {}
             res[loc1]['winmean'] = winmean
             res[loc1]['summean'] = summean
-            res[loc1]['winstdm'] = winstdm
-            res[loc1]['sumstdm'] = sumstdm
-            res[loc1]['winstdp'] = winstdp
-            res[loc1]['sumstdp'] = sumstdp
+            # res[loc1]['winstdm'] = winstdm
+            # res[loc1]['sumstdm'] = sumstdm
+            # res[loc1]['winstdp'] = winstdp
+            # res[loc1]['sumstdp'] = sumstdp
 
-    nrows = len(res.keys())
-    fig, axes = plt.subplots(nrows, 1, sharex=True, sharey=True, figsize=(5,nrows*0.85))
-    fig.subplots_adjust(top=0.95, left=0.1, right=0.98, hspace=0.35, bottom=0.07)
-    axes[-1].set_xlabel('Time [days]')
-    # axes[-1].set_ylabel('Likelihood any connectivity [%]', horizontalalignment='left')
-    irow = int(np.floor(nrows/2))
-    axes[irow].text(-0.125, 0.5, 'Likelihood any connectivity [%]',
-                    verticalalignment='center', rotation=90,
-                    transform=axes[irow].transAxes)
-    axes[0].text(0.01, 1.1, 'Transport from %s to ...' % loc0, transform=axes[0].transAxes, fontsize=12)
-    axes[0].set_ylim(0, 100)
-    axes[0].set_xlim(0, 30)
-    i = 0
-    for loc1 in locsorder:
-        if loc0 == loc1:
-            continue
-        # only use to-location if has non-nan results
-        if not loc1 in res.keys():
-            continue
-        ax = axes[i]
-        if locs[loc1][0] > locs[loc0][0]:  # loc1 is upcoast from loc0
-            color = colu
-        else:  # loc1 is downcoast from loc0
-            color = cold
-        ax.plot(t, res[loc1]['winmean']*100, ls='-', alpha=0.6, lw=3, color=color)
-        ax.fill_between(t, res[loc1]['winstdm'], res[loc1]['winstdp'], alpha=0.15, color=color)
-        ax.plot(t, res[loc1]['summean']*100, ls='--', alpha=0.6, lw=3, color=color)
-        ax.fill_between(t, res[loc1]['sumstdm'], res[loc1]['sumstdp'], alpha=0.15, color=color, hatch='/')
-        ax.text(0.775, 1.05, loc1, transform=ax.transAxes)
-        ax.grid(True)
-        if i == params[loc0]['text'][0]:
-            axes[i].text(params[loc0]['text'][1], 0.75, 'winter $-$', color=color, alpha=0.8, transform=axes[i].transAxes)
-            axes[i].text(params[loc0]['text'][1]+0.16, 0.75, 'summer $--$', color=color, alpha=0.8, transform=axes[i].transAxes)
-        i += 1
-
-    # add map
-    # fig = plt.figure(figsize=(7, 4))
-    axm = fig.add_axes(params[loc0]['axes'], projection=merc)
-    axm.set_frame_on(False) # kind of like it without the box
-    axm.set_extent([-98, -88.5, 25.5, 30.3], pc)
-    gl = axm.gridlines(linewidth=0.2, color='gray', alpha=0.5, linestyle='-', draw_labels=True)
-    # the following two make the labels look like lat/lon format
-    gl.xformatter = LONGITUDE_FORMATTER
-    gl.yformatter = LATITUDE_FORMATTER
-    gl.xlabels_bottom = False  # turn off labels where you don't want them
-    gl.ylabels_right = False
-    gl.xlabels_top = False  # turn off labels where you don't want them
-    gl.ylabels_left = False
-    axm.add_feature(land_10m, facecolor='0.85')
-    # axm.coastlines(resolution='10m')  # coastline resolution options are '110m', '50m', '10m'
-    axm.add_feature(cartopy.feature.BORDERS, facecolor='0.8')
-    axm.add_feature(states_provinces, edgecolor='gray')
-    # add location
-    pts_u_boxes = np.load('calcs/coastpaths_pts.npz')['pts_u_boxes']
-    pt = pts_u_boxes[locs[loc0][2]][0]
-    axm.plot(*pt, '*', color='yellow', markersize=10, transform=pc, mec='k')
-    # connectivity locations
-    for loc1 in locsorder:
-        if loc0 == loc1:
-            continue
-        # plot as empty if has nan results
-        if not loc1 in res.keys():
-            pts_u_boxes = np.load('calcs/coastpaths_pts.npz')['pts_u_boxes']
-            pt = pts_u_boxes[locs[loc1][2]][0]
-            axm.plot(*pt, 'o', color='none', markersize=5, transform=pc, mec='k')
-            continue
-        # ax = axes[i]
-        # col = '%s to %s' % (loc0, loc1)
-        # icol = np.where(columns == col)[0][0]
-        if locs[loc1][0] > locs[loc0][0]:  # loc1 is upcoast from loc0
-            color = colu
-            # sign = 1
-        else:  # loc1 is downcoast from loc0
-            color = cold
-        pts_u_boxes = np.load('calcs/coastpaths_pts.npz')['pts_u_boxes']
-        pt = pts_u_boxes[locs[loc1][2]][0]
-        axm.plot(*pt, 'o', color=color, markersize=5, transform=pc)#, mec='k')
-
-    fig.savefig('%s/%s.png' % (base,loc0), bbox_inches='tight')
-    fig.savefig('%s/%s.pdf' % (base,loc0), bbox_inches='tight')
-    plt.close(fig)
-# f.close()
-df.to_csv('calcs/alongcoastconn/conn_in_time/between_locs/nums.csv')
+#     nrows = len(res.keys())
+#     fig, axes = plt.subplots(nrows, 1, sharex=True, sharey=True, figsize=(5,nrows*0.85))
+#     fig.subplots_adjust(top=0.95, left=0.1, right=0.98, hspace=0.35, bottom=0.07)
+#     axes[-1].set_xlabel('Time [days]')
+#     # axes[-1].set_ylabel('Likelihood any connectivity [%]', horizontalalignment='left')
+#     irow = int(np.floor(nrows/2))
+#     axes[irow].text(-0.125, 0.5, 'Likelihood any connectivity [%]',
+#                     verticalalignment='center', rotation=90,
+#                     transform=axes[irow].transAxes)
+#     # axes[0].text(0.01, 1.1, 'Transport to %s from ...' % loc0, transform=axes[0].transAxes, fontsize=12)
+#     axes[0].text(0.01, 1.1, 'Transport from %s to ...' % loc0, transform=axes[0].transAxes, fontsize=12)
+#     axes[0].set_ylim(0, 100)
+#     axes[0].set_xlim(0, 30)
+#     i = 0
+#     for loc1 in locsorder:
+#         if loc0 == loc1:
+#             continue
+#         # only use to-location if has non-nan results
+#         if not loc1 in res.keys():
+#             continue
+#         ax = axes[i]
+#         if locs[loc1][0] > locs[loc0][0]:  # loc1 is upcoast from loc0
+#             color = colu
+#         else:  # loc1 is downcoast from loc0
+#             color = cold
+#         ax.plot(t, res[loc1]['winmean']*100, ls='-', alpha=0.6, lw=3, color=color)
+#         # ax.fill_between(t, res[loc1]['winstdm'], res[loc1]['winstdp'], alpha=0.15, color=color)
+#         ax.plot(t, res[loc1]['summean']*100, ls='--', alpha=0.6, lw=3, color=color)
+#         # ax.fill_between(t, res[loc1]['sumstdm'], res[loc1]['sumstdp'], alpha=0.15, color=color, hatch='/')
+#         ax.text(0.775, 1.05, loc1, transform=ax.transAxes)
+#         ax.grid(True)
+#         if i == params[loc0]['text'][0]:
+#             axes[i].text(params[loc0]['text'][1], 0.75, 'winter $-$', color=color, alpha=0.8, transform=axes[i].transAxes)
+#             axes[i].text(params[loc0]['text'][1]+0.16, 0.75, 'summer $--$', color=color, alpha=0.8, transform=axes[i].transAxes)
+#         i += 1
+#
+#     # add map
+#     # fig = plt.figure(figsize=(7, 4))
+#     axm = fig.add_axes(params[loc0]['axes'], projection=merc)
+#     # axm.set_frame_on(False) # kind of like it without the box
+#     axm.set_extent([-98, -88.5, 25.5, 30.3], pc)
+#     gl = axm.gridlines(linewidth=0.2, color='gray', alpha=0.5, linestyle='-', draw_labels=True)
+#     # the following two make the labels look like lat/lon format
+#     gl.xformatter = LONGITUDE_FORMATTER
+#     gl.yformatter = LATITUDE_FORMATTER
+#     gl.xlabels_bottom = False  # turn off labels where you don't want them
+#     gl.ylabels_right = False
+#     gl.xlabels_top = False  # turn off labels where you don't want them
+#     gl.ylabels_left = False
+#     axm.add_feature(land_10m, facecolor='0.85')
+#     # axm.coastlines(resolution='10m')  # coastline resolution options are '110m', '50m', '10m'
+#     axm.add_feature(cartopy.feature.BORDERS, facecolor='0.8')
+#     axm.add_feature(states_provinces, edgecolor='gray')
+#     # add location
+#     pts_u_boxes = np.load('calcs/coastpaths_pts.npz', allow_pickle=True)['pts_u_boxes']
+#     pt = pts_u_boxes[locs[loc0][2]][0]
+#     axm.plot(*pt, '*', color='yellow', markersize=10, transform=pc, mec='k')
+#     # connectivity locations
+#     for loc1 in locsorder:
+#         if loc0 == loc1:
+#             continue
+#         # plot as empty if has nan results
+#         if not loc1 in res.keys():
+#             pts_u_boxes = np.load('calcs/coastpaths_pts.npz', allow_pickle=True)['pts_u_boxes']
+#             pt = pts_u_boxes[locs[loc1][2]][0]
+#             axm.plot(*pt, 'o', color='none', markersize=5, transform=pc, mec='k')
+#             continue
+#         # ax = axes[i]
+#         # col = '%s to %s' % (loc0, loc1)
+#         # icol = np.where(columns == col)[0][0]
+#         if locs[loc1][0] > locs[loc0][0]:  # loc1 is upcoast from loc0
+#             color = colu
+#             # sign = 1
+#         else:  # loc1 is downcoast from loc0
+#             color = cold
+#         pts_u_boxes = np.load('calcs/coastpaths_pts.npz', allow_pickle=True)['pts_u_boxes']
+#         pt = pts_u_boxes[locs[loc1][2]][0]
+#         axm.plot(*pt, 'o', color=color, markersize=5, transform=pc)#, mec='k')
+#
+#     fig.savefig('%s/%s.png' % (base,loc0), bbox_inches='tight', dpi=300)
+#     fig.savefig('%s/%s.pdf' % (base,loc0), bbox_inches='tight')
+#     plt.close(fig)
+# # f.close()
+# df.to_csv('calcs/alongcoastconn/conn_in_time/between_locs/nums.csv')
 
 #
 # fig = plt.figure(figsize=(7, 4))
@@ -353,70 +355,70 @@ df.to_csv('calcs/alongcoastconn/conn_in_time/between_locs/nums.csv')
 
 
 
-# colored matrix of speeds
-df = pd.read_csv('calcs/alongcoastconn/conn_in_time/between_locs/nums.csv')
-import seaborn as sns
-import cmocean.cm as cmo
-speedswin = df.pivot("from", "to", "max speed winter [m/s]")
-speedswin = speedswin.loc[locsorder,locsorder[::-1]]
-speedssum = df.pivot("from", "to", "max speed summer [m/s]")
-speedssum = speedssum.loc[locsorder,locsorder[::-1]]
-vmin = min((speedswin.min().min(), speedssum.min().min()))
-vmax = max((speedswin.max().max(), speedssum.max().max()))
-# gray diagonal
-dd = 0.75
-I = np.eye(len(locsorder))[::-1]*dd
-mask = dd - I
-
-f, ax = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
-cbar_ax = f.add_axes([.91, .355, .015, .6])
-i=0
-sns.heatmap(I, mask=mask, ax=ax[0], cmap=cmo.gray, vmin=0, vmax=1, square=False, cbar=False, xticklabels=False, yticklabels=False)  # gray diagonal
-sns.heatmap(speedswin, annot=True, linewidths=.5, ax=ax[0], cmap=cmo.speed, vmin=vmin, vmax=vmax, square=False, cbar_kws={"label": "max speed [m/s]"}, cbar=i == 0, cbar_ax=None if i else cbar_ax)
-ax[0].set_title('Winter')
-ax[0].set_ylabel('Starting location')
-ax[0].set_xlabel('Ending location')
-ax[0].set_xticklabels(ax[0].get_xticklabels(), rotation = 45, ha='right')#, fontsize = 8)
-i=1
-sns.heatmap(I, mask=mask, ax=ax[1], cmap=cmo.gray, vmin=0, vmax=1, square=False, cbar=False, xticklabels=False, yticklabels=False)  # gray diagonal
-sns.heatmap(speedssum, annot=True, linewidths=.5, ax=ax[1], cmap=cmo.speed, vmin=vmin, vmax=vmax, square=False, cbar_kws={"label": "max speed [m/s]"}, cbar=i == 0, cbar_ax=None if i else cbar_ax)
-ax[1].set_title('Summer')
-ax[1].set_xticklabels(ax[1].get_xticklabels(), rotation = 45, ha='right')#, fontsize = 8)
-ax[1].set_ylabel('')
-ax[1].set_xlabel('Ending location')
-f.tight_layout(rect=[0, 0, .9, 1])
-f.savefig('figures/alongcoastconn/conn_in_time/between_locs/speeds.png', bbox_inches='tight')
-f.savefig('figures/alongcoastconn/conn_in_time/between_locs/speeds.pdf', bbox_inches='tight')
-
-
-# colored matrix of times (smaller and prettier than table)
-timeswin = df.pivot("from", "to", "min time winter [days]")
-timeswin = timeswin.loc[locsorder,locsorder[::-1]]
-timessum = df.pivot("from", "to", "min time summer [days]")
-timessum = timessum.loc[locsorder,locsorder[::-1]]
-vmin = min((timeswin.min().min(), timessum.min().min()))
-vmax = max((timeswin.max().max(), timessum.max().max()))
-# gray diagonal
-dd = 0.75
-I = np.eye(len(locsorder))[::-1]*dd
-mask = dd - I
-
-f, ax = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
-cbar_ax = f.add_axes([.91, .355, .015, .6])
-i=0
-sns.heatmap(I, mask=mask, ax=ax[0], cmap=cmo.gray, vmin=0, vmax=1, square=False, cbar=False, xticklabels=False, yticklabels=False)  # gray diagonal
-sns.heatmap(timeswin, annot=True, linewidths=.5, ax=ax[0], cmap=cmo.tempo_r, vmin=vmin, vmax=vmax, square=False, cbar_kws={"label": "min travel time [days]"}, cbar=i == 0, cbar_ax=None if i else cbar_ax)
-ax[0].set_title('Winter')
-ax[0].set_ylabel('Starting location')
-ax[0].set_xlabel('Ending location')
-ax[0].set_xticklabels(ax[0].get_xticklabels(), rotation = 45, ha='right')#, fontsize = 8)
-i=1
-sns.heatmap(I, mask=mask, ax=ax[1], cmap=cmo.gray, vmin=0, vmax=1, square=False, cbar=False, xticklabels=False, yticklabels=False)  # gray diagonal
-sns.heatmap(timessum, annot=True, linewidths=.5, ax=ax[1], cmap=cmo.tempo_r, vmin=vmin, vmax=vmax, square=False, cbar_kws={"label": "min travel time [days]"}, cbar=i == 0, cbar_ax=None if i else cbar_ax)
-ax[1].set_title('Summer')
-ax[1].set_xticklabels(ax[1].get_xticklabels(), rotation = 45, ha='right')#, fontsize = 8)
-ax[1].set_ylabel('')
-ax[1].set_xlabel('Ending location')
-f.tight_layout(rect=[0, 0, .9, 1])
-f.savefig('figures/alongcoastconn/conn_in_time/between_locs/times.png', bbox_inches='tight')
-f.savefig('figures/alongcoastconn/conn_in_time/between_locs/times.pdf', bbox_inches='tight')
+# # colored matrix of speeds
+# df = pd.read_csv('calcs/alongcoastconn/conn_in_time/between_locs/nums.csv')
+# import seaborn as sns
+# import cmocean.cm as cmo
+# speedswin = df.pivot("from", "to", "max speed winter [m/s]")
+# speedswin = speedswin.loc[locsorder,locsorder[::-1]]
+# speedssum = df.pivot("from", "to", "max speed summer [m/s]")
+# speedssum = speedssum.loc[locsorder,locsorder[::-1]]
+# vmin = min((speedswin.min().min(), speedssum.min().min()))
+# vmax = max((speedswin.max().max(), speedssum.max().max()))
+# # gray diagonal
+# dd = 0.75
+# I = np.eye(len(locsorder))[::-1]*dd
+# mask = dd - I
+#
+# f, ax = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
+# cbar_ax = f.add_axes([.91, .355, .015, .6])
+# i=0
+# sns.heatmap(I, mask=mask, ax=ax[0], cmap=cmo.gray, vmin=0, vmax=1, square=False, cbar=False, xticklabels=False, yticklabels=False)  # gray diagonal
+# sns.heatmap(speedswin, annot=True, linewidths=.5, ax=ax[0], cmap=cmo.speed, vmin=vmin, vmax=vmax, square=False, cbar_kws={"label": "max speed [m/s]"}, cbar=i == 0, cbar_ax=None if i else cbar_ax)
+# ax[0].set_title('Winter')
+# ax[0].set_ylabel('Starting location')
+# ax[0].set_xlabel('Ending location')
+# ax[0].set_xticklabels(ax[0].get_xticklabels(), rotation = 45, ha='right')#, fontsize = 8)
+# i=1
+# sns.heatmap(I, mask=mask, ax=ax[1], cmap=cmo.gray, vmin=0, vmax=1, square=False, cbar=False, xticklabels=False, yticklabels=False)  # gray diagonal
+# sns.heatmap(speedssum, annot=True, linewidths=.5, ax=ax[1], cmap=cmo.speed, vmin=vmin, vmax=vmax, square=False, cbar_kws={"label": "max speed [m/s]"}, cbar=i == 0, cbar_ax=None if i else cbar_ax)
+# ax[1].set_title('Summer')
+# ax[1].set_xticklabels(ax[1].get_xticklabels(), rotation = 45, ha='right')#, fontsize = 8)
+# ax[1].set_ylabel('')
+# ax[1].set_xlabel('Ending location')
+# f.tight_layout(rect=[0, 0, .9, 1])
+# f.savefig('figures/alongcoastconn/conn_in_time/between_locs/speeds.png', bbox_inches='tight')
+# f.savefig('figures/alongcoastconn/conn_in_time/between_locs/speeds.pdf', bbox_inches='tight')
+#
+#
+# # colored matrix of times (smaller and prettier than table)
+# timeswin = df.pivot("from", "to", "min time winter [days]")
+# timeswin = timeswin.loc[locsorder,locsorder[::-1]]
+# timessum = df.pivot("from", "to", "min time summer [days]")
+# timessum = timessum.loc[locsorder,locsorder[::-1]]
+# vmin = min((timeswin.min().min(), timessum.min().min()))
+# vmax = max((timeswin.max().max(), timessum.max().max()))
+# # gray diagonal
+# dd = 0.75
+# I = np.eye(len(locsorder))[::-1]*dd
+# mask = dd - I
+#
+# f, ax = plt.subplots(1, 2, figsize=(10, 4), sharey=True)
+# cbar_ax = f.add_axes([.91, .355, .015, .6])
+# i=0
+# sns.heatmap(I, mask=mask, ax=ax[0], cmap=cmo.gray, vmin=0, vmax=1, square=False, cbar=False, xticklabels=False, yticklabels=False)  # gray diagonal
+# sns.heatmap(timeswin, annot=True, linewidths=.5, ax=ax[0], cmap=cmo.tempo_r, vmin=vmin, vmax=vmax, square=False, cbar_kws={"label": "min travel time [days]"}, cbar=i == 0, cbar_ax=None if i else cbar_ax)
+# ax[0].set_title('Winter')
+# ax[0].set_ylabel('Starting location')
+# ax[0].set_xlabel('Ending location')
+# ax[0].set_xticklabels(ax[0].get_xticklabels(), rotation = 45, ha='right')#, fontsize = 8)
+# i=1
+# sns.heatmap(I, mask=mask, ax=ax[1], cmap=cmo.gray, vmin=0, vmax=1, square=False, cbar=False, xticklabels=False, yticklabels=False)  # gray diagonal
+# sns.heatmap(timessum, annot=True, linewidths=.5, ax=ax[1], cmap=cmo.tempo_r, vmin=vmin, vmax=vmax, square=False, cbar_kws={"label": "min travel time [days]"}, cbar=i == 0, cbar_ax=None if i else cbar_ax)
+# ax[1].set_title('Summer')
+# ax[1].set_xticklabels(ax[1].get_xticklabels(), rotation = 45, ha='right')#, fontsize = 8)
+# ax[1].set_ylabel('')
+# ax[1].set_xlabel('Ending location')
+# f.tight_layout(rect=[0, 0, .9, 1])
+# f.savefig('figures/alongcoastconn/conn_in_time/between_locs/times.png', bbox_inches='tight')
+# f.savefig('figures/alongcoastconn/conn_in_time/between_locs/times.pdf', bbox_inches='tight')
